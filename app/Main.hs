@@ -19,8 +19,6 @@ data Term = TVar Var
           | TDiv Term Term
           | TLambda Var Term
           | TApp Term Term
-          | TDes1 Term
-          | TDes2 Term
           deriving (Eq, Show)
 
 type Env = Map String Term
@@ -54,8 +52,6 @@ displayTerm (TMult t1 t2) = displayTerm t1 ++ "*" ++ displayTerm t2
 displayTerm (TDiv t1 t2) = displayTerm t1 ++ "/" ++ displayTerm t2
 displayTerm (TApp t1 t2) = "(" ++ displayTerm t1 ++ "$" ++ displayTerm t2 ++ ")"
 displayTerm (TLambda x t2) = "(\\" ++ x ++ "." ++ displayTerm t2 ++ ")"
-displayTerm (TDes1 t) = displayTerm t ++ "#"
-displayTerm (TDes2 t) = displayTerm t ++ "##"
 
 type TermParser = Text.Parsec.Prim.Parsec String Int
 
@@ -81,13 +77,13 @@ pVal :: TermParser Term
 pVal = pRest <|> pInt <|> pVar <|> pSub <|> pParens
 
 pOp1 :: Term -> TermParser Term
-pOp1 t = pDiv t <|> pMult t <|> pApp t <|> pStack t <|>  pDes2 t <|> pDes1 t
+pOp1 t = pDiv t <|> pMult t <|> pApp t <|> pStack t
 
 pOp1App :: Term -> TermParser Term
-pOp1App t = pDiv t <|> pMult t <|> pStack t <|>  pDes2 t <|> pDes1 t
+pOp1App t = pDiv t <|> pMult t <|> pStack t
 
 pOp1Seq :: Term -> TermParser Term
-pOp1Seq t = pDiv t <|> pMult t <|> pApp t <|> pSeq t <|> pStack t <|>  pDes2 t <|> pDes1 t
+pOp1Seq t = pDiv t <|> pMult t <|> pApp t <|> pSeq t <|> pStack t
 
 pOp2 :: TermParser Term
 pOp2 = pLambda
@@ -158,11 +154,6 @@ pLambda = do
   t <- pTerm
   return $ TLambda x t
 
-pDes1 :: Term -> TermParser Term
-pDes1 t = symbol "#" >> (return $ TDes1 t)
-
-pDes2 :: Term -> TermParser Term
-pDes2 t = symbol "§" >> (return $ TDes2 t)
 
 parseTerm :: String -> Either ParseError Term
 parseTerm = runParser (pTermSeq Prelude.<* eof) (0 :: Int) ""
@@ -186,8 +177,6 @@ fromChurch (TDiv t1 t2) = TDiv (fromChurch t1) (fromChurch t2)
 fromChurch (TApp t1 t2) = TApp (fromChurch t1) (fromChurch t2)
 fromChurch (TSub t) = TSub (fromChurch t)
 fromChurch (TLambda x t) = TLambda x (fromChurch t)
-fromChurch (TDes1 t) = TDes1 (fromChurch t)
-fromChurch (TDes2 t) = TDes2 (fromChurch t)
 fromChurch x = x
 
 nAppRev :: Term -> Maybe Int
@@ -195,29 +184,6 @@ nAppRev (TVar "x") = Just 0
 nAppRev (TApp (TVar "g") t) = fmap (+1) (nAppRev t)
 nAppRev _ = Nothing
 
-destruct1 :: Term -> Term
-destruct1 (TSeq t1 _) = t1
-destruct1 (TSub t) = destruct1 t
-destruct1 (TStack t1 _) = t1
-destruct1 (TMult t1 _) = t1
-destruct1 (TDiv t1 _) = t1
-destruct1 (TApp t1 _) = t1
-destruct1 (TLambda x _) = TVar x
-destruct1 (TDes1 t1) = t1
-destruct1 (TDes2 t1) = t1
-destruct1 t = t
-
-destruct2 :: Term -> Term
-destruct2 (TSeq _ t2) = t2
-destruct2 (TSub t) = destruct2 t
-destruct2 (TStack _ t2) = t2
-destruct2 (TMult _ t2) = t2
-destruct2 (TDiv _ t2) = t2
-destruct2 (TApp _ t2) = t2
-destruct2 (TLambda _ t2) = t2
-destruct2 (TDes1 t1) = t1
-destruct2 (TDes2 t1) = t1
-destruct2 t = t
 
 subs :: Var -> Term -> Term -> Term
 subs x (TVar y) t = if x == y then t else (TVar y)
@@ -230,8 +196,6 @@ subs x (TDiv t1 t2) t = TDiv (subs x t1 t) (subs x t2 t)
 subs x (TApp t1 t2) t = TApp (subs x t1 t) (subs x t2 t)
 subs x (TSub t1) t = TSub (subs x t1 t)
 subs x (TLambda y t1) t = if x /= y then TLambda y (subs x t1 t) else TLambda y t1
-subs x (TDes1 t1) t = TDes1 (subs x t1 t)
-subs x (TDes2 t1) t = TDes2 (subs x t1 t)
 
 
 -- in the case of multiplication or division the application is only propagated to the value of the term, not the modifiers(tail fs)
@@ -239,8 +203,6 @@ subs x (TDes2 t1) t = TDes2 (subs x t1 t)
 isFree :: Var -> Term -> Bool
 isFree x (TVar y) = x /= y
 isFree x (TSub t) = isFree x t
-isFree x (TDes1 t) = isFree x t
-isFree x (TDes2 t) = isFree x t
 isFree x (TSeq t1 t2) = (isFree x t1) && (isFree x t2)
 isFree x (TStack t1 t2) = (isFree x t1) && (isFree x t2)
 isFree x (TMult t1 t2) = (isFree x t1) && (isFree x t2)
@@ -268,8 +230,6 @@ isReduced (TApp (TMult _ _) _) = False
 isReduced (TApp (TDiv _ _) _) = False
 isReduced (TApp (TSub _) _) = False
 isReduced (TApp t1 t2) = isReduced t1 && isReduced t2
-isReduced (TDes1 _) = False
-isReduced (TDes2 _) = False
 
 reduce :: Term -> Term
 reduce (TApp f t) = case reduce f of
@@ -287,8 +247,6 @@ reduce (TInt i) = toChurch i
 reduce (TSeq t1 t2) = TSeq (reduce t1) (reduce t2)
 reduce (TMult t1 t2) = TMult (reduce t1) (reduce t2)
 reduce (TDiv t1 t2) = TDiv (reduce t1) (reduce t2)
-reduce (TDes1 t) = destruct1 t
-reduce (TDes2 t) = destruct2 t
 reduce (TLambda x t) = TLambda x (reduce t)
 reduce  t = t
 
@@ -297,8 +255,6 @@ _alphaConv vs (TLambda x t) = case isFree x t && (not $ elem x vs) of
                                             True -> t
                                             False -> TLambda x (_alphaConv (x:vs) t)
 _alphaConv vs (TSub t) = TSub $ _alphaConv vs t
-_alphaConv vs (TDes1 t) = TDes1 $ _alphaConv vs t
-_alphaConv vs (TDes2 t) = TDes2 $ _alphaConv vs t
 _alphaConv vs (TSeq t1 t2) = TSeq (_alphaConv vs t1) (_alphaConv vs t2)
 _alphaConv vs (TStack t1 t2) = TStack (_alphaConv vs t1) (_alphaConv vs t2)
 _alphaConv vs (TMult t1 t2) = TMult (_alphaConv vs t1) (_alphaConv vs t2)
