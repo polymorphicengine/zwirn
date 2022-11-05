@@ -6,15 +6,19 @@ import qualified Text.Parsec.Prim
 
 import Data.Map as Map (Map, fromList, lookup)
 
+import Data.List (intercalate)
+
 
 type Var = String
 
 data Term = TVar Var
           | TInt Int
           | TRest
+          | TEmpty
           | TSeq Term Term
-          | TSub Term
           | TStack Term Term
+          | TAlt Term Term
+          | TSub Term
           | TMult Term Term
           | TDiv Term Term
           | TLambda Var Term
@@ -28,6 +32,7 @@ envTry = fromList [("fast", TLambda "x" (TLambda "y" (TMult (TVar "y") (TVar "x"
                   ,("slow", TLambda "x" (TLambda "y" (TDiv (TVar "y") (TVar "x"))))
                   ,("t", TLambda "x" (TLambda "y" (TVar "x")))
                   ,("f", TLambda "x" (TLambda "y" (TVar "y")))
+                  ,("id", TLambda "x" (TVar "x"))
                   ,("if", TLambda "p" (TLambda "a" (TLambda "b" (TApp ( (TApp (TVar "p") (TVar "a"))) (TVar "b")))))
                   ,("while", TLambda "p" (TLambda "h" (TLambda "x" (TApp (TApp (TApp (TVar "if") (TVar "p")) (TApp (TVar "h") (TVar "x"))) (TVar "x")))))
                   ,("Y", (TLambda "g" ( (TApp ( (TLambda "x" (TApp (TVar "g") ( (TApp (TVar "x") (TVar "x")))))) ( (TLambda "z" (TApp (TVar "g") ( (TApp (TVar "z") (TVar "z"))))))))))
@@ -45,7 +50,9 @@ displayTerm :: Term -> String
 displayTerm (TVar x) = x
 displayTerm (TInt i) = show i
 displayTerm (TRest) = "~"
-displayTerm (TSeq t1 t2) = displayTerm t1 ++ " " ++ displayTerm t2
+displayTerm TEmpty = ""
+displayTerm t@(TSeq _ _) = "(" ++ (intercalate " " $ map displayTerm (getTSeq t)) ++ ")"
+displayTerm t@(TAlt _ _) = "<" ++ (intercalate " " $ map displayTerm (removeEmpty $ getTAlt t)) ++ ">"
 displayTerm (TSub t) = "[" ++ displayTerm t ++ "]"
 displayTerm (TStack t1 t2) = displayTerm t1 ++ "," ++ displayTerm t2
 displayTerm (TMult t1 t2) = displayTerm t1 ++ "*" ++ displayTerm t2
@@ -74,7 +81,7 @@ pInt :: TermParser Term
 pInt = fmap TInt $ read <$> many1 digit
 
 pVal :: TermParser Term
-pVal = pRest <|> pInt <|> pVar <|> pSub <|> pParens
+pVal = pRest <|> pInt <|> pVar <|> pSub <|> pParens <|> pAlt
 
 pOp1 :: Term -> TermParser Term
 pOp1 t = pDiv t <|> pMult t <|> pApp t <|> pStack t
@@ -109,6 +116,18 @@ pTermSeq = _pTerm pOp1Seq
 pTermApp :: TermParser Term
 pTermApp = _pTerm pOp1App
 
+pAlt :: TermParser Term
+pAlt = angles $ do
+          t <- pTerm
+          ts <- many (symbol " " >> pTerm)
+          case ts == [] of
+              True -> return $ TAlt t TEmpty
+              False -> return $ TAlt t (toTAlt ts)
+
+toTAlt :: [Term] -> Term
+toTAlt [] = error "Not possible"
+toTAlt [t] = TAlt t TEmpty
+toTAlt (t:ts) = TAlt t (toTAlt ts)
 
 pSeq :: Term -> TermParser Term
 pSeq t1 = do
@@ -171,6 +190,7 @@ fromChurch (TLambda "g" (TLambda "x" t)) = case nAppRev t of
                                                     Just n -> TInt n
                                                     Nothing -> (TLambda "g" (TLambda "x" t))
 fromChurch (TSeq t1 t2) = TSeq (fromChurch t1) (fromChurch t2)
+fromChurch (TAlt t1 t2) = TAlt (fromChurch t1) (fromChurch t2)
 fromChurch (TStack t1 t2) = TStack (fromChurch t1) (fromChurch t2)
 fromChurch (TMult t1 t2) = TMult (fromChurch t1) (fromChurch t2)
 fromChurch (TDiv t1 t2) = TDiv (fromChurch t1) (fromChurch t2)
@@ -189,7 +209,9 @@ subs :: Var -> Term -> Term -> Term
 subs x (TVar y) t = if x == y then t else (TVar y)
 subs _ t@(TInt _) _ = t
 subs _ TRest _ = TRest
+subs _ TEmpty _ = TEmpty
 subs x (TSeq t1 t2) t = TSeq (subs x t1 t) (subs x t2 t)
+subs x (TAlt t1 t2) t = TAlt (subs x t1 t) (subs x t2 t)
 subs x (TStack t1 t2) t = TStack (subs x t1 t) (subs x t2 t)
 subs x (TMult t1 t2) t = TMult (subs x t1 t) (subs x t2 t)
 subs x (TDiv t1 t2) t = TDiv (subs x t1 t) (subs x t2 t)
@@ -204,6 +226,7 @@ isFree :: Var -> Term -> Bool
 isFree x (TVar y) = x /= y
 isFree x (TSub t) = isFree x t
 isFree x (TSeq t1 t2) = (isFree x t1) && (isFree x t2)
+isFree x (TAlt t1 t2) = (isFree x t1) && (isFree x t2)
 isFree x (TStack t1 t2) = (isFree x t1) && (isFree x t2)
 isFree x (TMult t1 t2) = (isFree x t1) && (isFree x t2)
 isFree x (TDiv t1 t2) = (isFree x t1) && (isFree x t2)
@@ -218,8 +241,10 @@ isReduced (TVar x) = case Map.lookup x envTry of
                               Nothing -> True
 isReduced (TInt _) = False
 isReduced (TRest) = True
+isReduced TEmpty = True
 isReduced (TSub t) = isReduced t
 isReduced (TSeq t1 t2) = isReduced t1 && isReduced t2
+isReduced (TAlt t1 t2) = isReduced t1 && isReduced t2
 isReduced (TStack t1 t2) = isReduced t1 && isReduced t2
 isReduced (TMult t1 t2) = isReduced t1 && isReduced t2
 isReduced (TDiv t1 t2) = isReduced t1 && isReduced t2
@@ -238,6 +263,8 @@ reduce (TApp f t) = case reduce f of
                             TMult t1 t2 -> TMult (TApp t1 t) t2
                             TDiv t1 t2 -> TDiv (TApp t1 t) t2
                             t1@(TSeq _ _) -> applySeqToSeq t1 t
+                            t1@(TAlt _ _) -> applyAltToAlt t1 t
+                            TEmpty -> TEmpty
                             t2 -> TApp t2 (reduce t)
 reduce (TSub t) = TSub (reduce t)
 reduce (TVar x) = case Map.lookup x envTry of
@@ -245,6 +272,7 @@ reduce (TVar x) = case Map.lookup x envTry of
                               Nothing -> TVar x
 reduce (TInt i) = toChurch i
 reduce (TSeq t1 t2) = TSeq (reduce t1) (reduce t2)
+reduce (TAlt t1 t2) = TAlt (reduce t1) (reduce t2)
 reduce (TMult t1 t2) = TMult (reduce t1) (reduce t2)
 reduce (TDiv t1 t2) = TDiv (reduce t1) (reduce t2)
 reduce (TLambda x t) = TLambda x (reduce t)
@@ -256,6 +284,7 @@ _alphaConv vs (TLambda x t) = case isFree x t && (not $ elem x vs) of
                                             False -> TLambda x (_alphaConv (x:vs) t)
 _alphaConv vs (TSub t) = TSub $ _alphaConv vs t
 _alphaConv vs (TSeq t1 t2) = TSeq (_alphaConv vs t1) (_alphaConv vs t2)
+_alphaConv vs (TAlt t1 t2) = TAlt (_alphaConv vs t1) (_alphaConv vs t2)
 _alphaConv vs (TStack t1 t2) = TStack (_alphaConv vs t1) (_alphaConv vs t2)
 _alphaConv vs (TMult t1 t2) = TMult (_alphaConv vs t1) (_alphaConv vs t2)
 _alphaConv vs (TDiv t1 t2) = TDiv (_alphaConv vs t1) (_alphaConv vs t2)
@@ -301,6 +330,27 @@ _toTSeq :: [Term] -> Term
 _toTSeq [] = TRest
 _toTSeq [x] = x
 _toTSeq (t:ts) = TSeq (_toTSeq $ ts) t
+
+
+getTAlt :: Term -> [Term]
+getTAlt (TAlt t1 t2) = t1:(getTAlt t2)
+getTAlt t = [t]
+
+applyAltToAlt :: Term -> Term -> Term
+applyAltToAlt t1 t2 = toTAlt $ zs
+                    where s1 = getTAlt t1
+                          s2 = getTAlt t2
+                          n1 = length s1
+                          n2 = length s2
+                          l = lcm n1 n2
+                          l1 = div l n1
+                          l2 = div l n2
+                          f1 = removeEmpty $ concat $ replicate l1 s1
+                          f2 = removeEmpty $ concat $ replicate l2 s2
+                          zs = zipWith (\x y -> TApp x y) f1 f2
+
+removeEmpty :: [Term] -> [Term]
+removeEmpty = concatMap (\t -> if t == TEmpty then [] else [t])
 
 run :: Term -> String
 run = displayTerm . alphaConv . fromChurch . reduceMany
