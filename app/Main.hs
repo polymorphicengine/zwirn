@@ -32,6 +32,7 @@ envTry = fromList [("fast", TLambda "x" (TLambda "y" (TMult (TVar "y") (TVar "x"
                   ,("slow", TLambda "x" (TLambda "y" (TDiv (TVar "y") (TVar "x"))))
                   ,("t", TLambda "x" (TLambda "y" (TVar "x")))
                   ,("f", TLambda "x" (TLambda "y" (TVar "y")))
+                  ,("and", TLambda "p" (TLambda "q" (TApp (TApp (TVar "p") (TVar "q")) (TVar "p"))))
                   ,("id", TLambda "x" (TVar "x"))
                   ,("if", TLambda "p" (TLambda "a" (TLambda "b" (TApp ( (TApp (TVar "p") (TVar "a"))) (TVar "b")))))
                   ,("while", TLambda "p" (TLambda "h" (TLambda "x" (TApp (TApp (TApp (TVar "if") (TVar "p")) (TApp (TVar "h") (TVar "x"))) (TVar "x")))))
@@ -40,10 +41,13 @@ envTry = fromList [("fast", TLambda "x" (TLambda "y" (TMult (TVar "y") (TVar "x"
                   ,("add", TLambda "m" (TLambda "n" (TApp (TApp (TVar "m") (TVar "succ")) (TVar "n"))))
                   ,("pred", TLambda "n" (TLambda "g" (TLambda "x" (TApp (TApp (TApp (TVar "n") (TLambda "j" (TLambda "h" (TApp (TVar "h") (TApp (TVar "j") (TVar "g")))))) (TLambda "u" (TVar "x"))) (TLambda "u" (TVar "u"))))))
                   ,("sub", TLambda "m" (TLambda "n" (TApp ( (TApp (TVar "n") (TVar "pred"))) (TVar "m"))) )
+                  ,("leq", TLambda "m" (TLambda "n" (TApp (TVar "iszero") (TApp (TApp (TVar "sub") (TVar "m")) (TVar "n")))))
+                  ,("eq", TLambda "m" (TLambda "n" (TApp (TApp (TVar "and") (TApp (TApp (TVar "leq") (TVar "m")) (TVar "n"))) (TApp (TApp (TVar "leq") (TVar "n")) (TVar "m")))))
                   ,("iszero", TLambda "n" (TApp ( (TApp (TVar "n") (TLambda "x" (TVar "f")))) (TVar "t")))
-                  ,("eq", TLambda "m" (TLambda "n" (TApp (TVar "iszero") ( (TApp ( (TApp (TVar "sub") (TVar "m"))) (TVar "n"))))))
+                  ,("eq", TLambda "m" (TLambda "n" (TApp (TApp (TVar "and") (TApp (TApp (TVar "leq") (TVar "m")) (TVar "n"))) (TApp (TApp (TVar "leq") (TVar "n")) (TVar "m")))))
                   ,("loop", TLambda "x" (TApp (TLambda "h" (TSeq (TVar "x") (TApp (TVar "h") (TVar "h")))) (TLambda "h" (TSeq (TVar "x") (TApp (TVar "h") (TVar "h"))))))
-                  ,("run", TApp (TVar "Y") (TLambda "h" (TLambda "n" (TApp (TApp (TApp (TVar "if") (TApp (TVar "iszero") (TApp (TVar "pred") (TVar "n")))) (TInt 0)) (TSeq (TApp (TVar "h") (TApp (TVar "pred") (TVar "n"))) (TApp (TVar "pred") (TVar "n")))))))
+                  ,("revrun", TApp (TVar "Y") (TLambda "h" (TLambda "n" (TApp (TApp (TApp (TVar "if") (TApp (TVar "iszero") (TApp (TVar "pred") (TVar "n")))) (TInt 0)) (TSeq (TApp (TVar "pred") (TVar "n")) (TApp (TVar "h") (TApp (TVar "pred") (TVar "n"))))))))
+                  ,("run", TApp (TApp (TVar "Y") (TLambda "h" (TLambda "k" (TLambda "n" (TApp (TApp (TApp (TVar "if") (TApp (TApp (TVar "eq") (TVar "k")) (TApp (TVar "pred") (TVar "n")))) (TApp (TVar "pred") (TVar "n"))) (TSeq (TVar "k") (TApp (TApp (TVar "h") (TApp (TVar "succ") (TVar "k"))) (TVar "n")))))))) (TInt 0))
                   ]
 
 displayTerm :: Term -> String
@@ -90,7 +94,7 @@ pOp1App :: Term -> TermParser Term
 pOp1App t = pDiv t <|> pMult t <|> pStack t
 
 pOp1Seq :: Term -> TermParser Term
-pOp1Seq t = pDiv t <|> pMult t <|> pApp t <|> pSeq t <|> pStack t
+pOp1Seq t = pDiv t <|> pMult t <|> pApp t <|> pStack t <|> pSeq t
 
 pOp2 :: TermParser Term
 pOp2 = pLambda
@@ -130,10 +134,11 @@ toTAlt [t] = TAlt t TEmpty
 toTAlt (t:ts) = TAlt t (toTAlt ts)
 
 pSeq :: Term -> TermParser Term
-pSeq t1 = do
-  symbol " "
-  t2 <- pTerm
-  return $ TSeq t1 t2
+pSeq t = do
+  ts <- many1 (symbol " " >> pTerm)
+  case ts == [] of
+    True -> return $ t
+    False -> return $ TSeq t (toTSeq ts)
 
 pDiv :: Term -> TermParser Term
 pDiv t1 = do
@@ -301,11 +306,11 @@ reduceMany t = case isReduced t of
 
 
 tSeqLen :: Term -> Int
-tSeqLen (TSeq t1 _) = 1 + tSeqLen t1
+tSeqLen (TSeq _ t1) = 1 + tSeqLen t1
 tSeqLen _ = 1
 
 getTSeq :: Term -> [Term]
-getTSeq (TSeq t1 t2) = getTSeq t1 ++ [t2]
+getTSeq (TSeq t1 t2) = t1:(getTSeq t2)
 getTSeq t = [t]
 
 
@@ -324,12 +329,9 @@ applySeqToSeq t1 t2 = toTSeq $ map (\i -> zs!!i) [x*l2 | x <- [0..n2-1]]
                           zs = zipWith (\x y -> TApp x y) f1 f2
 
 toTSeq :: [Term] -> Term
-toTSeq = _toTSeq . reverse
-
-_toTSeq :: [Term] -> Term
-_toTSeq [] = TRest
-_toTSeq [x] = x
-_toTSeq (t:ts) = TSeq (_toTSeq $ ts) t
+toTSeq [] = TRest
+toTSeq [t] = t
+toTSeq (t:ts) = TSeq t (toTSeq ts)
 
 
 getTAlt :: Term -> [Term]
@@ -338,15 +340,15 @@ getTAlt t = [t]
 
 applyAltToAlt :: Term -> Term -> Term
 applyAltToAlt t1 t2 = toTAlt $ zs
-                    where s1 = getTAlt t1
-                          s2 = getTAlt t2
+                    where s1 = removeEmpty $ getTAlt t1
+                          s2 = removeEmpty $ getTAlt t2
                           n1 = length s1
                           n2 = length s2
                           l = lcm n1 n2
                           l1 = div l n1
                           l2 = div l n2
-                          f1 = removeEmpty $ concat $ replicate l1 s1
-                          f2 = removeEmpty $ concat $ replicate l2 s2
+                          f1 = concat $ replicate l1 s1
+                          f2 = concat $ replicate l2 s2
                           zs = zipWith (\x y -> TApp x y) f1 f2
 
 removeEmpty :: [Term] -> [Term]
