@@ -15,7 +15,7 @@ toPattern (TStack t1 t2) = do
                       p2 <- toPattern t2
                       return $ stack [p1,p2]
 toPattern t@(TAlt _ _) = do
-                      let ts = getTAlt t
+                      let ts = removeEmpty $ getTAlt t
                       ps <- sequence $ map toPattern ts
                       return $ cat ps
 toPattern (TSub t) = toPattern t
@@ -26,9 +26,9 @@ toPattern t@(TSeq _ _) = do
 toPattern (TMult t1 t2) = do
                       p1 <- toPattern t1
                       p2 <- toPattern t2
-                      return $ fast (fmap fromIntegral p1) $ p2
+                      return $ fast (fmap fromIntegral p2) $ p1
 toPattern (TDiv t1 t2) = do
                       p1 <- toPattern t1
                       p2 <- toPattern t2
-                      return $ slow (fmap fromIntegral p1) $ p2
+                      return $ slow (fmap fromIntegral p2) $ p1
 toPattern  _ = Nothing
