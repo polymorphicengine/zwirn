@@ -110,11 +110,29 @@ pApp t1 = do
 pLambda :: TermParser Term
 pLambda = do
   _ <- char '\\'
-  x <- many1 letter
+  p <- pPat
   symbol "."
   t <- pTerm
-  return $ TLambda x t
+  ts <- many $ do
+            symbol "|"
+            p1 <- pPat
+            symbol "."
+            t1 <- pTerm
+            return $ (p1,t1)
+  return $ TLambda $ (p,t):ts
 
+pPat :: TermParser Pat
+pPat = try pPatSeq <|> pPatVar
+
+pPatVar :: TermParser Pat
+pPatVar = fmap PVar $ many1 letter
+
+pPatSeq :: TermParser Pat
+pPatSeq = do
+  x <- many1 letter
+  symbol " "
+  y <- many1 letter
+  return $ PSeq x y
 
 parseTerm :: String -> Either ParseError Term
 parseTerm = runParser (pTermSeq Prelude.<* eof) (0 :: Int) ""

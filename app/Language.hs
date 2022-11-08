@@ -5,6 +5,10 @@ import Data.List (intercalate)
 
 type Var = String
 
+data Pat = PVar Var
+         | PSeq Var Var
+         deriving (Eq, Show)
+
 data Term = TVar Var
           | TInt Int
           | TRest
@@ -15,9 +19,13 @@ data Term = TVar Var
           | TSub Term
           | TMult Term Term
           | TDiv Term Term
-          | TLambda Var Term
+          | TLambda [(Pat,Term)]
           | TApp Term Term
           deriving (Eq, Show)
+
+displayPat :: Pat -> String
+displayPat (PVar x) = x
+displayPat (PSeq x y) = "(" ++ x ++ " " ++ y ++ ")"
 
 
 displayTerm :: Term -> String
@@ -32,21 +40,28 @@ displayTerm (TStack t1 t2) = displayTerm t1 ++ "," ++ displayTerm t2
 displayTerm (TMult t1 t2) = displayTerm t1 ++ "*" ++ displayTerm t2
 displayTerm (TDiv t1 t2) = displayTerm t1 ++ "/" ++ displayTerm t2
 displayTerm (TApp t1 t2) = "(" ++ displayTerm t1 ++ "$" ++ displayTerm t2 ++ ")"
-displayTerm (TLambda x t2) = "(\\" ++ x ++ "." ++ displayTerm t2 ++ ")"
+displayTerm (TLambda ps) = "(\\" ++ (intercalate "|" $ map (\(p,t) -> displayPat p ++ "." ++ displayTerm t) ps) ++ ")"
+
+
+patVars :: Pat -> [Var]
+patVars (PVar x) = [x]
+patVars (PSeq x y) = [x,y]
 
 -- church numeral stuff..
 
 toChurch :: Int -> Term
-toChurch n = TLambda "g" (TLambda "x" $ nApp n)
+toChurch n = TLambda [(PVar "g",TLambda [(PVar "x", nApp n)])]
 
 nApp :: Int -> Term
 nApp 0 = TVar "x"
 nApp n = TApp (TVar "g") (nApp $ n - 1)
 
 fromChurch :: Term -> Term
-fromChurch (TLambda "g" (TLambda "x" t)) = case nAppRev t of
+fromChurch (TLambda [(PVar "g", TLambda [(PVar "x", t)])]) = case nAppRev t of
                                                     Just n -> TInt n
-                                                    Nothing -> (TLambda "g" (TLambda "x" t))
+                                                    Nothing -> TLambda [(PVar "g", TLambda [(PVar "x", t)])]
+fromChurch (TLambda [(PVar "x", TLambda [(PVar "y",TVar "x")])]) = TVar "t"
+fromChurch (TLambda [(PVar "x", TLambda [(PVar "y",TVar "y")])]) = TVar "f"
 fromChurch (TSeq t1 t2) = TSeq (fromChurch t1) (fromChurch t2)
 fromChurch (TAlt t1 t2) = TAlt (fromChurch t1) (fromChurch t2)
 fromChurch (TStack t1 t2) = TStack (fromChurch t1) (fromChurch t2)
@@ -54,8 +69,11 @@ fromChurch (TMult t1 t2) = TMult (fromChurch t1) (fromChurch t2)
 fromChurch (TDiv t1 t2) = TDiv (fromChurch t1) (fromChurch t2)
 fromChurch (TApp t1 t2) = TApp (fromChurch t1) (fromChurch t2)
 fromChurch (TSub t) = TSub (fromChurch t)
-fromChurch (TLambda x t) = TLambda x (fromChurch t)
+fromChurch (TLambda ts) = TLambda $ mapTerm fromChurch ts
 fromChurch x = x
+
+mapTerm :: (Term -> Term) -> [(Pat,Term)] -> [(Pat,Term)]
+mapTerm f = map (\(p,t) -> (p, f t))
 
 nAppRev :: Term -> Maybe Int
 nAppRev (TVar "x") = Just 0
