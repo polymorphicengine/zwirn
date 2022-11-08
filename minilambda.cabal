@@ -64,6 +64,7 @@ executable minilambda
     other-modules:    Language
                       Parser
                       Interpreter
+                      Tidal
 
 
     -- LANGUAGE extensions used by modules in this package.
@@ -72,7 +73,8 @@ executable minilambda
     -- Other library packages from which modules are imported.
     build-depends:    base ^>=4.16.2.0,
                       parsec,
-                      containers
+                      containers,
+                      tidal == 1.9.2
 
     -- Directories containing source files.
     hs-source-dirs:   app
