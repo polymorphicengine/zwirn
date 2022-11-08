@@ -33,6 +33,7 @@ prelude = [("t", "\\x.\\y.x")
           ,("eq", "\\m.\\n.and$(leq$m$n)$(leq$n$m)")
           ,("Y", "\\func.(\\arg.func$(arg$arg))$(\\arg.func$(arg$arg))")
           ,("Z", "\\func.(\\arg.func$(\\v.arg$arg$v))$(\\arg.func$(\\v.arg$arg$v))")
+          ,("flip", "\\h.\\x.\\y.h$y$x")
           --minilambda functions
           ,("force","\\x xs.(x xs)|x.x")
           ,("isseq", "\\x xs.t|x.f")
@@ -47,6 +48,8 @@ prelude = [("t", "\\x.\\y.x")
           ,("seqfront", "\\x.seqtake$(pred$(seqlen$x))$x")
           ,("seqlast","\\x.(seqlen$x)$seqtail$x")
           ,("rot", "\\n.\\y.n$(\\z.(seqlast$z seqfront$z))$y")
+          ,("replicate", "(Y$(\\h.\\k.\\x.if$(iszero$(pred$k))$(x)$(x h$(pred$k)$x)))")
+          ,("squeeze", "\\h.\\x.\\y.(replicate$(seqlen$x)$h)$x$(replicate$(seqlen$x)$y)")
           ,("rev", "Y$(\\h.(\\y ys.(h$ys y)|z.z))")
           ]
 
