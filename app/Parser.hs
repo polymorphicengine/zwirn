@@ -27,7 +27,7 @@ pInt :: TermParser Term
 pInt = fmap TInt $ read <$> many1 digit
 
 pVal :: TermParser Term
-pVal = pRest <|> pInt <|> pVar <|> pSub <|> pParens <|> pAlt
+pVal = pRest <|> pInt <|> pVar <|> pParens
 
 pOp1 :: Term -> TermParser Term
 pOp1 t = pDiv t <|> pMult t <|> pApp t <|> pStack t
@@ -62,14 +62,6 @@ pTermSeq = _pTerm pOp1Seq
 pTermApp :: TermParser Term
 pTermApp = _pTerm pOp1App
 
-pAlt :: TermParser Term
-pAlt = angles $ do
-          t <- pTerm
-          ts <- many (symbol " " >> pTerm)
-          case ts == [] of
-              True -> return $ TAlt t TEmpty
-              False -> return $ TAlt t (toTAlt ts)
-
 pSeq :: Term -> TermParser Term
 pSeq t = do
   ts <- many1 (symbol " " >> pTerm)
@@ -95,9 +87,6 @@ pStack t1 = do
   t2 <- pTerm
   return $ TStack t1 t2
 
-pSub :: TermParser Term
-pSub = fmap TSub $ brackets $ pTermSeq
-
 pParens :: TermParser Term
 pParens = parens pTermSeq
 
@@ -122,16 +111,16 @@ pLambda = do
   return $ TLambda $ (p,t):ts
 
 pPat :: TermParser Pat
-pPat = try pPatSeq <|> pPatVar
+pPat = pPatVar
 
 pPatVar :: TermParser Pat
 pPatVar = fmap PVar $ many1 letter
 
 pPatSeq :: TermParser Pat
 pPatSeq = do
-  x <- many1 letter
+  x <- pPat
   symbol " "
-  y <- many1 letter
+  y <- pPat
   return $ PSeq x y
 
 parseTerm :: String -> Either ParseError Term

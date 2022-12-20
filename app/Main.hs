@@ -4,18 +4,14 @@ import Language
 import Parser
 import Interpreter
 import Tidal
+import Compiler
 
 import Sound.Tidal.Pattern (Pattern)
 
 import Data.List (intercalate)
 
 run :: Term -> String
-run = displayTerm . fromChurch . reduceMany
-
-runTidal :: Term -> Pattern Int
-runTidal t = case toPattern $ fromChurch $ reduceMany t of
-                                      Just x -> x
-                                      Nothing -> error "Could not transform to pattern!"
+run = displayTerm
 
 parseOne :: (String, String) -> String
 parseOne (x,t) = "("++show x++","++func++")"
