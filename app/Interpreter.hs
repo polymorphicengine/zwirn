@@ -4,7 +4,9 @@ import Language
 
 import Data.Map as Map (Map, fromList)
 
-type Env = Map String Term
+import qualified Prelude as P
+
+type Env = Map P.String Term
 
 envTry :: Env
 envTry = fromList [("t",TLambda [(PVar "x",TLambda [(PVar "y",TVar "x")])])
@@ -45,18 +47,62 @@ envTry = fromList [("t",TLambda [(PVar "x",TLambda [(PVar "y",TVar "x")])])
 
 -- the idea is that the structure will always come from the right term and the values in the left term will be matched against them
 applySeqToSeq :: TermF -> TermF -> TermF
-applySeqToSeq t1 t2 = toFSeq $ map (\i -> zs!!i) [x*l2 | x <- [0..n2-1]]
+applySeqToSeq t1 t2 = toFSeq P.$ P.map (\i -> (P.!!) zs i) [(P.*) x l2 | x <- [0..(P.-) n2 1]]
                     where s1 = getFSeq t1
                           s2 = getFSeq t2
-                          n1 = length s1
-                          n2 = length s2
-                          l = lcm n1 n2
-                          l1 = div l n1
-                          l2 = div l n2
-                          f1 = concatMap (\x -> take l1 $ repeat x) s1
-                          f2 = concatMap (\x -> take l2 $ repeat x) s2
-                          zs = zipWith (\x y -> apply x y) f1 f2
+                          n1 = P.length s1
+                          n2 = P.length s2
+                          l = P.lcm n1 n2
+                          l1 = P.div l n1
+                          l2 = P.div l n2
+                          f1 = P.concatMap (\x -> P.take l1 (P.repeat x)) s1
+                          f2 = P.concatMap (\x -> P.take l2 (P.repeat x)) s2
+                          zs = P.zipWith (\x y -> apply x y) f1 f2
 
 apply :: TermF -> TermF -> TermF
 apply (FLambda f) t = f t
 apply t1 t2 = applySeqToSeq t1 t2
+
+intToTerm :: (P.Int -> P.Int) -> TermF
+intToTerm f = FLambda g
+            where g (FInt i) = FInt (f i)
+                  g (FSeq t1 t2) = FSeq (apply (intToTerm f) t1) (apply (intToTerm f) t2)
+                  g (FStack t1 t2) = FStack (apply (intToTerm f) t1) (apply (intToTerm f) t2)
+                  g (FDiv t n) = FDiv (apply (intToTerm f) t) n
+                  g (FMult t n) = FMult (apply (intToTerm f) t) n
+                  g x = x
+
+intToTerm2 :: (P.Int -> P.Int -> P.Int) -> TermF
+intToTerm2 f = FLambda g
+            where g (FInt i) = FLambda h
+                              where h (FInt j) = FInt (f i j)
+                                    h x = x
+                  g x = x
+
+
+succ :: TermF
+succ = intToTerm P.succ
+
+pred :: TermF
+pred = intToTerm P.pred
+
+add :: TermF
+add = intToTerm2 (P.+)
+
+lcm :: TermF
+lcm = intToTerm2 P.lcm
+
+fast :: TermF
+fast = FLambda (\t1 -> FLambda (\t2 -> FMult t2 t1))
+
+slow :: TermF
+slow = FLambda (\t1 -> FLambda (\t2 -> FDiv t2 t1))
+
+seqhead :: TermF
+seqhead = FLambda (\t -> case t of (FSeq x _) -> x; x -> x)
+
+seqtail :: TermF
+seqtail = FLambda (\t -> case t of (FSeq _ xs) -> xs; x -> x)
+
+rev :: TermF
+rev = FLambda (\t -> case t of (FSeq x xs) -> (FSeq (apply rev xs) x); x -> x)
