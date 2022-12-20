@@ -66,6 +66,7 @@ subsPat x t (p, t1) = if not $ elem x (patVars p) then subs x t1 t else t1
 matches :: Pat -> Term -> Bool
 matches (PSeq _ _) (TSeq _ _) = True
 matches (PSeq _ _) _ = False
+matches PNil TEmpty = True
 matches _ _ = True
 
 -- the idea is that the structure will always come from the right term and the values in the left term will be matched against them

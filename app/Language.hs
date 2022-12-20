@@ -7,6 +7,9 @@ type Var = String
 
 data Pat = PVar Var
          | PSeq Var Var
+         | PNil
+         | PDiv Var Var
+         | PMult Var Var
          deriving (Eq, Show)
 
 data Term = TVar Var
@@ -26,6 +29,9 @@ data Term = TVar Var
 displayPat :: Pat -> String
 displayPat (PVar x) = x
 displayPat (PSeq x y) = "(" ++ x ++ " " ++ y ++ ")"
+displayPat (PNil) = "nil"
+displayPat (PDiv x n) = x ++ "/" ++ n
+displayPat (PMult x n) = x ++ "*" ++ n
 
 
 displayTerm :: Term -> String
@@ -42,10 +48,31 @@ displayTerm (TDiv t1 t2) = displayTerm t1 ++ "/" ++ displayTerm t2
 displayTerm (TApp t1 t2) = "(" ++ displayTerm t1 ++ "$" ++ displayTerm t2 ++ ")"
 displayTerm (TLambda ps) = "(\\" ++ (intercalate "|" $ map (\(p,t) -> displayPat p ++ "." ++ displayTerm t) ps) ++ ")"
 
+patToHaskell :: Pat -> String
+patToHaskell (PVar x) = x
+patToHaskell (PSeq x y) = "(TSeq " ++ x ++ " " ++ y ++ ")"
+patToHaskell (PNil) = "TEmpty"
+patToHaskell (PDiv x n) = "(TDiv " ++ x ++ " " ++ n ++ ")"
+patToHaskell (PMult x n) = "(TMult " ++ x ++ " " ++ n ++ ")"
+
+toHaskell :: Term -> String
+toHaskell (TVar x) = x
+toHaskell (TInt i) = "(TInt " ++ show i ++ ")"
+toHaskell TRest = "TRest"
+toHaskell TEmpty = "TEmpty"
+toHaskell (TSeq t1 t2) = "(TSeq " ++ toHaskell t1 ++ " " ++ toHaskell t2 ++ ")"
+toHaskell (TAlt t1 t2) = "(TAlt " ++ toHaskell t1 ++ " " ++ toHaskell t2 ++ ")"
+toHaskell (TSub t) = "(TSub " ++ toHaskell t ++ ")"
+toHaskell (TStack t1 t2) = "(TStack " ++ toHaskell t1 ++ " " ++ toHaskell t2 ++ ")"
+toHaskell (TMult t1 t2) = "(TMult " ++ toHaskell t1 ++ " " ++ toHaskell t2 ++ ")"
+toHaskell (TDiv t1 t2) = "(TDiv " ++ toHaskell t1 ++ " " ++ toHaskell t2 ++ ")"
+toHaskell (TApp t1 t2) = "(" ++ toHaskell t1 ++ " " ++ toHaskell t2 ++ ")"
+toHaskell (TLambda ps) = "(\\" ++ (intercalate "|" $ map (\(p,t) -> patToHaskell p ++ "->" ++ toHaskell t) ps) ++ ")"
 
 patVars :: Pat -> [Var]
 patVars (PVar x) = [x]
 patVars (PSeq x y) = [x,y]
+patVars _ = []
 
 -- church numeral stuff..
 
