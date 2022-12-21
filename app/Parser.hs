@@ -18,7 +18,12 @@ symbol :: String -> TermParser ()
 symbol x = string x >> return ()
 
 pVar :: TermParser Term
-pVar = fmap TVar $ many1 letter
+pVar = do
+  xs <- many1 letter
+  case xs of
+    "t" -> fail "reserved"
+    "f" -> fail "reserved"
+    _ -> return $ TVar xs
 
 pRest :: TermParser Term
 pRest = symbol "~" >> return TRest
@@ -30,7 +35,7 @@ pBool :: TermParser Term
 pBool = (symbol "t" >> return (TBool True)) <|> (symbol "f" >> return (TBool False))
 
 pVal :: TermParser Term
-pVal = pRest <|> pInt <|> try pBool <|> pVar <|> pParens
+pVal = pRest <|> pInt <|> try pVar <|> pBool <|> pParens
 
 pOp1 :: Term -> TermParser Term
 pOp1 t = pDiv t <|> pMult t <|> pApp t <|> pStack t
@@ -69,7 +74,7 @@ pSeq :: Term -> TermParser Term
 pSeq t = do
   ts <- many1 (symbol " " >> pTerm)
   case ts == [] of
-    True -> return $ t
+    True -> return $ TSeq t TEmpty
     False -> return $ TSeq t (toTSeq ts)
 
 pDiv :: Term -> TermParser Term
@@ -114,16 +119,22 @@ pLambda = do
   return $ TLambda $ (p,t):ts
 
 pPat :: TermParser Pat
-pPat = pPatVar
+pPat = try pPatSeq <|> try pPatBool <|> pPatVar <|> pPatInt
 
 pPatVar :: TermParser Pat
 pPatVar = fmap PVar $ many1 letter
 
+pPatInt :: TermParser Pat
+pPatInt = fmap PInt $ read <$> many1 digit
+
+pPatBool :: TermParser Pat
+pPatBool = (symbol "t" >> (return $ PBool True)) <|> (symbol "f" >> (return $ PBool False))
+
 pPatSeq :: TermParser Pat
 pPatSeq = do
-  x <- pPat
+  x <- pPatVar <|> parens pPat
   symbol " "
-  y <- pPat
+  y <- pPatVar <|> parens pPat
   return $ PSeq x y
 
 parseTerm :: String -> Either ParseError Term

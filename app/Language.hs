@@ -6,6 +6,8 @@ import Data.List (intercalate)
 type Var = String
 
 data Pat = PVar Var
+         | PInt Int
+         | PBool Bool
          | PEmpty
          | PSeq Pat Pat
          | PStack Pat Pat
@@ -28,6 +30,8 @@ data Term = TVar Var
 
 displayPat :: Pat -> String
 displayPat (PVar x) = x
+displayPat (PInt i) = show i
+displayPat (PBool b) = show b
 displayPat (PSeq x y) = "(" ++ displayPat x ++ " " ++ displayPat y ++ ")"
 displayPat (PStack x y) = "(" ++ displayPat x ++ "," ++ displayPat y ++ ")"
 displayPat (PEmpty) = "nil"

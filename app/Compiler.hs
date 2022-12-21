@@ -18,6 +18,8 @@ compile (TLambda ps) = "(FLambda (\\pat -> " ++ compileCases ps ++"))"
 
 compilePat :: Pat -> String
 compilePat (PVar x) = x
+compilePat (PInt i) = "(FInt " ++ show i ++ ")"
+compilePat (PBool b) = "(FBool P." ++ show b ++ ")"
 compilePat PEmpty = "FEmpty"
 compilePat (PSeq p1 p2) = "(FSeq " ++ compilePat p1 ++ " " ++ compilePat p2 ++ ")"
 compilePat (PStack p1 p2) = "(FStack " ++ compilePat p1 ++ " " ++ compilePat p2 ++ ")"

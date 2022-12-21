@@ -41,7 +41,6 @@ import qualified Language.Haskell.Interpreter as Hint
 --           ,("force","\\x xs.(x xs)|x.x")
 --           ,("isseq", "\\x xs.t|x.f")
 --           ,("revrun", "Y$(\\h.\\n.(if$(iszero$(pred$n))$0$((pred$n) h$(pred$n))))")
---           ,("seqlen", "Y$(\\h.\\y ys.(succ$(h$ys))|y.1)")
 --           ,("seqdrop", "\\n.\\y.n$seqtail$y")
 --           ,("seqtake", "Y$(\\h.\\n.(\\y ys.(if$(leq$n$1)$y$(y h$(pred$n)$ys))|y.y))")
 --           ,("seqfront", "\\x.seqtake$(pred$(seqlen$x))$x")
@@ -74,7 +73,7 @@ main = do
             case x of
                 Left err -> putStrLn $ show err
                 Right f -> case toPatternI f of
-                                  Just p -> putStrLn $ show p
+                                  Just p -> (putStrLn $ displayTermF f) >> (putStrLn $ show p)
                                   Nothing -> case toPatternB f of
-                                    Just q -> putStrLn $ show q
+                                    Just q -> (putStrLn $ displayTermF f) >> (putStrLn $ show q)
                                     Nothing -> putStrLn "Cannot convert resulting term to pattern!"
