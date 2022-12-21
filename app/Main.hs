@@ -73,6 +73,8 @@ main = do
             x <- eval $ c
             case x of
                 Left err -> putStrLn $ show err
-                Right f -> case toPattern f of
+                Right f -> case toPatternI f of
                                   Just p -> putStrLn $ show p
-                                  Nothing -> putStrLn "Cannot convert resulting term to pattern!"
+                                  Nothing -> case toPatternB f of
+                                    Just q -> putStrLn $ show q
+                                    Nothing -> putStrLn "Cannot convert resulting term to pattern!"

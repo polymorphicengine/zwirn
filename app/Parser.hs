@@ -26,8 +26,11 @@ pRest = symbol "~" >> return TRest
 pInt :: TermParser Term
 pInt = fmap TInt $ read <$> many1 digit
 
+pBool :: TermParser Term
+pBool = (symbol "t" >> return (TBool True)) <|> (symbol "f" >> return (TBool False))
+
 pVal :: TermParser Term
-pVal = pRest <|> pInt <|> pVar <|> pParens
+pVal = pRest <|> pInt <|> try pBool <|> pVar <|> pParens
 
 pOp1 :: Term -> TermParser Term
 pOp1 t = pDiv t <|> pMult t <|> pApp t <|> pStack t

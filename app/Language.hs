@@ -15,6 +15,7 @@ data Pat = PVar Var
 
 data Term = TVar Var
           | TInt Int
+          | TBool Bool
           | TRest
           | TEmpty
           | TSeq Term Term
@@ -36,6 +37,8 @@ displayPat (PMult x n) = displayPat x ++ "*" ++ displayPat n
 displayTerm :: Term -> String
 displayTerm (TVar x) = x
 displayTerm (TInt i) = show i
+displayTerm (TBool True) = "t"
+displayTerm (TBool False) = "f"
 displayTerm (TRest) = "~"
 displayTerm TEmpty = ""
 displayTerm t@(TSeq _ _) = "(" ++ (intercalate " " $ map displayTerm (getTSeq t)) ++ ")"

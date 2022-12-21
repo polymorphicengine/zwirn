@@ -1,11 +1,12 @@
 module Interpreter where
 
-import Prelude as P
+import qualified Prelude as P
 
-type Var = String
+type Var = P.String
 
 data TermF = FVar Var
-           | FInt Int
+           | FInt P.Int
+           | FBool P.Bool
            | FRest
            | FEmpty
            | FSeq TermF TermF
@@ -26,43 +27,70 @@ toFSeq (t:ts) = FSeq t (toFSeq ts)
 
 -- the idea is that the structure will always come from the right term and the values in the left term will be matched against them
 applySeqToSeq :: TermF -> TermF -> TermF
-applySeqToSeq t1 t2 = toFSeq $ map (\i -> zs!!i) [x*l2 | x <- [0..n2-1]]
+applySeqToSeq t1 t2 = toFSeq (P.map (\i -> (P.!!) zs i) [(P.*) x l2 | x <- [0..(P.-) n2 1]])
                     where s1 = getFSeq t1
                           s2 = getFSeq t2
-                          n1 = length s1
-                          n2 = length s2
+                          n1 = P.length s1
+                          n2 = P.length s2
                           l = P.lcm n1 n2
-                          l1 = div l n1
-                          l2 = div l n2
-                          f1 = concatMap (\x -> take l1 (repeat x)) s1
-                          f2 = concatMap (\x -> take l2 (repeat x)) s2
-                          zs = zipWith (\x y -> apply x y) f1 f2
+                          l1 = P.div l n1
+                          l2 = P.div l n2
+                          f1 = P.concatMap (\x -> P.take l1 (P.repeat x)) s1
+                          f2 = P.concatMap (\x -> P.take l2 (P.repeat x)) s2
+                          zs = P.zipWith (\x y -> apply x y) f1 f2
 
 apply :: TermF -> TermF -> TermF
 apply (FLambda f) t = f t
 apply t1@(FSeq _ _) t2 = applySeqToSeq t1 t2
-apply _ _ = error "Cannot apply these terms!"
+apply _ _ = P.error "Cannot apply these terms!"
 
-intToTerm :: (Int -> Int) -> TermF
+intToTerm :: (P.Int -> P.Int) -> TermF
 intToTerm f = FLambda g
             where g (FInt i) = FInt (f i)
                   g (FSeq t1 t2) = FSeq (apply (intToTerm f) t1) (apply (intToTerm f) t2)
                   g (FStack t1 t2) = FStack (apply (intToTerm f) t1) (apply (intToTerm f) t2)
                   g (FDiv t n) = FDiv (apply (intToTerm f) t) n
                   g (FMult t n) = FMult (apply (intToTerm f) t) n
+                  g x = x -- or throw an error maybe ?
+
+boolToTerm :: (P.Bool -> P.Bool) -> TermF
+boolToTerm f = FLambda g
+            where g (FBool i) = FBool (f i)
+                  g (FSeq t1 t2) = FSeq (apply (boolToTerm f) t1) (apply (boolToTerm f) t2)
+                  g (FStack t1 t2) = FStack (apply (boolToTerm f) t1) (apply (boolToTerm f) t2)
+                  g (FDiv t n) = FDiv (apply (boolToTerm f) t) n
+                  g (FMult t n) = FMult (apply (boolToTerm f) t) n
                   g x = x
 
-intToTerm2 :: (Int -> Int -> Int) -> TermF
+intToTerm2 :: (P.Int -> P.Int -> P.Int) -> TermF
 intToTerm2 f = FLambda g
-            where g (FInt i) = (intToTerm $ f i)
+            where g (FInt i) = (intToTerm (f i))
                   g (FSeq t1 t2) = FSeq (apply (intToTerm2 f) t1) (apply (intToTerm2 f) t2)
                   g (FStack t1 t2) = FStack (apply (intToTerm2 f) t1) (apply (intToTerm2 f) t2)
                   g (FDiv t n) = FDiv (apply (intToTerm2 f) t) n
                   g (FMult t n) = FMult (apply (intToTerm2 f) t) n
                   g x = x
 
+boolToTerm2 :: (P.Bool -> P.Bool -> P.Bool) -> TermF
+boolToTerm2 f = FLambda g
+            where g (FBool b) = (boolToTerm (f b))
+                  g (FSeq t1 t2) = FSeq (apply (boolToTerm2 f) t1) (apply (boolToTerm2 f) t2)
+                  g (FStack t1 t2) = FStack (apply (boolToTerm2 f) t1) (apply (boolToTerm2 f) t2)
+                  g (FDiv t n) = FDiv (apply (boolToTerm2 f) t) n
+                  g (FMult t n) = FMult (apply (boolToTerm2 f) t) n
+                  g x = x
+
 id :: TermF
 id = FLambda (\x -> x)
+
+not :: TermF
+not = boolToTerm P.not
+
+and :: TermF
+and = boolToTerm2 (P.&&)
+
+or :: TermF
+or = boolToTerm2 (P.||)
 
 succ :: TermF
 succ = intToTerm P.succ

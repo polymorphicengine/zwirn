@@ -6,6 +6,7 @@ import Data.List (intercalate)
 compile :: Term -> String
 compile (TVar x) = x
 compile (TInt i) = "(FInt " ++ show i ++ ")"
+compile (TBool b) = "(FBool P." ++ show b ++ ")"
 compile (TEmpty) = "FEmpty"
 compile (TRest) = "FRest"
 compile (TSeq x y) = "(FSeq " ++ compile x ++ " " ++ compile y ++ ")"

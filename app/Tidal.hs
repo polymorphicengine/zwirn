@@ -6,24 +6,46 @@ import Sound.Tidal.Show()
 
 import Interpreter (TermF (..), getFSeq)
 
-toPattern :: TermF -> Maybe (Pattern Int)
-toPattern (FInt i) = Just $ pure i
-toPattern FRest = Just $ silence
-toPattern FEmpty = Just $ silence
-toPattern (FStack t1 t2) = do
-                      p1 <- toPattern t1
-                      p2 <- toPattern t2
+toPatternI :: TermF -> Maybe (Pattern Int)
+toPatternI (FInt i) = Just $ pure i
+toPatternI FRest = Just $ silence
+toPatternI FEmpty = Just $ silence
+toPatternI (FStack t1 t2) = do
+                      p1 <- toPatternI t1
+                      p2 <- toPatternI t2
                       return $ stack [p1,p2]
-toPattern t@(FSeq _ _) = do
+toPatternI t@(FSeq _ _) = do
                       let ts = getFSeq t
-                      ps <- sequence $ map toPattern ts
+                      ps <- sequence $ map toPatternI ts
                       return $ fastcat ps
-toPattern (FMult t1 t2) = do
-                      p1 <- toPattern t1
-                      p2 <- toPattern t2
+toPatternI (FMult t1 t2) = do
+                      p1 <- toPatternI t1
+                      p2 <- toPatternI t2
                       return $ fast (fmap fromIntegral p2) $ p1
-toPattern (FDiv t1 t2) = do
-                      p1 <- toPattern t1
-                      p2 <- toPattern t2
+toPatternI (FDiv t1 t2) = do
+                      p1 <- toPatternI t1
+                      p2 <- toPatternI t2
                       return $ slow (fmap fromIntegral p2) $ p1
-toPattern  _ = Nothing
+toPatternI  _ = Nothing
+
+toPatternB :: TermF -> Maybe (Pattern Bool)
+toPatternB (FBool b) = Just $ pure b
+toPatternB FRest = Just $ silence
+toPatternB FEmpty = Just $ silence
+toPatternB (FStack t1 t2) = do
+                      p1 <- toPatternB t1
+                      p2 <- toPatternB t2
+                      return $ stack [p1,p2]
+toPatternB t@(FSeq _ _) = do
+                      let ts = getFSeq t
+                      ps <- sequence $ map toPatternB ts
+                      return $ fastcat ps
+toPatternB (FMult t1 t2) = do
+                      p1 <- toPatternB t1
+                      p2 <- toPatternI t2
+                      return $ fast (fmap fromIntegral p2) $ p1
+toPatternB (FDiv t1 t2) = do
+                      p1 <- toPatternB t1
+                      p2 <- toPatternI t2
+                      return $ slow (fmap fromIntegral p2) $ p1
+toPatternB  _ = Nothing
