@@ -25,16 +25,6 @@ data Term = TVar Var
           | TApp Term Term
           deriving (Eq, Show)
 
-data TermF = FVar Var
-           | FInt Int
-           | FRest
-           | FEmpty
-           | FSeq TermF TermF
-           | FStack TermF TermF
-           | FMult TermF TermF
-           | FDiv TermF TermF
-           | FLambda (TermF -> TermF)
-
 displayPat :: Pat -> String
 displayPat (PVar x) = x
 displayPat (PSeq x y) = "(" ++ displayPat x ++ " " ++ displayPat y ++ ")"
@@ -64,15 +54,3 @@ toTSeq :: [Term] -> Term
 toTSeq [] = TRest
 toTSeq [t] = t
 toTSeq (t:ts) = TSeq t (toTSeq ts)
-
-
-
-getFSeq :: TermF -> [TermF]
-getFSeq (FSeq t1 t2) = t1:(getFSeq t2)
-getFSeq t = [t]
-
-
-toFSeq :: [TermF] -> TermF
-toFSeq [] = FRest
-toFSeq [t] = t
-toFSeq (t:ts) = FSeq t (toFSeq ts)

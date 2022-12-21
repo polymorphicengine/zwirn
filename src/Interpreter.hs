@@ -1,8 +1,28 @@
 module Interpreter where
 
-import Language
-
 import Prelude as P
+
+type Var = String
+
+data TermF = FVar Var
+           | FInt Int
+           | FRest
+           | FEmpty
+           | FSeq TermF TermF
+           | FStack TermF TermF
+           | FMult TermF TermF
+           | FDiv TermF TermF
+           | FLambda (TermF -> TermF)
+
+getFSeq :: TermF -> [TermF]
+getFSeq (FSeq t1 t2) = t1:(getFSeq t2)
+getFSeq t = [t]
+
+toFSeq :: [TermF] -> TermF
+toFSeq [] = FRest
+toFSeq [t] = t
+toFSeq (t:ts) = FSeq t (toFSeq ts)
+
 
 -- the idea is that the structure will always come from the right term and the values in the left term will be matched against them
 applySeqToSeq :: TermF -> TermF -> TermF

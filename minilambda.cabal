@@ -53,7 +53,14 @@ extra-doc-files:    CHANGELOG.md
 common warnings
     ghc-options: -Wall
 
-executable minilambda
+library
+  hs-source-dirs: src
+  exposed-modules:
+    Interpreter
+  build-depends:
+    base ^>= 4.16.2.0
+
+executable minilambda-interpreter
     -- Import common warning flags.
     import:           warnings
 
@@ -64,7 +71,6 @@ executable minilambda
     other-modules:    Language
                       Parser
                       Compiler
-                      Interpreter
                       Tidal
 
 
@@ -75,7 +81,8 @@ executable minilambda
     build-depends:    base ^>=4.16.2.0,
                       parsec,
                       containers,
-                      tidal == 1.9.2
+                      tidal == 1.9.2,
+                      minilambda
 
     -- Directories containing source files.
     hs-source-dirs:   app

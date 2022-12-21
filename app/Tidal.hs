@@ -4,7 +4,7 @@ import Sound.Tidal.Pattern (Pattern)
 import Sound.Tidal.Core (stack,fastcat,silence,fast,slow)
 import Sound.Tidal.Show()
 
-import Language
+import Interpreter (TermF (..), getFSeq)
 
 toPattern :: TermF -> Maybe (Pattern Int)
 toPattern (FInt i) = Just $ pure i
