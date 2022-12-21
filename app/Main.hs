@@ -61,14 +61,18 @@ eval s = Hint.runInterpreter $ do
   Hint.setTopLevelModules ["Interpreter"]
   Hint.interpret s (Hint.as :: TermF)
 
-main :: P.IO ()
+main :: IO ()
 main = do
   putStrLn $ "Enter a MiniTerm: \n"
   input <- getLine
   case parseTerm input of
     Left err -> putStrLn $ show err
     Right t -> do
-            x <- eval $ compile t
+            let c = compile t
+            putStrLn c
+            x <- eval $ c
             case x of
                 Left err -> putStrLn $ show err
-                Right f -> putStrLn $ show $ toPattern f
+                Right f -> case toPattern f of
+                                  Just p -> putStrLn $ show p
+                                  Nothing -> putStrLn "Cannot convert resulting term to pattern!"

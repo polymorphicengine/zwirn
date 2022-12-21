@@ -26,7 +26,7 @@ toFSeq (t:ts) = FSeq t (toFSeq ts)
 
 -- the idea is that the structure will always come from the right term and the values in the left term will be matched against them
 applySeqToSeq :: TermF -> TermF -> TermF
-applySeqToSeq t1 t2 = toFSeq P.$ map (\i -> zs!!i) [x*l2 | x <- [0..n2-1]]
+applySeqToSeq t1 t2 = toFSeq $ map (\i -> zs!!i) [x*l2 | x <- [0..n2-1]]
                     where s1 = getFSeq t1
                           s2 = getFSeq t2
                           n1 = length s1
@@ -40,7 +40,8 @@ applySeqToSeq t1 t2 = toFSeq P.$ map (\i -> zs!!i) [x*l2 | x <- [0..n2-1]]
 
 apply :: TermF -> TermF -> TermF
 apply (FLambda f) t = f t
-apply t1 t2 = applySeqToSeq t1 t2
+apply t1@(FSeq _ _) t2 = applySeqToSeq t1 t2
+apply _ _ = error "Cannot apply these terms!"
 
 intToTerm :: (Int -> Int) -> TermF
 intToTerm f = FLambda g
