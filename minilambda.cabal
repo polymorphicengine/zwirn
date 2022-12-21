@@ -82,7 +82,8 @@ executable minilambda-interpreter
                       parsec,
                       containers,
                       tidal == 1.9.2,
-                      minilambda
+                      minilambda,
+                      hint
 
     -- Directories containing source files.
     hs-source-dirs:   app

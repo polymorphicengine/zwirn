@@ -6,7 +6,8 @@ import Interpreter
 import Tidal
 import Compiler
 
-import qualified Prelude as P
+import Prelude as P
+import qualified Language.Haskell.Interpreter as Hint
 
 -- import Sound.Tidal.Pattern (Pattern)
 --
@@ -53,5 +54,21 @@ import qualified Prelude as P
 -- createPrelude :: String
 -- createPrelude = "[" ++ intercalate "\n," (map parseOne prelude) ++ "\n]"
 --
+
+eval :: String -> IO (Either Hint.InterpreterError TermF)
+eval s = Hint.runInterpreter $ do
+  Hint.loadModules ["src/Interpreter.hs"]
+  Hint.setTopLevelModules ["Interpreter"]
+  Hint.interpret s (Hint.as :: TermF)
+
 main :: P.IO ()
-main = P.return ()
+main = do
+  putStrLn $ "Enter a MiniTerm: \n"
+  input <- getLine
+  case parseTerm input of
+    Left err -> putStrLn $ show err
+    Right t -> do
+            x <- eval $ compile t
+            case x of
+                Left err -> putStrLn $ show err
+                Right f -> putStrLn $ show $ toPattern f
