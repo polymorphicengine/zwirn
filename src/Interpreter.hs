@@ -39,9 +39,16 @@ getFSeq (FSeq t1 t2) = t1:(getFSeq t2)
 getFSeq t = [t]
 
 toFSeq :: [TermF] -> TermF
-toFSeq [] = FRest
-toFSeq [t] = FSeq t FEmpty
+toFSeq [] = FEmpty
 toFSeq (t:ts) = FSeq t (toFSeq ts)
+
+getFStack :: TermF -> [TermF]
+getFStack (FStack t1 t2) = getFStack t1 P.++ getFStack t2
+getFStack t = [t]
+
+toFStack :: [TermF] -> TermF
+toFStack [t] = t
+toFStack (t1:t2) = FStack t1 (toFStack t2)
 
 
 -- the idea is that the structure will always come from the right term and the values in the left term will be matched against them
@@ -71,9 +78,17 @@ applySeqL t1 t2 = toFSeq (P.map (\i -> (P.!!) zs i) [(P.*) x l1 | x <- [0..(P.-)
                           f2 = P.concatMap (\x -> P.take l2 (P.repeat x)) s2
                           zs = P.zipWith (\x y -> apply x y) f1 f2
 
+applyStack :: TermF -> TermF -> TermF
+applyStack t1 t2 = toFStack zs
+                  where s1 = getFStack t1
+                        s2 = getFStack t2
+                        zs = P.zipWith (\x y -> apply x y) s1 s2
+
+
 apply :: TermF -> TermF -> TermF
 apply (FLambda f) t = f t
 apply t1@(FSeq _ _) t2 = applySeqR t1 t2
+apply t1@(FStack _ _) t2 = applyStack t1 t2
 apply FEmpty t2 = t2
 apply _ _ = P.error "Cannot apply these terms!"
 
@@ -144,7 +159,8 @@ iff :: TermF
 iff = (FLambda (\b -> FLambda (\t1 -> FLambda (\t2 -> _iff b t1 t2))))
     where _iff (FBool P.True) t1 t2 = t1
           _iff (FBool P.False) t1 t2 = t2
-          _iff b@(FSeq _ _) t1 t2 = applySeqL (applySeqL (applySeqR iff b) t1) t2
+          _iff b@(FSeq _ _) t1 t2 = apply (apply (applySeqR iff b) t1) t2
+          _iff b@(FStack _ _) t1 t2 = apply (apply (applyStack iff b) t1) t2
           _iff x _ _ = x
 
 -- some arithmetic functions
@@ -182,7 +198,7 @@ ply = (FLambda (\pat -> (case pat of n -> (FLambda (\pat -> (case pat of x -> (a
 _rev :: TermF
 _rev = FLambda f
      where f (FSeq x xs) = apply (apply append (apply _rev xs)) (apply _rev x)
-           f (FStack x xs) = FSeq (apply _rev x) (apply _rev xs)
+           f (FStack x xs) = FStack (apply _rev x) (apply _rev xs)
            f (FDiv x n) = FDiv (apply _rev x) n
            f (FMult x n) = FMult (apply _rev x) n
            f x = x
