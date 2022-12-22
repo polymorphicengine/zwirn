@@ -59,5 +59,5 @@ getTSeq t = [t]
 
 toTSeq :: [Term] -> Term
 toTSeq [] = TRest
-toTSeq [t] = t
+toTSeq [t] = TSeq t TEmpty
 toTSeq (t:ts) = TSeq t (toTSeq ts)

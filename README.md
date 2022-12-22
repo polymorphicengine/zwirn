@@ -8,6 +8,5 @@ We therefore have lazy evaluation and full pattern-matching within MiniLambda.
 
 TODO:
 
-- figure out how to deal with control statements, i.e. booleans
 - add a lot of syntactic sugar (non-lambda function notation, alternations, polymetric sequences)
 - add the random choice construct, where period [x | y] = [period x | period y]
