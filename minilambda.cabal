@@ -56,7 +56,8 @@ common warnings
 library
   hs-source-dirs: src
   exposed-modules:
-    Interpreter
+    Functional
+    MiniPrelude
   build-depends:
     base ^>= 4.16.2.0
 
