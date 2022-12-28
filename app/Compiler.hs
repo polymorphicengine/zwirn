@@ -5,8 +5,8 @@ import Data.List (intercalate)
 
 compile :: Term -> String
 compile (TVar x) = x
-compile (TInt i) = "(FInt " ++ show i ++ ")"
-compile (TBool b) = "(FBool P." ++ show b ++ ")"
+compile (TInt i) = "(FVal " ++ show i ++ ")"
+compile (TBool b) = "(FVal P." ++ show b ++ ")"
 compile (TEmpty) = "FEmpty"
 compile (TRest) = "FRest"
 compile (TSeq x y) = "(FSeq " ++ compile x ++ " " ++ compile y ++ ")"
@@ -18,8 +18,8 @@ compile (TLambda ps) = "(FLambda (\\pat -> " ++ compileCases ps ++"))"
 
 compilePat :: Pat -> String
 compilePat (PVar x) = x
-compilePat (PInt i) = "(FInt " ++ show i ++ ")"
-compilePat (PBool b) = "(FBool P." ++ show b ++ ")"
+compilePat (PInt i) = "(FVal " ++ show i ++ ")"
+compilePat (PBool b) = "(FVal P." ++ show b ++ ")"
 compilePat PEmpty = "FEmpty"
 compilePat (PSeq p1 p2) = "(FSeq " ++ compilePat p1 ++ " " ++ compilePat p2 ++ ")"
 compilePat (PStack p1 p2) = "(FStack " ++ compilePat p1 ++ " " ++ compilePat p2 ++ ")"
