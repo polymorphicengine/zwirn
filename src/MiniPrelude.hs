@@ -64,11 +64,11 @@ fast = FVal (\x -> FVal (\y -> FMult y x))
 -- slow the term down by a number
 slow :: Mini (Mini Int -> Mini (Mini a -> Mini a))
 slow = FVal (\x -> FVal (\y -> FDiv y x))
---
--- -- ply the elements of a sequence by a number
--- ply :: Mini a
--- ply = (FLambda (\pat -> (case pat of n -> (FLambda (\pat -> (case pat of x -> (apply (apply map (apply fast n)) x)))))))
---
+
+-- ply the elements of a sequence by a number
+ply :: Mini (Mini Int -> Mini (Mini a -> Mini a))
+ply = apply map fast
+
 --reverse a pattern cyclewise
 _rev :: Mini (Mini a -> Mini a)
 _rev = FVal f
@@ -105,9 +105,6 @@ cat = FVal (\t1 -> FVal(\t2 -> f t1 t2))
                                s = apply (apply add p1) p2
                                s1 = apply (apply fast p1) t1
                                s2 = apply (apply fast p2) t2
-
--- while :: Mini (Mini Bool -> Mini (Mini a -> Mini (Mini a -> Mini a)))
--- while = FVal (\b -> FVal (\g -> FVal (\x -> apply (apply (apply iff b) (apply (apply map g) x)) x)))
 
 --some utility functions
 
