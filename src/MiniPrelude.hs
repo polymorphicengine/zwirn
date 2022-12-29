@@ -49,6 +49,9 @@ pred = pure $ fmap P.pred
 add :: Mini (Mini Int -> Mini (Mini Int -> Mini Int))
 add = pure $ lift2 (P.+)
 
+sub :: Mini (Mini Int -> Mini (Mini Int -> Mini Int))
+sub = pure $ lift2 (P.-)
+
 mult :: Mini (Mini Int -> Mini (Mini Int -> Mini Int))
 mult  = pure $ lift2 (P.*)
 
@@ -81,6 +84,16 @@ _rev = FVal f
 -- reverse a pattern completely
 rev :: Mini (Mini a -> Mini a)
 rev = apply inside _rev
+
+rot :: Mini (Mini Int -> Mini (Mini a -> Mini a))
+rot = FVal (\x -> FVal (\y -> r x y))
+    where r (FVal 0) x = x
+          r (FVal 1) s@(FSeq _ _) = FSeq (apply seqlast s) (apply (apply seqtake (apply pred $ apply seqlen s)) s)
+          r (FVal 1) (FDiv x n) = FDiv (r (FVal 1) x) n
+          r (FVal 1) x = x
+          r n x = apply (apply rot ((apply pred n))) (r (FVal 1) x)
+
+
 
 -- append a value to a sequence as last element
 append :: Mini (Mini a -> Mini (Mini a -> Mini a))
@@ -137,6 +150,27 @@ seqhead = FVal (\t -> case t of (FSeq x _) -> x; x -> x)
 -- return the tail of a sequence
 seqtail :: Mini (Mini a -> Mini a)
 seqtail = FVal (\t -> case t of (FSeq _ xs) -> xs; x -> x)
+
+-- return last element of sequence
+seqlast :: Mini (Mini a -> Mini a)
+seqlast = FVal f
+        where f (FSeq x FEmpty) = x
+              f (FSeq _ ts) = apply seqlast ts
+              f x = x
+
+seqdrop :: Mini (Mini Int -> Mini (Mini a -> Mini a))
+seqdrop = FVal (\n -> FVal (\x -> d n x))
+        where d (FVal 0) x = x
+              d n (FSeq _ xs) = apply (apply seqdrop (apply pred n)) xs
+              d n (FEmpty) = FEmpty
+              d n x = x
+
+seqtake :: Mini (Mini Int -> Mini (Mini a -> Mini a))
+seqtake = FVal (\n -> FVal (\x -> d n x))
+        where d (FVal 0) x = FEmpty
+              d n (FSeq x xs) = FSeq x (apply (apply seqtake (apply pred n)) xs)
+              d n (FEmpty) = FEmpty
+              d n x = x
 
 -- calculate the length of a sequence
 seqlen :: Mini (Mini a -> Mini Int)
