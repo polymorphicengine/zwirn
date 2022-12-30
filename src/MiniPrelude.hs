@@ -3,15 +3,15 @@ module MiniPrelude where
 import qualified Prelude as P
 import Functional
 
--- app :: Mini a
--- app = FLambda (\f -> (FLambda (\t -> apply f t)))
---
--- appR :: Mini a
--- appR = FLambda (\f -> (FLambda (\t -> applySeqR f t)))
---
--- appL :: Mini a
--- appL = FLambda (\f -> (FLambda (\t -> applySeqL f t)))
---
+app :: Mini (Mini (Mini a -> Mini b) -> Mini (Mini a -> Mini b))
+app = FVal (\f -> FVal (\x -> apply f x))
+
+appL :: Mini (Mini (Mini a -> Mini b) -> Mini (Mini a -> Mini b))
+appL = FVal (\f -> FVal (\x -> applyL f x))
+
+appSR :: Mini (Mini (Mini a -> Mini b) -> Mini (Mini a -> Mini b))
+appSR = FVal (\f -> FVal (\x -> applySSSR f x))
+
 id :: Mini (Mini a -> Mini a)
 id = FVal (\x -> x)
 
@@ -60,19 +60,19 @@ lcm = pure $ lift2 P.lcm
 
 -- some tidal functions
 
--- speed the term up by a number
+-- | speed the term up by a number
 fast :: Mini (Mini Int -> Mini (Mini a -> Mini a))
 fast = FVal (\x -> FVal (\y -> FMult y x))
 
--- slow the term down by a number
+-- | slow the term down by a number
 slow :: Mini (Mini Int -> Mini (Mini a -> Mini a))
 slow = FVal (\x -> FVal (\y -> FDiv y x))
 
--- ply the elements of a sequence by a number
+-- | ply the elements of a sequence by a number
 ply :: Mini (Mini Int -> Mini (Mini a -> Mini a))
 ply = apply map fast
 
---reverse a pattern cyclewise
+-- | reverse a pattern cyclewise
 _rev :: Mini (Mini a -> Mini a)
 _rev = FVal f
      where f (FSeq x xs) = apply (apply append (apply _rev xs)) (apply _rev x)
@@ -81,10 +81,11 @@ _rev = FVal f
            f (FMult x n) = FMult (apply _rev x) n
            f x = x
 
--- reverse a pattern completely
+-- | reverse a pattern completely
 rev :: Mini (Mini a -> Mini a)
 rev = apply inside _rev
 
+-- | rotate the values of a sequence to the right
 rot :: Mini (Mini Int -> Mini (Mini a -> Mini a))
 rot = FVal (\x -> FVal (\y -> r x y))
     where r (FVal 0) x = x
@@ -93,23 +94,21 @@ rot = FVal (\x -> FVal (\y -> r x y))
           r (FVal 1) x = x
           r n x = apply (apply rot ((apply pred n))) (r (FVal 1) x)
 
-
-
--- append a value to a sequence as last element
+-- | append a value to a sequence as last element
 append :: Mini (Mini a -> Mini (Mini a -> Mini a))
 append = FVal (\x -> FVal (\y -> f x y))
        where f (FSeq x xs) ts = FSeq x (apply (apply append xs) ts)
              f FEmpty t = FSeq t FEmpty
              f x t = FSeq x (FSeq t FEmpty)
 
--- concat two sequences into one, cyclewise
+-- | concat two sequences into one, cyclewise
 fastcat :: Mini (Mini a -> Mini (Mini a -> Mini a))
 fastcat = FVal (\t1 -> FVal (\t2 -> f t1 t2))
            where f (FSeq x xs) ts = FSeq x (apply (apply fastcat xs) ts)
                  f FEmpty t = t
                  f x t = FSeq x t
 
--- concat two sequences into one, respecting their respective periods
+-- | concat two sequences into one, respecting their respective periods
 cat :: Mini (Mini a -> Mini (Mini a -> Mini a))
 cat = FVal (\t1 -> FVal(\t2 -> f t1 t2))
            where f t1 t2 = apply (apply slow s) (apply (apply fastcat s1) s2)
@@ -119,6 +118,7 @@ cat = FVal (\t1 -> FVal(\t2 -> f t1 t2))
                                s1 = apply (apply fast p1) t1
                                s2 = apply (apply fast p2) t2
 
+-- | create a sequence of the numbers from 0 to n-1
 run :: Mini (Mini Int -> Mini Int)
 run = FVal $ r
     where r (FVal 1) = FVal 0
@@ -126,7 +126,7 @@ run = FVal $ r
 
 --some utility functions
 
--- calculate the period of a pattern, i.e. the number of cycles it needs to repeat itself
+-- | calculate the period of a pattern, i.e. the number of cycles it needs to repeat itself
 period :: Mini (Mini a -> Mini Int)
 period = FVal f
        where f (FSeq x xs) = apply (apply lcm (apply period x)) (apply period xs)
@@ -134,11 +134,11 @@ period = FVal f
              f (FDiv x n) = apply (apply mult (apply period x)) n
              f _ = FVal 1
 
--- apply a function that works cycle-wise and the resulting function will respect the period of the pattern
+-- | apply a function that works cycle-wise and the resulting function will respect the period of the pattern
 inside :: Mini (Mini (Mini a -> Mini b) -> Mini (Mini a -> Mini b))
 inside = FVal (\f -> FVal (\t -> apply (apply slow (apply period t)) (apply f (apply (apply fast (apply period t)) t))))
 
--- maps the function in the first argument into the structure
+-- | maps the function in the first argument into the structure
 map :: Mini (Mini (Mini a -> Mini b) -> Mini (Mini a -> Mini b))
 map = FVal (\g -> FVal (\x -> h g x))
     where h g (FSeq x xs) = FSeq (apply g x) (apply (apply map g) xs)
@@ -148,21 +148,22 @@ map = FVal (\g -> FVal (\x -> h g x))
           h g FEmpty = FEmpty
           h g x = apply g x
 
--- return the head of a sequence
+-- | return the head of a sequence
 seqhead :: Mini (Mini a -> Mini a)
 seqhead = FVal (\t -> case t of (FSeq x _) -> x; x -> x)
 
--- return the tail of a sequence
+-- | return the tail of a sequence
 seqtail :: Mini (Mini a -> Mini a)
 seqtail = FVal (\t -> case t of (FSeq _ xs) -> xs; x -> x)
 
--- return last element of sequence
+-- | return the last element of sequence
 seqlast :: Mini (Mini a -> Mini a)
 seqlast = FVal f
         where f (FSeq x FEmpty) = x
               f (FSeq _ ts) = apply seqlast ts
               f x = x
 
+-- | drop the first n elements of a sequence
 seqdrop :: Mini (Mini Int -> Mini (Mini a -> Mini a))
 seqdrop = FVal (\n -> FVal (\x -> d n x))
         where d (FVal 0) x = x
@@ -170,6 +171,7 @@ seqdrop = FVal (\n -> FVal (\x -> d n x))
               d n (FEmpty) = FEmpty
               d n x = x
 
+-- | take the first n elements of a sequence
 seqtake :: Mini (Mini Int -> Mini (Mini a -> Mini a))
 seqtake = FVal (\n -> FVal (\x -> d n x))
         where d (FVal 0) x = FEmpty
@@ -177,7 +179,7 @@ seqtake = FVal (\n -> FVal (\x -> d n x))
               d n (FEmpty) = FEmpty
               d n x = x
 
--- calculate the length of a sequence
+-- | calculate the length of a sequence
 seqlen :: Mini (Mini a -> Mini Int)
 seqlen = FVal g
        where g (FSeq x xs) = apply (apply add (FVal 1)) (apply seqlen xs)
