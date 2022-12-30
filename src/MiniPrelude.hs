@@ -119,6 +119,11 @@ cat = FVal (\t1 -> FVal(\t2 -> f t1 t2))
                                s1 = apply (apply fast p1) t1
                                s2 = apply (apply fast p2) t2
 
+run :: Mini (Mini Int -> Mini Int)
+run = FVal $ r
+    where r (FVal 1) = FVal 0
+          r (FVal n) = apply (apply append (r (FVal $ P.pred n))) (FVal $ P.pred n)
+
 --some utility functions
 
 -- calculate the period of a pattern, i.e. the number of cycles it needs to repeat itself

@@ -152,6 +152,9 @@ apply f@(FStack _ _) t = applyStack f t
 apply FEmpty t = FEmpty
 apply _ _ = P.error "Cannot apply these terms!"
 
+($|) :: Mini (Mini a -> Mini b) -> Mini a -> Mini b
+($|) = apply
+
 applySSSR :: Mini (Mini a -> Mini b) -> Mini a -> Mini b
 applySSSR (FVal f) t = f t
 applySSSR f@(FSeq _ _) t = applySubSeqSmartR f t
