@@ -27,6 +27,5 @@ main = do
             x <- eval $ c
             case x of
                 Left err -> putStrLn $ show err
-                Right f -> case toPattern f of
-                                  Just p -> (putStrLn $ displayMini f) >> (putStrLn $ show p)
-                                  Nothing -> putStrLn "Cannot convert resulting term to pattern!"
+                Right f -> (putStrLn $ displayMini f) >> (putStrLn $ show $ toPattern f)
+                                  

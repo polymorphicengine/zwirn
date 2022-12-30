@@ -6,24 +6,11 @@ import Sound.Tidal.Show()
 
 import Functional (Mini (..), getFSeq, removeEmpty)
 
-toPattern :: Mini a -> Maybe (Pattern a)
-toPattern (FVal i) = Just $ pure i
-toPattern FRest = Just $ silence
-toPattern FEmpty = Just $ silence
-toPattern (FStack t1 t2) = do
-                      p1 <- toPattern t1
-                      p2 <- toPattern t2
-                      return $ stack [p1,p2]
-toPattern t@(FSeq _ _) = do
-                      let ts = removeEmpty $ getFSeq t
-                      ps <- sequence $ map toPattern ts
-                      return $ fastcat ps
-toPattern (FMult t1 t2) = do
-                      p1 <- toPattern t1
-                      p2 <- toPattern t2
-                      return $ fast (fmap fromIntegral p2) $ p1
-toPattern (FDiv t1 t2) = do
-                      p1 <- toPattern t1
-                      p2 <- toPattern t2
-                      return $ slow (fmap fromIntegral p2) $ p1
-toPattern  _ = Nothing
+toPattern :: Mini a -> Pattern a
+toPattern (FVal i) =  pure i
+toPattern FRest = silence
+toPattern FEmpty = silence
+toPattern (FStack t1 t2) = stack [toPattern t1,toPattern t2]
+toPattern t@(FSeq _ _) = fastcat ps $ map toPattern (removeEmpty $ getFSeq t)
+toPattern (FMult t1 t2) = fast (fmap fromIntegral toPattern t2) $ toPattern t1
+toPattern (FDiv t1 t2) = slow (fmap fromIntegral toPattern t2) $ toPattern t1
