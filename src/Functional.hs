@@ -87,10 +87,15 @@ applySeqSmartR t1 t2 = case P.mod n1 n2 P.== 0 of
                           f2 = P.concatMap (\x -> P.take l2 (P.repeat x)) s2
                           zs = P.zipWith (\x y -> apply x y) f1 f2
 
+subseqGroup :: Int -> [Mini a] -> [Mini a]
+subseqGroup n xs = (toFSeq $ P.take n xs):(subseqGroup n (P.drop n xs))
+
 applySubSeqSmartR :: Mini (Mini a -> Mini b) -> Mini a -> Mini b
 applySubSeqSmartR t1 t2 = case P.mod n2 n1 P.== 0 of
-                              P.True -> toFSeq ys
-                              P.False -> toFSeq (P.map (\i -> (P.!!) zs i) [(P.*) x l2 | x <- [0..(P.-) n2 1]])
+                              P.True -> toFSeq $ P.zipWith (\x y -> apply x y) s1 (subseqGroup l1 s2)
+                              P.False -> case P.mod n1 n2 P.== 0 of
+                                                      P.True -> toFSeq zs
+                                                      P.False -> toFSeq (P.map (\i -> (P.!!) zs i) [(P.*) x l2 | x <- [0..(P.-) n2 1]])
                     where s1 = removeEmpty P.$ getFSeq t1
                           s2 = removeEmpty P.$ getFSeq t2
                           n1 = P.length s1
@@ -100,9 +105,7 @@ applySubSeqSmartR t1 t2 = case P.mod n2 n1 P.== 0 of
                           l2 = P.div l n2
                           f1 = P.concatMap (\x -> P.take l1 (P.repeat x)) s1
                           f2 = P.concatMap (\x -> P.take l2 (P.repeat x)) s2
-                          f3 = P.map (\x -> toFSeq $ P.take l2 (P.repeat x)) s2
                           zs = P.zipWith (\x y -> apply x y) f1 f2
-                          ys = P.zipWith (\x y -> apply x y) f1 f3
 
 applySeqL :: Mini (Mini a -> Mini b) -> Mini a -> Mini b
 applySeqL t1 t2 = toFSeq (P.map (\i -> (P.!!) zs i) [(P.*) x l1 | x <- [0..(P.-) n1 1]])
@@ -147,7 +150,7 @@ combine FEmpty = FEmpty
 
 apply :: Mini (Mini a -> Mini b) -> Mini a -> Mini b
 apply (FVal f) t = f t
-apply f@(FSeq _ _) t = applySeqSmartR f t
+apply f@(FSeq _ _) t = applySubSeqSmartR f t
 apply f@(FStack _ _) t = applyStack f t
 apply FEmpty t = FEmpty
 apply _ _ = P.error "Cannot apply these terms!"
