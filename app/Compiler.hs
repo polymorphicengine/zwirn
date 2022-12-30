@@ -14,7 +14,7 @@ compile (TStack x y) = "(FStack " ++ compile x ++ " " ++ compile y ++ ")"
 compile (TDiv x n) = "(FDiv " ++ compile x ++ " " ++ compile n ++ ")"
 compile (TMult x n) = "(FMult " ++ compile x ++ " " ++ compile n ++ ")"
 compile (TApp x y) = "(apply " ++ compile x ++ " " ++ compile y ++ ")"
-compile (TLambda ps) = "(FLambda (\\pat -> " ++ compileCases ps ++"))"
+compile (TLambda ps) = "(FVal (\\pat -> " ++ compileCases ps ++"))"
 
 compilePat :: Pat -> String
 compilePat (PVar x) = x
