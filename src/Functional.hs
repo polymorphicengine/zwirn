@@ -107,6 +107,23 @@ applySubSeqSmartR t1 t2 = case P.mod n2 n1 P.== 0 of
                           f2 = P.concatMap (\x -> P.take l2 (P.repeat x)) s2
                           zs = P.zipWith (\x y -> apply x y) f1 f2
 
+applySubSeqSmartL :: Mini (Mini a -> Mini b) -> Mini a -> Mini b
+applySubSeqSmartL t1 t2 = case P.mod n1 n2 P.== 0 of
+                              P.True -> toFSeq $ P.zipWith (\x y -> apply x y) s1 (subseqGroup l2 s2)
+                              P.False -> case P.mod n2 n1 P.== 0 of
+                                                      P.True -> toFSeq zs
+                                                      P.False -> toFSeq (P.map (\i -> (P.!!) zs i) [(P.*) x l1 | x <- [0..(P.-) n1 1]])
+                    where s1 = removeEmpty P.$ getFSeq t1
+                          s2 = removeEmpty P.$ getFSeq t2
+                          n1 = P.length s1
+                          n2 = P.length s2
+                          l = P.lcm n1 n2
+                          l1 = P.div l n1
+                          l2 = P.div l n2
+                          f1 = P.concatMap (\x -> P.take l1 (P.repeat x)) s1
+                          f2 = P.concatMap (\x -> P.take l2 (P.repeat x)) s2
+                          zs = P.zipWith (\x y -> apply x y) f1 f2
+
 applySeqL :: Mini (Mini a -> Mini b) -> Mini a -> Mini b
 applySeqL t1 t2 = toFSeq (P.map (\i -> (P.!!) zs i) [(P.*) x l1 | x <- [0..(P.-) n1 1]])
                     where s1 = removeEmpty P.$ getFSeq t1
@@ -139,6 +156,15 @@ applyStack t1 t2 = toFStack zs
                         s2 = getFStack t2
                         zs = P.zipWith (\x y -> apply x y) s1 s2
 
+applyNew :: Mini (Mini a -> Mini b) -> Mini a -> Mini b
+applyNew f x = toFSeq xs
+            where ss = removeEmpty $ getFSeq f
+                  xs = P.map (\g -> apply g x) ss
+                  -- n1 = P.length ss
+                  -- n2s = P.map P.length xs
+                  -- ls = P.map (\x -> P.lcm n1 x) n2s
+                  -- l1s = P.map (\l -> P.div l) ls
+                  -- l2s = P.zipWith (\l n -> P.div l n) ls n2s
 
 combine :: Mini (Mini a) -> Mini a
 combine (FVal x) = x
@@ -150,7 +176,7 @@ combine FEmpty = FEmpty
 
 apply :: Mini (Mini a -> Mini b) -> Mini a -> Mini b
 apply (FVal f) t = f t
-apply f@(FSeq _ _) t = applySubSeqSmartR f t
+apply f@(FSeq _ _) t = applySeqSmartR f t
 apply f@(FStack _ _) t = applyStack f t
 apply FEmpty t = FEmpty
 apply _ _ = P.error "Cannot apply these terms!"
@@ -164,6 +190,13 @@ applySSSR f@(FSeq _ _) t = applySubSeqSmartR f t
 applySSSR f@(FStack _ _) t = applyStack f t
 applySSSR FEmpty t = FEmpty
 applySSSR _ _ = P.error "Cannot apply these terms!"
+
+applySSSL :: Mini (Mini a -> Mini b) -> Mini a -> Mini b
+applySSSL (FVal f) t = f t
+applySSSL f@(FSeq _ _) t = applySubSeqSmartL f t
+applySSSL f@(FStack _ _) t = applyStack f t
+applySSSL FEmpty t = FEmpty
+applySSSL _ _ = P.error "Cannot apply these terms!"
 
 applyL :: Mini (Mini a -> Mini b) -> Mini a -> Mini b
 applyL (FVal f) t = f t

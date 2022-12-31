@@ -9,6 +9,9 @@ app = FVal (\f -> FVal (\x -> apply f x))
 appL :: Mini (Mini (Mini a -> Mini b) -> Mini (Mini a -> Mini b))
 appL = FVal (\f -> FVal (\x -> applyL f x))
 
+appB :: Mini (Mini (Mini a -> Mini b) -> Mini (Mini a -> Mini b))
+appB = FVal (\f -> FVal (\x -> applyB f x))
+
 appSR :: Mini (Mini (Mini a -> Mini b) -> Mini (Mini a -> Mini b))
 appSR = FVal (\f -> FVal (\x -> applySSSR f x))
 
@@ -34,7 +37,7 @@ iff :: Mini (Mini Bool -> Mini (Mini a -> Mini (Mini a -> Mini a)))
 iff = (FVal (\b -> FVal (\t1 -> FVal (\t2 -> _iff b t1 t2))))
     where _iff (FVal P.True) t1 t2 = t1
           _iff (FVal P.False) t1 t2 = t2
-          _iff b@(FSeq _ _) t1 t2 = applySSSR (applySSSR (applySeqR iff b) t1) t2
+          _iff b@(FSeq _ _) t1 t2 = applySSSL (applySSSL (applySeqR iff b) t1) t2
           _iff b@(FStack _ _) t1 t2 = apply (apply (apply iff b) t1) t2
           _iff x _ _ = P.undefined
 
@@ -118,6 +121,14 @@ cat = FVal (\t1 -> FVal(\t2 -> f t1 t2))
                                s1 = apply (apply fast p1) t1
                                s2 = apply (apply fast p2) t2
 
+-- | overlays one pattern with the other, playing them simultaneously
+overlay :: Mini (Mini a -> Mini (Mini a -> Mini a))
+overlay = FVal (\x -> (FVal (\y -> FStack x y)))
+
+-- | overlay the current pattern with a alterated version of itself
+superimpose :: Mini (Mini (Mini a -> Mini a) -> Mini (Mini a -> Mini a))
+superimpose = FVal (\f -> FVal (\x -> apply (apply overlay (apply f x)) x))
+
 -- | create a sequence of the numbers from 0 to n-1
 run :: Mini (Mini Int -> Mini Int)
 run = FVal $ r
@@ -167,17 +178,30 @@ seqlast = FVal f
 seqdrop :: Mini (Mini Int -> Mini (Mini a -> Mini a))
 seqdrop = FVal (\n -> FVal (\x -> d n x))
         where d (FVal 0) x = x
-              d n (FSeq _ xs) = apply (apply seqdrop (apply pred n)) xs
-              d n (FEmpty) = FEmpty
-              d n x = x
+              d (FVal n) (FSeq _ xs) = d (FVal $ P.pred n) xs
+              d _ (FEmpty) = FEmpty
+              d (FStack n1 n2) x = FStack (d n1 x) (d n2 x)
+              d n@(FSeq _ _) x = P.error "Undefined"
+              d _ _ = FEmpty
 
 -- | take the first n elements of a sequence
 seqtake :: Mini (Mini Int -> Mini (Mini a -> Mini a))
 seqtake = FVal (\n -> FVal (\x -> d n x))
         where d (FVal 0) x = FEmpty
-              d n (FSeq x xs) = FSeq x (apply (apply seqtake (apply pred n)) xs)
-              d n (FEmpty) = FEmpty
-              d n x = x
+              d (FVal n) (FSeq x xs) = FSeq x (d (FVal $ P.pred n) xs)
+              d _ (FEmpty) = FEmpty
+              d (FStack n1 n2) x = FStack (d n1 x) (d n2 x)
+              d n@(FSeq _ _) x = P.error "Undefined"
+              d _ x = x
+
+-- | make a sequence of length n with the given element
+replicate :: Mini (Mini Int -> Mini (Mini a -> Mini a))
+replicate = FVal (\n -> FVal (\x -> r n x))
+          where r (FVal 0) x = FEmpty
+                r (FVal 1) x = FSeq x FEmpty
+                r (FVal n) x = apply (apply append x) (r (FVal $ P.pred n) x)
+                r (FStack n1 n2) x = FStack (r n1 x) (r n2 x)
+                r _ _ = P.error "Undefined"
 
 -- | calculate the length of a sequence
 seqlen :: Mini (Mini a -> Mini Int)
