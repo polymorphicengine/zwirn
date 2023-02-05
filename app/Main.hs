@@ -15,6 +15,9 @@ eval s = Hint.runInterpreter $ do
   Hint.setTopLevelModules ["Functional","MiniPrelude"]
   Hint.interpret s (Hint.as :: Mini Functional.Int)
 
+
+
+
 main :: IO ()
 main = do
   putStrLn $ "Enter a MiniTerm: \n"
@@ -28,4 +31,3 @@ main = do
             case x of
                 Left err -> putStrLn $ show err
                 Right f -> (putStrLn $ displayMini f) >> (putStrLn $ show $ toPattern f)
-                                  

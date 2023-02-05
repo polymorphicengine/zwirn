@@ -19,7 +19,7 @@ id :: Mini (Mini a -> Mini a)
 id = FVal (\x -> x)
 
 const :: Mini (Mini a -> Mini (Mini b -> Mini a))
-const = FVal (\x -> FVal (\y -> x))
+const = FVal (\x -> FVal (\_ -> x))
 
 --logic
 
@@ -35,11 +35,11 @@ or = pure $ lift2 (P.||)
 --TODO fix
 iff :: Mini (Mini Bool -> Mini (Mini a -> Mini (Mini a -> Mini a)))
 iff = (FVal (\b -> FVal (\t1 -> FVal (\t2 -> _iff b t1 t2))))
-    where _iff (FVal P.True) t1 t2 = t1
-          _iff (FVal P.False) t1 t2 = t2
+    where _iff (FVal P.True) t1 _ = t1
+          _iff (FVal P.False) _ t2 = t2
           _iff b@(FSeq _ _) t1 t2 = applySSSL (applySSSL (applySeqR iff b) t1) t2
           _iff b@(FStack _ _) t1 t2 = apply (apply (apply iff b) t1) t2
-          _iff x _ _ = P.undefined
+          _iff _ _ _ = P.undefined
 
 -- some arithmetic functions
 
@@ -134,6 +134,7 @@ run :: Mini (Mini Int -> Mini Int)
 run = FVal $ r
     where r (FVal 1) = FVal 0
           r (FVal n) = apply (apply append (r (FVal $ P.pred n))) (FVal $ P.pred n)
+          r x = apply run x
 
 --some utility functions
 
@@ -156,7 +157,7 @@ map = FVal (\g -> FVal (\x -> h g x))
           h g (FStack x xs) = FStack (apply g x) (apply (apply map g) xs)
           h g (FDiv x n) = FDiv (apply g x) n
           h g (FMult x n) = FMult (apply g x) n
-          h g FEmpty = FEmpty
+          h _ FEmpty = FEmpty
           h g x = apply g x
 
 -- | return the head of a sequence
@@ -181,23 +182,23 @@ seqdrop = FVal (\n -> FVal (\x -> d n x))
               d (FVal n) (FSeq _ xs) = d (FVal $ P.pred n) xs
               d _ (FEmpty) = FEmpty
               d (FStack n1 n2) x = FStack (d n1 x) (d n2 x)
-              d n@(FSeq _ _) x = P.error "Undefined"
+              d (FSeq _ _) _ = P.error "Undefined"
               d _ _ = FEmpty
 
 -- | take the first n elements of a sequence
 seqtake :: Mini (Mini Int -> Mini (Mini a -> Mini a))
 seqtake = FVal (\n -> FVal (\x -> d n x))
-        where d (FVal 0) x = FEmpty
+        where d (FVal 0) _ = FEmpty
               d (FVal n) (FSeq x xs) = FSeq x (d (FVal $ P.pred n) xs)
               d _ (FEmpty) = FEmpty
               d (FStack n1 n2) x = FStack (d n1 x) (d n2 x)
-              d n@(FSeq _ _) x = P.error "Undefined"
+              d (FSeq _ _) _ = P.error "Undefined"
               d _ x = x
 
 -- | make a sequence of length n with the given element
 replicate :: Mini (Mini Int -> Mini (Mini a -> Mini a))
 replicate = FVal (\n -> FVal (\x -> r n x))
-          where r (FVal 0) x = FEmpty
+          where r (FVal 0) _ = FEmpty
                 r (FVal 1) x = FSeq x FEmpty
                 r (FVal n) x = apply (apply append x) (r (FVal $ P.pred n) x)
                 r (FStack n1 n2) x = FStack (r n1 x) (r n2 x)
@@ -206,6 +207,6 @@ replicate = FVal (\n -> FVal (\x -> r n x))
 -- | calculate the length of a sequence
 seqlen :: Mini (Mini a -> Mini Int)
 seqlen = FVal g
-       where g (FSeq x xs) = apply (apply add (FVal 1)) (apply seqlen xs)
+       where g (FSeq _ xs) = apply (apply add (FVal 1)) (apply seqlen xs)
              g FEmpty = FVal 0
-             g x = FVal 1
+             g _ = FVal 1
