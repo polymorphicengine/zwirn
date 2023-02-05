@@ -1,24 +1,30 @@
-{-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE DeriveFunctor, DeriveGeneric#-}
 
 module Functional where
 
 import qualified Prelude as P
 import Data.List (intercalate)
 
+import GHC.Generics
+import Test.QuickCheck hiding (Testable)
+
 type Var = P.String
 
-data Mini a = FVar Var
-           | FVal a
+data Mini a = FVal a
            | FRest
            | FEmpty
            | FSeq (Mini a) (Mini a)
            | FStack (Mini a) (Mini a)
            | FMult (Mini a) (Mini Int)
            | FDiv (Mini a) (Mini Int)
-           deriving P.Functor
+           deriving (P.Functor, Generic)
 
 type Int = P.Int
 type Bool = P.Bool
+
+instance Arbitrary a => Arbitrary (Mini a)
+
+instance CoArbitrary a => CoArbitrary (Mini a)
 
 ($) :: (a -> b) -> a -> b
 ($) = (P.$)
@@ -27,7 +33,6 @@ fmap :: P.Functor f => (a -> b) -> f a -> f b
 fmap = P.fmap
 
 displayMini :: P.Show a => Mini a -> P.String
-displayMini (FVar x) = x
 displayMini (FVal i) = P.show i
 displayMini (FRest) = "~"
 displayMini FEmpty = ""
@@ -54,6 +59,7 @@ getFStack (FStack t1 t2) = getFStack t1 P.++ getFStack t2
 getFStack t = [t]
 
 toFStack :: [Mini a] -> Mini a
+toFStack [] = FEmpty
 toFStack [t] = t
 toFStack (t1:t2) = FStack t1 (toFStack t2)
 
@@ -173,12 +179,13 @@ combine t@(FStack _ _) = toFStack P.$ P.concatMap getFStack (P.fmap combine P.$ 
 combine (FDiv t n) = FDiv (combine t) n
 combine (FMult t n) = FMult (combine t) n
 combine FEmpty = FEmpty
+combine FRest = FRest
 
 apply :: Mini (Mini a -> Mini b) -> Mini a -> Mini b
 apply (FVal f) t = f t
 apply f@(FSeq _ _) t = applySeqSmartR f t
 apply f@(FStack _ _) t = applyStack f t
-apply FEmpty t = FEmpty
+apply FEmpty _ = FEmpty
 apply _ _ = P.error "Cannot apply these terms!"
 
 ($|) :: Mini (Mini a -> Mini b) -> Mini a -> Mini b
@@ -188,28 +195,28 @@ applySSSR :: Mini (Mini a -> Mini b) -> Mini a -> Mini b
 applySSSR (FVal f) t = f t
 applySSSR f@(FSeq _ _) t = applySubSeqSmartR f t
 applySSSR f@(FStack _ _) t = applyStack f t
-applySSSR FEmpty t = FEmpty
+applySSSR FEmpty _ = FEmpty
 applySSSR _ _ = P.error "Cannot apply these terms!"
 
 applySSSL :: Mini (Mini a -> Mini b) -> Mini a -> Mini b
 applySSSL (FVal f) t = f t
 applySSSL f@(FSeq _ _) t = applySubSeqSmartL f t
 applySSSL f@(FStack _ _) t = applyStack f t
-applySSSL FEmpty t = FEmpty
+applySSSL FEmpty _ = FEmpty
 applySSSL _ _ = P.error "Cannot apply these terms!"
 
 applyL :: Mini (Mini a -> Mini b) -> Mini a -> Mini b
 applyL (FVal f) t = f t
 applyL f@(FSeq _ _) t = applySeqL f t
 applyL f@(FStack _ _) t = applyStack f t
-applyL FEmpty t = FEmpty
+applyL FEmpty _ = FEmpty
 applyL _ _ = P.error "Cannot apply these terms!"
 
 applyB :: Mini (Mini a -> Mini b) -> Mini a -> Mini b
 applyB (FVal f) t = f t
 applyB f@(FSeq _ _) t = applySeqB f t
 applyB f@(FStack _ _) t = applyStack f t
-applyB FEmpty t = FEmpty
+applyB FEmpty _ = FEmpty
 applyB _ _ = P.error "Cannot apply these terms!"
 
 lift2 :: (a -> b -> c) -> Mini a -> (Mini (Mini b -> Mini c))
@@ -223,6 +230,7 @@ lift (FStack t ts) = FStack (lift t) (lift ts)
 lift (FDiv t n) = FDiv (lift t) n
 lift (FMult t n) = FMult (lift t) n
 lift FEmpty = FEmpty
+lift FRest = FRest
 
 pure :: a -> Mini a
 pure = FVal
