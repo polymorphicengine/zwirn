@@ -6,7 +6,6 @@ import qualified Prelude as P
 import Data.List (intercalate)
 
 import GHC.Generics
-import Test.QuickCheck hiding (Testable)
 
 type Var = P.String
 
@@ -22,9 +21,6 @@ data Mini a = FVal a
 type Int = P.Int
 type Bool = P.Bool
 
-instance Arbitrary a => Arbitrary (Mini a)
-
-instance CoArbitrary a => CoArbitrary (Mini a)
 
 ($) :: (a -> b) -> a -> b
 ($) = (P.$)
@@ -37,9 +33,12 @@ displayMini (FVal i) = P.show i
 displayMini (FRest) = "~"
 displayMini FEmpty = ""
 displayMini t@(FSeq _ _) = "(" P.++ (intercalate " " P.$  P.map displayMini (removeEmpty P.$ getFSeq t)) P.++ ")"
-displayMini (FStack t1 t2) = displayMini t1 P.++ "," P.++ displayMini t2
-displayMini (FMult t1 t2) = displayMini t1 P.++ "*" P.++ displayMini t2
-displayMini (FDiv t1 t2) = displayMini t1 P.++ "/" P.++ displayMini t2
+displayMini (FStack t1 t2) = "(" P.++ displayMini t1 P.++ "," P.++ displayMini t2 P.++ ")"
+displayMini (FMult t1 t2) = "(" P.++ displayMini t1 P.++ "*" P.++ displayMini t2 P.++ ")"
+displayMini (FDiv t1 t2) = "(" P.++ displayMini t1 P.++ "/" P.++ displayMini t2 P.++ ")"
+
+instance P.Show a => P.Show (Mini a) where
+  show = displayMini
 
 removeEmpty :: [Mini a] -> [Mini a]
 removeEmpty [] = []

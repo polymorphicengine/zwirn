@@ -32,12 +32,16 @@ executable minilambda-interpreter
                       Parser
                       Compiler
                       Tidal
+                      Arbitrary
+                      Megaparsec
     build-depends:    base,
                       parsec,
+                      megaparsec,
                       containers,
                       tidal == 1.9.2,
                       minilambda,
-                      hint
+                      hint,
+                      QuickCheck
     hs-source-dirs:   app
     default-language: Haskell2010
     ghc-options: -threaded
