@@ -29,7 +29,6 @@ library
 executable minilambda-interpreter
     main-is:          Main.hs
     other-modules:    Language
-                      Parser
                       Compiler
                       Tidal
                       Arbitrary
@@ -37,6 +36,7 @@ executable minilambda-interpreter
     build-depends:    base,
                       parsec,
                       megaparsec,
+                      parser-combinators,
                       containers,
                       tidal == 1.9.2,
                       minilambda,

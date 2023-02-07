@@ -1,7 +1,6 @@
 module Main where
 
-import Language
-import Parser
+import Megaparsec
 import Functional hiding (($))
 import Tidal
 import Compiler
@@ -9,13 +8,11 @@ import Compiler
 import Prelude as P
 import qualified Language.Haskell.Interpreter as Hint
 
-eval :: String -> IO (Either Hint.InterpreterError (Mini Functional.Int))
+eval :: String -> IO (Either Hint.InterpreterError (Mini P.Int))
 eval s = Hint.runInterpreter $ do
   Hint.loadModules ["src/Functional.hs","src/MiniPrelude.hs"]
   Hint.setTopLevelModules ["Functional","MiniPrelude"]
-  Hint.interpret s (Hint.as :: Mini Functional.Int)
-
-
+  Hint.interpret s (Hint.as :: Mini P.Int)
 
 
 main :: IO ()
