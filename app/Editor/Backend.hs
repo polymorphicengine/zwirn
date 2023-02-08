@@ -2,7 +2,7 @@ module Editor.Backend where
 
 import Control.Monad  (void)
 
-import Sound.Tidal.Context (Stream)
+import qualified Sound.Tidal.Context as T (Stream, Note (..), streamReplace, note, s, (#))
 
 import Control.Concurrent.MVar  (MVar, putMVar, takeMVar)
 
@@ -17,9 +17,10 @@ import Editor.UI
 import Megaparsec
 import Compiler
 import Functional (displayMini)
+import Tidal
 
 data Env = Env {windowE :: Window
-               ,streamE :: Stream
+               ,streamE :: T.Stream
                ,hintM :: MVar InterpreterMessage
                ,hintR :: MVar InterpreterResponse
                }
@@ -32,7 +33,8 @@ interpretCommands cm lineBool env = do
 
 interpretCommandsLine :: JSObject -> Bool -> Int -> Env -> UI ()
 interpretCommandsLine cm lineBool line env = do
-    let mMV = hintM env
+    let str = streamE env
+        mMV = hintM env
         rMV = hintR env
     contentsControl <- liftUI $ getValue cm
     out <- liftUI getOutputEl
@@ -48,7 +50,10 @@ interpretCommandsLine cm lineBool line env = do
                                                             liftIO $ putMVar mMV $ (compile t)
                                                             res <- liftIO $ takeMVar rMV
                                                             case res of
-                                                              RMini m -> successUI >> (outputUI $ displayMini m)
+                                                              RMini m -> do
+                                                                successUI
+                                                                outputUI $ displayMini m
+                                                                liftIO $ T.streamReplace str 1 ((T.note $ fmap (T.Note . fromIntegral) (toPattern m)) T.# T.s (pure "superpiano"))
                                                               RError e -> errorUI e
          where successUI = liftUI $ flashSuccess cm blockLineStart blockLineEnd
                errorUI err = (liftUI $ flashError cm blockLineStart blockLineEnd) >> (void $ liftUI $ element out # set UI.text err)
