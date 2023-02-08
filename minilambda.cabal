@@ -28,20 +28,28 @@ library
 
 executable minilambda-interpreter
     main-is:          Main.hs
-    other-modules:    Language
+    other-modules:    Editor.Backend
+                      Editor.Block
+                      Editor.Frontend
+                      Editor.Hint
+                      Editor.Setup
+                      Editor.UI
+                      Language
                       Compiler
                       Tidal
                       Arbitrary
                       Megaparsec
     build-depends:    base,
-                      parsec,
                       megaparsec,
                       parser-combinators,
                       containers,
                       tidal == 1.9.2,
                       minilambda,
                       hint,
-                      QuickCheck
+                      QuickCheck,
+                      threepenny-gui,
+                      exceptions,
+                      filepath
     hs-source-dirs:   app
     default-language: Haskell2010
     ghc-options: -threaded

@@ -1,30 +1,22 @@
 module Main where
 
-import Megaparsec
-import Functional hiding (($))
-import Tidal
-import Compiler
+import System.FilePath  (dropFileName)
+import System.Environment (getExecutablePath)
 
-import Prelude as P
-import qualified Language.Haskell.Interpreter as Hint
 
-eval :: String -> IO (Either Hint.InterpreterError (Mini P.Int))
-eval s = Hint.runInterpreter $ do
-  Hint.loadModules ["src/Functional.hs","src/MiniPrelude.hs"]
-  Hint.setTopLevelModules ["Functional","MiniPrelude"]
-  Hint.interpret s (Hint.as :: Mini P.Int)
+import Sound.Tidal.Context as T hiding (mute,solo,(#),s)
+
+import Graphics.UI.Threepenny.Core as C hiding (text)
+
+import Editor.Frontend
 
 
 main :: IO ()
 main = do
-  putStrLn $ "Enter a MiniTerm: \n"
-  input <- getLine
-  case parseTerm input of
-    Left err -> putStrLn $ show err
-    Right t -> do
-            let c = compile t
-            putStrLn c
-            x <- eval $ c
-            case x of
-                Left err -> putStrLn $ show err
-                Right f -> (putStrLn $ displayMini f) >> (putStrLn $ show $ toPattern f)
+    execPath <- dropFileName <$> getExecutablePath
+    str <- T.startTidal (T.superdirtTarget {oLatency = 0.1, oAddress = "127.0.0.1", oPort = 57120}) (T.defaultConfig {cVerbose = True, cFrameTimespan = 1/20})
+
+    startGUI C.defaultConfig {
+          jsStatic = Just $ execPath ++ "static",
+          jsCustomHTML     = Just "tidal.html"
+        } $ setup str
