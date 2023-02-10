@@ -115,12 +115,12 @@ pLambda :: Parser Term
 pLambda = do
   _ <- symbol "\\"
   p <- pPat
-  _ <- symbol "."
+  _ <- symbol "->"
   t <- bottomParser
   ts <- many $ do
             _ <- symbol "|"
             p1 <- pPat
-            _ <- symbol "."
+            _ <- symbol "->"
             t1 <- bottomParser
             return $ (p1,t1)
   return $ TLambda $ (p,t):ts
