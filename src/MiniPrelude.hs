@@ -3,17 +3,11 @@ module MiniPrelude where
 import qualified Prelude as P
 import Functional
 
+nil :: Mini a
+nil = FEmpty
+
 app :: Mini (Mini (Mini a -> Mini b) -> Mini (Mini a -> Mini b))
 app = FVal (\f -> FVal (\x -> apply f x))
-
-appL :: Mini (Mini (Mini a -> Mini b) -> Mini (Mini a -> Mini b))
-appL = FVal (\f -> FVal (\x -> applyL f x))
-
-appB :: Mini (Mini (Mini a -> Mini b) -> Mini (Mini a -> Mini b))
-appB = FVal (\f -> FVal (\x -> applyB f x))
-
-appSR :: Mini (Mini (Mini a -> Mini b) -> Mini (Mini a -> Mini b))
-appSR = FVal (\f -> FVal (\x -> applySSSR f x))
 
 id :: Mini (Mini a -> Mini a)
 id = FVal (\x -> x)
@@ -33,13 +27,13 @@ or :: Mini (Mini Bool -> Mini (Mini Bool -> Mini Bool))
 or = pure $ lift2 (P.||)
 
 --TODO fix
-iff :: Mini (Mini Bool -> Mini (Mini a -> Mini (Mini a -> Mini a)))
-iff = (FVal (\b -> FVal (\t1 -> FVal (\t2 -> _iff b t1 t2))))
-    where _iff (FVal P.True) t1 _ = t1
-          _iff (FVal P.False) _ t2 = t2
-          _iff b@(FSeq _ _) t1 t2 = applySSSL (applySSSL (applySeqR iff b) t1) t2
-          _iff b@(FStack _ _) t1 t2 = apply (apply (apply iff b) t1) t2
-          _iff _ _ _ = P.undefined
+-- iff :: Mini (Mini Bool -> Mini (Mini a -> Mini (Mini a -> Mini a)))
+-- iff = (FVal (\b -> FVal (\t1 -> FVal (\t2 -> _iff b t1 t2))))
+--     where _iff (FVal P.True) t1 _ = t1
+--           _iff (FVal P.False) _ t2 = t2
+--           _iff b@(FSeq _ _) t1 t2 = applySSSL (applySSSL (applySeqR iff b) t1) t2
+--           _iff b@(FStack _ _) t1 t2 = apply (apply (apply iff b) t1) t2
+--           _iff _ _ _ = P.undefined
 
 -- some arithmetic functions
 

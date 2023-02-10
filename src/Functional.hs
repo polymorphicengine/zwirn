@@ -182,41 +182,13 @@ combine FRest = FRest
 
 apply :: Mini (Mini a -> Mini b) -> Mini a -> Mini b
 apply (FVal f) t = f t
-apply f@(FSeq _ _) t = applySeqSmartR f t
-apply f@(FStack _ _) t = applyStack f t
+apply (FSeq f fs) t = FSeq (apply f t) (apply fs t)
 apply FEmpty _ = FEmpty
-apply _ _ = P.error "Cannot apply these terms!"
+apply FRest _ = FRest
+apply _ _ = P.error "cannot apply these terms for now"
 
 ($|) :: Mini (Mini a -> Mini b) -> Mini a -> Mini b
 ($|) = apply
-
-applySSSR :: Mini (Mini a -> Mini b) -> Mini a -> Mini b
-applySSSR (FVal f) t = f t
-applySSSR f@(FSeq _ _) t = applySubSeqSmartR f t
-applySSSR f@(FStack _ _) t = applyStack f t
-applySSSR FEmpty _ = FEmpty
-applySSSR _ _ = P.error "Cannot apply these terms!"
-
-applySSSL :: Mini (Mini a -> Mini b) -> Mini a -> Mini b
-applySSSL (FVal f) t = f t
-applySSSL f@(FSeq _ _) t = applySubSeqSmartL f t
-applySSSL f@(FStack _ _) t = applyStack f t
-applySSSL FEmpty _ = FEmpty
-applySSSL _ _ = P.error "Cannot apply these terms!"
-
-applyL :: Mini (Mini a -> Mini b) -> Mini a -> Mini b
-applyL (FVal f) t = f t
-applyL f@(FSeq _ _) t = applySeqL f t
-applyL f@(FStack _ _) t = applyStack f t
-applyL FEmpty _ = FEmpty
-applyL _ _ = P.error "Cannot apply these terms!"
-
-applyB :: Mini (Mini a -> Mini b) -> Mini a -> Mini b
-applyB (FVal f) t = f t
-applyB f@(FSeq _ _) t = applySeqB f t
-applyB f@(FStack _ _) t = applyStack f t
-applyB FEmpty _ = FEmpty
-applyB _ _ = P.error "Cannot apply these terms!"
 
 lift2 :: (a -> b -> c) -> Mini a -> (Mini (Mini b -> Mini c))
 lift2 f x = lift (fmap f x)
