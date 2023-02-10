@@ -61,7 +61,7 @@ pVal = pRest <|> pInt <|> try pVar <|> pBool
 -- seqeuences and stacks to the right
 
 topOps :: [[Operator Parser Term]]
-topOps = [[ binaryL  "*"  TMult, binaryL  "/"  TDiv]]
+topOps = [[manyPostfix "@" TElong], [ binaryL  "*"  TMult, binaryL  "/"  TDiv]]
 
 topParser :: Parser Term
 topParser = makeExprParser (pVal <|> parens bottomParser) topOps
@@ -89,6 +89,12 @@ binaryR name f = InfixR (f <$ symbol name)
 
 binaryL :: String -> (Term -> Term -> Term) -> Operator Parser Term
 binaryL name f = InfixL (f <$ symbol name)
+
+postfix :: String -> (Term -> Term) -> Operator Parser Term
+postfix name f = Postfix (f <$ symbol name)
+
+manyPostfix :: String -> (Term -> Term) -> Operator Parser Term
+manyPostfix name f = Postfix $ foldr1 (.) <$> some (f <$ symbol name)
 
 -- parsing patterns
 

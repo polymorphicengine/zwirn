@@ -12,6 +12,7 @@ type Var = P.String
 data Mini a = FVal a
            | FRest
            | FEmpty
+           | FElong (Mini a)
            | FSeq (Mini a) (Mini a)
            | FStack (Mini a) (Mini a)
            | FMult (Mini a) (Mini Int)
@@ -32,6 +33,7 @@ displayMini :: P.Show a => Mini a -> P.String
 displayMini (FVal i) = P.show i
 displayMini (FRest) = "~"
 displayMini FEmpty = ""
+displayMini (FElong t) = displayMini t P.++ "@"
 displayMini t@(FSeq _ _) = "(" P.++ (intercalate " " P.$  P.map displayMini (removeEmpty P.$ getFSeq t)) P.++ ")"
 displayMini (FStack t1 t2) = "(" P.++ displayMini t1 P.++ "," P.++ displayMini t2 P.++ ")"
 displayMini (FMult t1 t2) = "(" P.++ displayMini t1 P.++ "*" P.++ displayMini t2 P.++ ")"
@@ -177,6 +179,7 @@ combine t@(FSeq _ _) = toFSeq P.$ P.concatMap getFSeq (P.fmap combine P.$ getFSe
 combine t@(FStack _ _) = toFStack P.$ P.concatMap getFStack (P.fmap combine P.$ getFStack t)
 combine (FDiv t n) = FDiv (combine t) n
 combine (FMult t n) = FMult (combine t) n
+combine (FElong t) = FElong (combine t)
 combine FEmpty = FEmpty
 combine FRest = FRest
 
@@ -196,6 +199,7 @@ lift2 f x = lift (fmap f x)
 
 lift :: Mini (a -> b) -> Mini (Mini a -> Mini b)
 lift (FVal f) = FVal $ fmap f
+lift (FElong t) = FElong (lift t)
 lift (FSeq t ts) = FSeq (lift t) (lift ts)
 lift (FStack t ts) = FStack (lift t) (lift ts)
 lift (FDiv t n) = FDiv (lift t) n

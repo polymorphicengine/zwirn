@@ -20,6 +20,7 @@ data Term = TVar Var
           | TBool Bool
           | TRest
           | TEmpty
+          | TElong Term
           | TSeq Term Term
           | TStack Term Term
           | TMult Term Term
@@ -45,6 +46,7 @@ displayTerm (TBool True) = "t"
 displayTerm (TBool False) = "f"
 displayTerm (TRest) = "~"
 displayTerm TEmpty = ""
+displayTerm (TElong t) = displayTerm t  ++ "@"
 displayTerm t@(TSeq _ _) = "(" ++ (intercalate " " $ map displayTerm (getTSeq t)) ++ ")"
 displayTerm (TStack t1 t2) = displayTerm t1 ++ "," ++ displayTerm t2
 displayTerm (TMult t1 t2) = displayTerm t1 ++ "*" ++ displayTerm t2
