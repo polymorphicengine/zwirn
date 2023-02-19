@@ -120,24 +120,10 @@ elongN i m = FElong (elongN (i P.- 1) m)
 
 
 applySeq :: Mini (Mini a -> Mini b) -> Mini a -> Mini b
-applySeq f t = toFSeq (P.map (\i -> (rss P.!! i) P.!! i) [0..n P.- 1])
+applySeq f t = toFSeq $ P.zipWith apply fs ts
              where fs = getFSeq f
                    n = P.length fs
-                   rss = P.map (\g -> breakSeq n (apply g t)) fs
-
--- the idea is that the structure will always come from the right term and the values in the left term will be matched against them
--- applySeqR :: Mini (Mini a -> Mini b) -> Mini a -> Mini b
--- applySeqR t1 t2 = toFSeq (P.map (\i -> (P.!!) zs i) [(P.*) x l2 | x <- [0..(P.-) n2 1]])
---                     where s1 = getFSeq t1
---                           s2 = getFSeq t2
---                           n1 = P.length s1
---                           n2 = P.length s2
---                           l = P.lcm n1 n2
---                           l1 = P.div l n1
---                           l2 = P.div l n2
---                           f1 = P.concatMap (\x -> P.take l1 (P.repeat x)) s1
---                           f2 = P.concatMap (\x -> P.take l2 (P.repeat x)) s2
---                           zs = P.zipWith (\x y -> apply x y) f1 f2
+                   ts = breakSeq n t
 
 applyStack :: Mini (Mini a -> Mini b) -> Mini a -> Mini b
 applyStack t1 t2 = toFStack zs
