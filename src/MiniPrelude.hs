@@ -15,6 +15,15 @@ id = FVal (\x -> x)
 const :: Mini (Mini a -> Mini (Mini b -> Mini a))
 const = FVal (\x -> FVal (\_ -> x))
 
+norm :: Mini (Mini a -> Mini a)
+norm = FVal normalise
+
+norm2 :: Mini (Mini a -> Mini a)
+norm2 = FVal no2
+
+flat :: Mini (Mini a -> Mini a)
+flat = FVal flatten
+
 --logic
 
 not :: Mini (Mini Bool -> Mini Bool)

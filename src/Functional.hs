@@ -70,6 +70,46 @@ lastEl (FMult t _) = lastEl t
 lastEl (FDiv t _) = lastEl t
 lastEl x = x
 
+normalise :: Mini a -> Mini a
+normalise (FMult x n@(FSeq _ _)) =  toFSeq (P.map (\j -> (xs P.!! j) P.!! j) [0..P.length xs P.- 1])
+                            where ns = getFSeq n
+                                  l = P.length ns
+                                  xs = P.map (\i -> breakSeq l (normalise $ FMult x i)) ns
+normalise (FMult x (FVal n)) | n P.== 1 = x
+                        | P.otherwise = toFSeq (P.map normalise $ P.replicate n x)
+normalise (FMult _ FRest) = FRest
+normalise (FMult x n@(FMult _ _)) = normalise (FMult x (normalise n))
+normalise (FMult x n@(FDiv _ _)) = case normalise n of
+                                  FDiv y m -> FDiv (normalise $ FMult x y) m
+                                  _ -> P.error "cannot happen"
+normalise (FDiv x n@(FSeq _ _)) =  toFSeq (P.map (\j -> (xs P.!! j) P.!! j) [0..P.length xs P.- 1])
+                            where ns = getFSeq n
+                                  l = P.length ns
+                                  xs = P.map (\i -> breakSeq l (normalise $ FDiv x i)) ns
+normalise (FDiv x (FVal n)) | n P.== 1 = x
+                       | P.otherwise = FDiv x (FVal n)
+normalise (FDiv _ FRest) = FRest
+normalise (FDiv x n@(FMult _ _)) = normalise (FDiv x (normalise n))
+normalise (FDiv x n@(FDiv _ _)) = case normalise n of
+                                  FDiv y m -> FDiv (normalise $ FDiv x y) m
+                                  _ -> P.error "cannot happen"
+normalise f@(FSeq _ _) = toFSeq (P.map normalise $ getFSeq f)
+normalise x = x
+
+--TODO replace all divisions simultaneously calculating their lcm
+no2 :: Mini a -> Mini a
+no2 f@(FSeq _ _) = case go 0 fs of
+                      P.Nothing -> f
+                      P.Just (xs, i) -> FDiv (toFSeq $ P.map toFSeq (P.map (\y -> (P.take i fs) P.++ [y] P.++ (P.drop (i P.+ 1) fs)) xs)) (FVal $ P.length xs)
+                where fs = getFSeq f
+                      go _ [] = P.Nothing
+                      go i ((FDiv x (FVal n)):_) = P.Just $ (breakSeq n x, i)
+                      go i (d@(FDiv _ _):_) = case normalise d of
+                                            FDiv x (FVal n) -> P.Just $ (breakSeq n x, i)
+                                            _ -> P.error "cannot happen, i hope"
+                      go i (_:xs) = go (i P.+ 1) xs
+no2 x = x
+
 -- | break a sequence into an almost equivalent sequence with exactly n elements
 breakSeq :: Int -> Mini a -> [Mini a]
 breakSeq n p = P.map (\hs -> toFSeq $ P.map (\(k,x) -> elongN k x) hs) hss
@@ -79,6 +119,25 @@ breakSeq n p = P.map (\hs -> toFSeq $ P.map (\(k,x) -> elongN k x) hs) hss
                    i = P.div l n
                    j = P.div l m
                    hss = helper2 i j P.Nothing ps
+
+flatten :: Mini a -> Mini a
+flatten x = toFSeq $ flatten' x
+
+flatten' :: Mini a -> [Mini a]
+flatten' f@(FSeq _ _) = P.concatMap (\ps -> P.map (\p -> elongN (P.div l (P.length ps)) p ) ps ) flats
+                     where fs = getFSeq f
+                           flats = P.map flatten' fs
+                           ls = P.map P.length flats
+                           l = P.foldr P.lcm 1 ls
+flatten' x = [x]
+
+breakS :: Mini a -> [Int] -> [Mini a]
+breakS x [] = [x]
+breakS x@(FVal _) (i:is) = (elongN i x):(P.map (\j -> elongN j FRest) is)
+breakS s@(FSeq _ _) is@(_:_) = P.undefined
+                           where fs = getFSeq s
+                                 n = P.length fs
+                                 m = P.sum is
 
 -- | i specifies how much a single slot can hold, while j specifies the length of each individual event
 -- | r determinies how much of a slot is already filled
@@ -92,7 +151,7 @@ helper1 r i j P.Nothing (p:ps) = case leftover P.> 0 of
                                               newRest = r P.+ newLength
                                               (xs,n) = case newLength P.< j of
                                                               P.False -> helper1 newRest i j P.Nothing ps
-                                                              P.True -> ([], (j P.- newLength, ps))
+                                                              P.True -> ([], (j P.- newLength, p:ps))
                                 P.False -> ([], (0, p:ps))
                                 where leftover = i P.- r
 helper1 _ i j (P.Just (n,x)) ps = ((n,x):xs,l)
@@ -104,7 +163,7 @@ helper2 _ _ (P.Just x) [] = [[x]]
 helper2 _ _ (P.Nothing) [] = []
 helper2 i j may ps = case n P.== 0 of
                               P.True -> ls:(helper2 i j P.Nothing xs)
-                              P.False -> [ls] P.++ rss P.++ (helper2 i j r xs) -- change FRest to P.head xs for different effect
+                              P.False -> [ls] P.++ rss P.++ (helper2 i j r xs)
                where (ls,(n,xs)) = helper1 0 i j may ps
                      (rss, r) = resolveRests i n
 
