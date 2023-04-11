@@ -2,6 +2,7 @@ module MiniPrelude where
 
 import qualified Prelude as P
 import Functional
+import Tidal
 
 id :: Mini (Mini a -> Mini a)
 id = FVal (\x -> x)

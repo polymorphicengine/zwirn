@@ -27,6 +27,10 @@ symbol = L.symbol sc
 parens :: Parser a -> Parser a
 parens = between (symbol "(") (symbol ")")
 
+brackets :: Parser a -> Parser a
+brackets = between (symbol "[") (symbol "]")
+
+
 pInteger :: Parser Integer
 pInteger =  lexeme L.decimal
 
@@ -64,23 +68,24 @@ topOps :: [[Operator Parser Term]]
 topOps = [[manyPostfix "@" TElong], [ binaryL  "*"  TMult, binaryL  "/"  TDiv]]
 
 topParser :: Parser Term
-topParser = makeExprParser (pVal <|> parens bottomParser) topOps
+topParser = makeExprParser (pVal <|> pSeqExp <|> parens bottomParser) topOps
 
 
 pSeqExp :: Parser Term
-pSeqExp = do
+pSeqExp = brackets $ do
       expr <- topParser
       pSeq expr <|> return expr
+      -- <|> topParser
       where pSeq t = do
-                ts <- some topParser
+                ts <- some topParser <|> (brackets $ some topParser)
                 return $ toTSeq (t:ts)
 
 
 bottomOps :: [[Operator Parser Term]]
-bottomOps = [[ binaryR "," TStack ],[ binaryL  "$"  TApp ]]
+bottomOps = [[ binaryR "," TStack ],[ binaryL  ""  TApp ]]
 
 bottomParser :: Parser Term
-bottomParser = makeExprParser (pSeqExp <|> pLambda <|> parens bottomParser) bottomOps
+bottomParser = makeExprParser (topParser <|> pLambda <|> parens bottomParser) bottomOps
 
 
 

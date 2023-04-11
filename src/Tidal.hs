@@ -1,7 +1,7 @@
 module Tidal where
 
 import Sound.Tidal.Pattern (Pattern)
-import Sound.Tidal.Core (stack,silence,fast,slow, timecat)
+import Sound.Tidal.Core (stack,silence,fast,slow,timecat)
 import Sound.Tidal.Show()
 
 import Functional (Mini (..), getFSeq)
