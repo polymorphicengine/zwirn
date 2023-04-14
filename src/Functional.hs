@@ -1,5 +1,3 @@
-{-# LANGUAGE TypeOperators #-}
-
 module Functional where
 
 import qualified Prelude as P
@@ -9,8 +7,6 @@ type Int = P.Int
 type Bool = P.Bool
 type Pattern = T.Pattern
 
-infixr 0 ->> 
-type a ->> b = Pattern (Pattern a -> Pattern b)
 
 infixl 0 $
 ($) :: (a -> b) -> a -> b

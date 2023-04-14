@@ -1,34 +1,39 @@
-{-# LANGUAGE TypeOperators #-}
 module MiniPrelude where
 
 import qualified Prelude as P
-import Functional
 
 import qualified Sound.Tidal.Context as T
 
-t :: Pattern Bool
-t = P.pure True
+import Functional (lift2)
 
-f :: Pattern Bool
-f = P.pure False
+type Pattern = T.Pattern
+type Time = T.Time
+type Int = P.Int
 
-id :: a ->> a
+
+id :: Pattern (Pattern a -> Pattern a)
 id = P.pure (\x -> x)
 
-const :: a ->> b ->> a
+const :: Pattern (Pattern a -> Pattern (Pattern b -> Pattern a))
 const = P.pure (\x -> P.pure (\_ -> x))
 
-rev :: a ->> a
+rev :: Pattern (Pattern a -> Pattern a)
 rev = P.pure T.rev
 
-fast :: Int ->> a ->> a
+fast :: Pattern (Pattern Time -> Pattern (Pattern a -> Pattern a))
 fast = lift2 T.fast
 
-slow :: Int ->> a ->> a
+slow :: Pattern (Pattern Time -> Pattern (Pattern a -> Pattern a))
 slow = lift2 T.slow
 
-ply :: Int ->> a ->> a
+ply :: Pattern (Pattern Time -> Pattern (Pattern a -> Pattern a))
 ply = lift2 T.ply
 
-rot :: Int ->> a ->> a
+rot :: P.Ord a => Pattern (Pattern Int -> Pattern (Pattern a -> Pattern a))
 rot = lift2 T.rot
+
+rotL :: Pattern (Pattern Time -> Pattern (Pattern a -> Pattern a))
+rotL = lift2 (\x y -> x T.<~ y)
+
+rotR :: Pattern (Pattern Time -> Pattern (Pattern a -> Pattern a))
+rotR = lift2 (\x y -> x T.~> y)
