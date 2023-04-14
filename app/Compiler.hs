@@ -4,18 +4,27 @@ import Language
 import Data.List (intercalate)
 
 compile :: Term -> String
-compile (TVar x) = x
-compile (TInt i) = "(FVal " ++ show i ++ ")"
-compile (TBool b) = "(FVal P." ++ show b ++ ")"
-compile (TEmpty) = "FEmpty"
-compile (TRest) = "FRest"
-compile (TElong t) = "(FElong " ++ compile t ++ ")"
-compile (TSeq x y) = "(FSeq " ++ compile x ++ " " ++ compile y ++ ")"
-compile (TStack x y) = "(FStack " ++ compile x ++ " " ++ compile y ++ ")"
-compile (TDiv x n) = "(FDiv " ++ compile x ++ " " ++ compile n ++ ")"
-compile (TMult x n) = "(FMult " ++ compile x ++ " " ++ compile n ++ ")"
-compile (TApp x y) = "(apply (toPattern " ++ compile x ++ ") (toPattern " ++ compile y ++ "))"
-compile (TLambda ps) = "(FVal (\\pat -> " ++ compileCases ps ++"))"
+compile (TVar x) = "(P.pure " ++ x ++ ")"
+compile (TInt i) = "(P.pure " ++ show i ++ ")"
+compile (TBool b) = "(P.pure P." ++ show b ++ ")"
+compile (TEmpty) = "silence"
+compile (TRest) = "silence"
+compile (TElong t) = "(" ++ compile t ++ ")"
+compile t@(TSeq _ _) = "(timecat " ++ "[" ++ intercalate "," ts ++  "])"
+                     where ts = map (\(n,m) -> "(" ++ show n ++ "," ++ compile m ++ ")") $ resolveSize $ getTSeq t
+compile (TStack x y) = "(stack [" ++ compile x ++ "," ++ compile y ++ "])"
+compile (TDiv x n) = "(slow " ++ compile n ++ " " ++ compile x ++ ")"
+compile (TMult x n) = "(fast " ++ compile n ++ " " ++ compile x ++ ")"
+compile (TApp x y) = "(apply " ++ compile x ++ " " ++ compile y ++ ")"
+compile (TLambda ps) = "(P.pure (\\pat -> " ++ compileCases ps ++"))"
+
+
+resolveSize :: [Term] -> [(Int,Term)]
+resolveSize = map (\m -> (elongAmount m, m))
+
+elongAmount :: Term -> Int
+elongAmount (TElong t) = elongAmount t + 1
+elongAmount _ = 1
 
 compilePat :: Pat -> String
 compilePat (PVar x) = x

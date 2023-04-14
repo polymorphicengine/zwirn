@@ -48,12 +48,13 @@ interpretCommandsLine cm lineBool line env = do
                                                     Left err -> errorUI $ show err
                                                     Right t -> do
                                                             liftIO $ putMVar mMV $ (compile t)
+                                                            liftIO $ putStrLn $ compile t
                                                             res <- liftIO $ takeMVar rMV
                                                             case res of
                                                               RMini m -> do
                                                                 successUI
-                                                                outputUI $ displayMini m
-                                                                liftIO $ T.streamReplace str 1 ((T.note $ fmap (T.Note . fromIntegral) (toPattern m)) T.# T.s (pure "superpiano"))
+                                                                outputUI $ show m
+                                                                liftIO $ T.streamReplace str 1 ((T.note $ fmap (T.Note . fromIntegral) m) T.# T.s (pure "superpiano"))
                                                               RError e -> errorUI e
          where successUI = liftUI $ flashSuccess cm blockLineStart blockLineEnd
                errorUI err = (liftUI $ flashError cm blockLineStart blockLineEnd) >> (void $ liftUI $ element out # set UI.text err)

@@ -9,12 +9,13 @@ import Language.Haskell.Interpreter as Hint
 
 import Data.List (intercalate)
 
+import Sound.Tidal.Context (Pattern)
 
 import qualified Functional as F
 
 type InterpreterMessage = String
 
-data InterpreterResponse = RMini (F.Mini Int)
+data InterpreterResponse = RMini (Pattern Int)
                          | RError String
                          deriving Show
 
@@ -30,7 +31,7 @@ hintJob mMV rMV = do
                 hintJob mMV rMV
 
 staticInterpreter :: Interpreter ()
-staticInterpreter = Hint.loadModules ["src/Functional.hs","src/MiniPrelude.hs"] >> Hint.setTopLevelModules ["Functional","MiniPrelude"]
+staticInterpreter = Hint.loadModules ["src/Functional.hs","src/MiniPrelude.hs", "src/Tidal.hs"] >> Hint.setTopLevelModules ["Functional","MiniPrelude","Tidal"]
 
 interpreterLoop :: MVar InterpreterMessage -> MVar InterpreterResponse -> Interpreter ()
 interpreterLoop mMV rMV = do
@@ -41,7 +42,7 @@ interpreterLoop mMV rMV = do
 
 interpretMini :: String -> MVar InterpreterResponse -> Interpreter ()
 interpretMini s rMV = do
-                      p <- Hint.interpret s (Hint.as :: F.Mini Int)
+                      p <- Hint.interpret s (Hint.as :: Pattern Int)
                       liftIO $ putMVar rMV $ RMini p
 
 

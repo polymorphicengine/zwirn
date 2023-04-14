@@ -56,8 +56,9 @@ displayTerm (TLambda ps) = "(\\" ++ (intercalate "|" $ map (\(p,t) -> displayPat
 
 
 getTSeq :: Term -> [Term]
+getTSeq TEmpty = []
 getTSeq (TSeq t1 t2) = t1:(getTSeq t2)
-getTSeq t = [t]
+getTSeq x = [x]
 
 toTSeq :: [Term] -> Term
 toTSeq [] = TRest
