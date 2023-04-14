@@ -16,8 +16,6 @@ import Editor.Block
 import Editor.UI
 import Megaparsec
 import Compiler
-import Functional (displayMini)
-import Tidal
 
 data Env = Env {windowE :: Window
                ,streamE :: T.Stream
