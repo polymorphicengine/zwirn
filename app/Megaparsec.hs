@@ -101,40 +101,13 @@ postfix name f = Postfix (f <$ symbol name)
 manyPostfix :: String -> (Term -> Term) -> Operator Parser Term
 manyPostfix name f = Postfix $ foldr1 (.) <$> some (f <$ symbol name)
 
--- parsing patterns
-
-pPat :: Parser Pat
-pPat = try pPatSeq <|> try pPatBool <|> pPatVar <|> pPatInt
-
-pPatVar :: Parser Pat
-pPatVar = fmap PVar $ pString
-
-pPatInt :: Parser Pat
-pPatInt = fmap PInt $ (fmap fromIntegral pInteger)
-
-pPatBool :: Parser Pat
-pPatBool = (symbol "t" >> (return $ PBool True)) <|> (symbol "f" >> (return $ PBool False))
-
-pPatSeq :: Parser Pat
-pPatSeq = do
-  x <- pPatVar <|> parens pPat
-  y <- pPatVar <|> parens pPat
-  return $ PSeq x y
-
-
 pLambda :: Parser Term
 pLambda = do
   _ <- symbol "\\"
-  p <- pPat
+  x <- pString
   _ <- symbol "->"
   t <- bottomParser
-  ts <- many $ do
-            _ <- symbol "|"
-            p1 <- pPat
-            _ <- symbol "->"
-            t1 <- bottomParser
-            return $ (p1,t1)
-  return $ TLambda $ (p,t):ts
+  return $ TLambda x t
 
 parseTerm :: String -> Either (ParseErrorBundle String Void) Term
 parseTerm s = runParser (bottomParser <* eof) "" s

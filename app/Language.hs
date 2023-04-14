@@ -5,16 +5,6 @@ import Data.List (intercalate)
 
 type Var = String
 
-data Pat = PVar Var
-         | PInt Int
-         | PBool Bool
-         | PEmpty
-         | PSeq Pat Pat
-         | PStack Pat Pat
-         | PDiv Pat Pat
-         | PMult Pat Pat
-         deriving (Eq, Show)
-
 data Term = TVar Var
           | TInt Int
           | TBool Bool
@@ -25,19 +15,9 @@ data Term = TVar Var
           | TStack Term Term
           | TMult Term Term
           | TDiv Term Term
-          | TLambda [(Pat,Term)]
+          | TLambda Var Term
           | TApp Term Term
           deriving (Eq, Show)
-
-displayPat :: Pat -> String
-displayPat (PVar x) = x
-displayPat (PInt i) = show i
-displayPat (PBool b) = show b
-displayPat (PSeq x y) = "(" ++ displayPat x ++ " " ++ displayPat y ++ ")"
-displayPat (PStack x y) = "(" ++ displayPat x ++ "," ++ displayPat y ++ ")"
-displayPat (PEmpty) = "nil"
-displayPat (PDiv x n) = displayPat x ++ "/" ++ displayPat n
-displayPat (PMult x n) = displayPat x ++ "*" ++ displayPat n
 
 displayTerm :: Term -> String
 displayTerm (TVar x) = x
@@ -52,7 +32,7 @@ displayTerm (TStack t1 t2) = displayTerm t1 ++ "," ++ displayTerm t2
 displayTerm (TMult t1 t2) = displayTerm t1 ++ "*" ++ displayTerm t2
 displayTerm (TDiv t1 t2) = displayTerm t1 ++ "/" ++ displayTerm t2
 displayTerm (TApp t1 t2) = "(" ++ displayTerm t1 ++ "$" ++ displayTerm t2 ++ ")"
-displayTerm (TLambda ps) = "(\\" ++ (intercalate "|" $ map (\(p,t) -> displayPat p ++ "." ++ displayTerm t) ps) ++ ")"
+displayTerm (TLambda v t) = "(\\" ++ v ++ " -> " ++ displayTerm t ++ ")"
 
 
 getTSeq :: Term -> [Term]
