@@ -37,7 +37,6 @@ executable minilambda-interpreter
                       Editor.UI
                       Language
                       Compiler
-                      Arbitrary
                       Megaparsec
     build-depends:    base,
                       megaparsec,
