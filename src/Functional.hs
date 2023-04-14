@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveFunctor, DeriveGeneric#-}
+{-# LANGUAGE TypeOperators #-}
 
 module Functional where
 
@@ -8,6 +8,9 @@ import qualified Sound.Tidal.Context as T
 type Int = P.Int
 type Bool = P.Bool
 type Pattern = T.Pattern
+
+infixr 0 ->> 
+type a ->> b = Pattern (Pattern a -> Pattern b)
 
 infixl 0 $
 ($) :: (a -> b) -> a -> b
