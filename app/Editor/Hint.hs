@@ -31,7 +31,7 @@ hintJob mMV rMV = do
                 hintJob mMV rMV
 
 staticInterpreter :: Interpreter ()
-staticInterpreter = Hint.loadModules ["src/Functional.hs","src/MiniPrelude.hs", "src/Tidal.hs"] >> Hint.setTopLevelModules ["Functional","MiniPrelude","Tidal"]
+staticInterpreter = Hint.loadModules ["src/Functional.hs","src/MiniPrelude.hs"] >> Hint.setTopLevelModules ["Functional","MiniPrelude"]
 
 interpreterLoop :: MVar InterpreterMessage -> MVar InterpreterResponse -> Interpreter ()
 interpreterLoop mMV rMV = do
