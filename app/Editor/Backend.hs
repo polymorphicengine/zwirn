@@ -46,7 +46,6 @@ interpretCommandsLine cm lineBool line env = do
                                                     Left err -> errorUI $ show err
                                                     Right t -> do
                                                             liftIO $ putMVar mMV $ (compile t)
-                                                            liftIO $ putStrLn $ compile t
                                                             res <- liftIO $ takeMVar rMV
                                                             case res of
                                                               RMini m -> do
