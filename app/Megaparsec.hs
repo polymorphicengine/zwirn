@@ -41,11 +41,8 @@ pString = lexeme $ (:) <$> letterChar <*> many alphaNumChar
 
 pVar :: Parser Term
 pVar = do
-  xs <- pString
-  case xs of
-    "t" -> fail "reserved"
-    "f" -> fail "reserved"
-    _ -> return $ TVar xs
+  x <- pString
+  return $ TVar x
 
 pRest :: Parser Term
 pRest = symbol "~" >> return TRest
@@ -53,11 +50,9 @@ pRest = symbol "~" >> return TRest
 pInt :: Parser Term
 pInt = fmap TInt (fmap fromIntegral pInteger)
 
-pBool :: Parser Term
-pBool = (symbol "t" >> return (TBool True)) <|> (symbol "f" >> return (TBool False))
 
 pVal :: Parser Term
-pVal = pRest <|> pInt <|> try pVar <|> pBool
+pVal = pRest <|> pInt <|> pVar
 
 -- seqeuences bind less than * and /,
 -- but more than , which binds more than $
@@ -75,17 +70,22 @@ pSeqExp :: Parser Term
 pSeqExp = brackets $ do
       expr <- topParser
       pSeq expr <|> return expr
-      -- <|> topParser
       where pSeq t = do
                 ts <- some topParser <|> (brackets $ some topParser)
-                return $ toTSeq (t:ts)
-
+                return $ TSeq (t:ts)
 
 bottomOps :: [[Operator Parser Term]]
-bottomOps = [[ binaryR "," TStack ],[ binaryL  ""  TApp ]]
+bottomOps = [[ binaryL  ""  TApp ]]
 
 bottomParser :: Parser Term
-bottomParser = makeExprParser (topParser <|> pLambda <|> parens bottomParser) bottomOps
+bottomParser = makeExprParser (topParser <|> pLambda) bottomOps
+
+--stacks are currently not supported
+pStack :: Parser Term
+pStack = do
+     t <- topParser
+     ts <- many $ (symbol "," >> topParser)
+     return $ TStack (t:ts)
 
 
 
