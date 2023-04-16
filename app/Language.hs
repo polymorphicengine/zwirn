@@ -15,6 +15,7 @@ data Term = TVar Var
           | TAlt [Term]
           | TMult Term Term
           | TDiv Term Term
+          | TPoly Term Term
           | TLambda Var Term
           | TApp Term Term
           deriving (Eq, Show)
@@ -42,6 +43,7 @@ displayTerm (TAlt ts) = "<" ++ (intercalate " " $ map displayTerm ts) ++ ">"
 displayTerm (TStack ts) = "(" ++ (intercalate "," $ map displayTerm ts) ++ ")"
 displayTerm (TMult t1 t2) = displayTerm t1 ++ "*" ++ displayTerm t2
 displayTerm (TDiv t1 t2) = displayTerm t1 ++ "/" ++ displayTerm t2
+displayTerm (TPoly t1 t2) = displayTerm t1 ++ "%" ++ displayTerm t2
 displayTerm (TApp t1 t2) = "(" ++ displayTerm t1 ++ "$" ++ displayTerm t2 ++ ")"
 displayTerm (TLambda v t) = "(\\" ++ v ++ " -> " ++ displayTerm t ++ ")"
 
@@ -56,5 +58,8 @@ simplify (TAlt ts) = SDiv (SSeq ss) (SInt $ length ss)
                    where ss = map simplify ts
 simplify (TMult x y) = SMult (simplify x) (simplify y)
 simplify (TDiv x y) = SDiv (simplify x) (simplify y)
+simplify (TPoly (TSeq ts) n) = SMult (SDiv (SSeq ss) (SInt $ length ss)) (simplify n)
+                   where ss = map simplify ts
+simplify (TPoly x n) = SMult (simplify x) (simplify n)
 simplify (TLambda x t) = SLambda x (simplify t)
 simplify (TApp x y) = SApp (simplify x) (simplify y)

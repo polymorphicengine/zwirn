@@ -30,6 +30,9 @@ parens = between (symbol "(") (symbol ")")
 brackets :: Parser a -> Parser a
 brackets = between (symbol "[") (symbol "]")
 
+angles :: Parser a -> Parser a
+angles = between (symbol "<") (symbol ">")
+
 
 pInteger :: Parser Integer
 pInteger =  lexeme L.decimal
@@ -60,10 +63,10 @@ pVal = pRest <|> pInt <|> pVar
 -- seqeuences and stacks to the right
 
 topOps :: [[Operator Parser Term]]
-topOps = [[manyPostfix "@" TElong], [ binaryL  "*"  TMult, binaryL  "/"  TDiv]]
+topOps = [[manyPostfix "@" TElong], [binaryL "%" TPoly], [ binaryL  "*"  TMult, binaryL  "/"  TDiv]]
 
 topParser :: Parser Term
-topParser = makeExprParser (pVal <|> pSeqExp <|> parens bottomParser) topOps
+topParser = makeExprParser (pVal <|> pSeqExp <|> pAltExp <|> parens bottomParser) topOps
 
 
 pSeqExp :: Parser Term
@@ -71,8 +74,16 @@ pSeqExp = brackets $ do
       expr <- topParser
       pSeq expr <|> return expr
       where pSeq t = do
-                ts <- some topParser <|> (brackets $ some topParser)
+                ts <- some topParser -- <|> (brackets $ some topParser)
                 return $ TSeq (t:ts)
+
+pAltExp :: Parser Term
+pAltExp = angles $ do
+      expr <- topParser
+      pSeq expr <|> return expr
+      where pSeq t = do
+                ts <- some topParser -- <|> (angles $ some topParser)
+                return $ TAlt (t:ts)
 
 bottomOps :: [[Operator Parser Term]]
 bottomOps = [[ binaryL  ""  TApp ]]
