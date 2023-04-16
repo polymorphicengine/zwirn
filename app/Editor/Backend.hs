@@ -16,6 +16,7 @@ import Editor.Block
 import Editor.UI
 import Megaparsec
 import Compiler
+import Language
 
 data Env = Env {windowE :: Window
                ,streamE :: T.Stream
@@ -45,7 +46,7 @@ interpretCommandsLine cm lineBool line env = do
                                               case parseTerm block of
                                                     Left err -> errorUI $ show err
                                                     Right t -> do
-                                                            liftIO $ putMVar mMV $ (compile t)
+                                                            liftIO $ putMVar mMV $ (compile $ simplify t)
                                                             res <- liftIO $ takeMVar rMV
                                                             case res of
                                                               RMini m -> do
