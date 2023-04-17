@@ -66,23 +66,31 @@ topOps :: [[Operator Parser Term]]
 topOps = [[manyPostfix "@" TElong], [binaryL "%" TPoly], [ binaryL  "*"  TMult, binaryL  "/"  TDiv]]
 
 topParser :: Parser Term
-topParser = makeExprParser (pVal <|> pSeqExp <|> pAltExp <|> parens bottomParser) topOps
+topParser = makeExprParser (pVal <|> pStackSeq <|> pAltExp <|> parens fullParser) topOps
 
 
 pSeqExp :: Parser Term
-pSeqExp = brackets $ do
+pSeqExp = do
       expr <- topParser
       pSeq expr <|> return expr
       where pSeq t = do
-                ts <- some topParser -- <|> (brackets $ some topParser)
+                ts <- some topParser
                 return $ TSeq (t:ts)
+
+pStackSeq :: Parser Term
+pStackSeq = brackets $ do
+     t <- pSeqExp
+     pStack t <|> return t
+     where pStack t = do
+              ts <- some $ (symbol "," >> pSeqExp)
+              return $ TStack (t:ts)
 
 pAltExp :: Parser Term
 pAltExp = angles $ do
       expr <- topParser
       pSeq expr <|> return expr
       where pSeq t = do
-                ts <- some topParser -- <|> (angles $ some topParser)
+                ts <- some topParser
                 return $ TAlt (t:ts)
 
 bottomOps :: [[Operator Parser Term]]
@@ -91,14 +99,15 @@ bottomOps = [[ binaryL  ""  TApp ]]
 bottomParser :: Parser Term
 bottomParser = makeExprParser (topParser <|> pLambda) bottomOps
 
---stacks are currently not supported
-pStack :: Parser Term
-pStack = do
-     t <- topParser
-     ts <- many $ (symbol "," >> topParser)
+
+pStackApp :: Parser Term
+pStackApp = do
+     t <- bottomParser
+     ts <- some $ (symbol "," >> bottomParser)
      return $ TStack (t:ts)
 
-
+fullParser :: Parser Term
+fullParser = try pStackApp <|> bottomParser
 
 binaryR :: String -> (Term -> Term -> Term) -> Operator Parser Term
 binaryR name f = InfixR (f <$ symbol name)
@@ -117,8 +126,8 @@ pLambda = do
   _ <- symbol "\\"
   x <- pString
   _ <- symbol "->"
-  t <- bottomParser
+  t <- fullParser
   return $ TLambda x t
 
 parseTerm :: String -> Either (ParseErrorBundle String Void) Term
-parseTerm s = runParser (bottomParser <* eof) "" s
+parseTerm s = runParser (fullParser <* eof) "" s
