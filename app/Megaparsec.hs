@@ -57,10 +57,9 @@ pInt = fmap TInt (fmap fromIntegral pInteger)
 pVal :: Parser Term
 pVal = pRest <|> pInt <|> pVar
 
--- seqeuences bind less than * and /,
--- but more than , which binds more than $
--- * / and $ associate to the left
--- seqeuences and stacks to the right
+-- parsing of a sequence of terms is context depended, usually it is parsed as
+-- function application, within brackets [] it is parsed as a tidal sequence
+-- * and / associate to the left
 
 topOps :: [[Operator Parser Term]]
 topOps = [[manyPostfix "@" TElong], [binaryL "%" TPoly], [ binaryL  "*"  TMult, binaryL  "/"  TDiv]]
