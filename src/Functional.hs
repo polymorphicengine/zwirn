@@ -3,6 +3,8 @@ module Functional where
 import qualified Prelude as P
 import qualified Sound.Tidal.Context as T
 
+-- this module contains meta functions
+
 type Int = P.Int
 type Bool = P.Bool
 type Pattern = T.Pattern
