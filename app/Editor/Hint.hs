@@ -11,8 +11,6 @@ import Data.List (intercalate)
 
 import Sound.Tidal.Context (Pattern)
 
-import qualified Functional as F
-
 type InterpreterMessage = String
 
 data InterpreterResponse = RMini (Pattern Int)
