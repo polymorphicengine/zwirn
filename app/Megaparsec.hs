@@ -38,7 +38,7 @@ pInteger :: Parser Integer
 pInteger =  lexeme L.decimal
 
 pString :: Parser String
-pString = lexeme $ (:) <$> letterChar <*> many alphaNumChar
+pString = lexeme $ (:) <$> (letterChar <|> oneOf "+-") <*> many alphaNumChar
 
 -- parsing simple values
 

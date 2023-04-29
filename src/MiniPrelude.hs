@@ -83,11 +83,18 @@ toInt = P.pure (P.fmap (\x -> if x then 1 else 0))
 add :: Pattern (Pattern Int -> Pattern (Pattern Int -> Pattern Int))
 add = lift2 (\x y -> x P.+ y)
 
+(+) :: Pattern (Pattern Int -> Pattern (Pattern Int -> Pattern Int))
+(+) = add
+
 sub :: Pattern (Pattern Int -> Pattern (Pattern Int -> Pattern Int))
 sub = lift2 (\x y -> y P.- x)
 
+(-) :: Pattern (Pattern Int -> Pattern (Pattern Int -> Pattern Int))
+(-) = lift2 (\x y -> x P.- y)
+
 mult :: Pattern (Pattern Int -> Pattern (Pattern Int -> Pattern Int))
 mult = lift2 (\x y -> x P.* y)
+
 
 addR :: Pattern (Pattern Int -> Pattern (Pattern Int -> Pattern Int))
 addR = right add

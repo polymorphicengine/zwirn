@@ -46,6 +46,8 @@ interpretCommandsLine cm lineBool line env = do
                                               case parseTerm block of
                                                     Left err -> errorUI $ show err
                                                     Right t -> do
+                                                            liftIO $ putStrLn $ show t
+                                                            liftIO $ putStrLn $ (compile $ simplify t)
                                                             liftIO $ putMVar mMV $ (compile $ simplify t)
                                                             res <- liftIO $ takeMVar rMV
                                                             case res of
