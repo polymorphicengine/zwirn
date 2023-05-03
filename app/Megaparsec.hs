@@ -38,7 +38,7 @@ pInteger :: Parser Integer
 pInteger =  lexeme L.decimal
 
 pString :: Parser String
-pString = lexeme $ (:) <$> (letterChar <|> oneOf "+-#") <*> many alphaNumChar
+pString = lexeme $ (:) <$> letterChar <*> many alphaNumChar
 
 -- parsing simple values
 
@@ -100,7 +100,19 @@ pAltExp = angles $ do
                 return $ TAlt (t:ts)
 
 bottomOps :: [[Operator Parser Term]]
-bottomOps = [[ binaryL  ""  TApp ]]
+bottomOps = [[ binaryL  ""  TApp ]
+            ,[binaryR "|+" (TOp "|+")
+             ,binaryR "+|" (TOp "+|")
+             ,binaryR "+" (TOp "+")
+             ,binaryR "|-" (TOp "|-")
+             ,binaryR "-|" (TOp "-|")
+             ,binaryR "-" (TOp "-")
+             ,binaryR "|*|" (TOp "|*|")
+             ,binaryR "|*" (TOp "|*")
+             -- ,binaryR "*|" (TOp "*|") syntactically not possible
+             ]
+            ,[binaryR "$" (TOp "$$")], [binaryL "#" (TOp "#")]
+            ]
 
 bottomParser :: Parser Term
 bottomParser = makeExprParser (topParser <|> pLambda) bottomOps
@@ -116,10 +128,10 @@ fullParser :: Parser Term
 fullParser = try pStackApp <|> bottomParser
 
 binaryR :: String -> (Term -> Term -> Term) -> Operator Parser Term
-binaryR name f = InfixR (f <$ symbol name)
+binaryR name f = InfixR (f <$ (symbol name))
 
 binaryL :: String -> (Term -> Term -> Term) -> Operator Parser Term
-binaryL name f = InfixL (f <$ symbol name)
+binaryL name f = InfixL (f <$ (symbol name))
 
 postfix :: String -> (Term -> Term) -> Operator Parser Term
 postfix name f = Postfix (f <$ symbol name)

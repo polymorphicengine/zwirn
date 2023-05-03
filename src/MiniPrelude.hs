@@ -8,7 +8,7 @@ import qualified Sound.Tidal.Context as T
 
 import qualified Data.Map as Map
 
-import Functional (lift2, apply, applyOut, collect,match, ($))
+import Functional (lift2, apply, applyOut, collect, match, ($))
 
 type Pattern = T.Pattern
 type ControlPattern = T.ControlPattern
@@ -21,6 +21,7 @@ type Char = P.Char
 type String = P.String
 type Bool = P.Bool
 
+
 -- type family Pat x where
 --   Pat (a -> b) = Pattern (Pat a -> Pat b)
 --   Pat (Pattern a) = Pattern a
@@ -31,6 +32,10 @@ type Bool = P.Bool
 --
 -- instance PatClass P.Bool where
 --   toPat = P.pure
+
+infixr 0 $$
+($$) :: Pattern (Pattern (Pattern a -> Pattern b) -> Pattern (Pattern a -> Pattern b))
+($$) = P.pure (\x -> P.pure (\y -> apply x y))
 
 t :: Pattern Bool
 t = P.pure P.True
@@ -101,27 +106,36 @@ rarely = P.pure (\g -> P.pure (T.rarely (apply g)))
 toInt :: Pattern (Pattern Bool -> Pattern Int)
 toInt = P.pure (P.fmap (\x -> if x then 1 else 0))
 
-add :: Pattern (Pattern Int -> Pattern (Pattern Int -> Pattern Int))
-add = lift2 (\x y -> x P.+ y)
 
-(+) :: Pattern (Pattern Int -> Pattern (Pattern Int -> Pattern Int))
-(+) = add
+(+) :: P.Num a => Pattern (Pattern a -> Pattern (Pattern a -> Pattern a))
+(+) = lift2 (\x y -> x P.+ y)
 
-sub :: Pattern (Pattern Int -> Pattern (Pattern Int -> Pattern Int))
-sub = lift2 (\x y -> y P.- x)
+(+|) :: P.Num a => Pattern (Pattern a -> Pattern (Pattern a -> Pattern a))
+(+|) = right (+)
 
-(-) :: Pattern (Pattern Int -> Pattern (Pattern Int -> Pattern Int))
+(|+) :: P.Num a => Pattern (Pattern a -> Pattern (Pattern a -> Pattern a))
+(|+) = left (+)
+
+
+(-) :: P.Num a => Pattern (Pattern a -> Pattern (Pattern a -> Pattern a))
 (-) = lift2 (\x y -> x P.- y)
 
-mult :: Pattern (Pattern Int -> Pattern (Pattern Int -> Pattern Int))
-mult = lift2 (\x y -> x P.* y)
+(-|) :: P.Num a => Pattern (Pattern a -> Pattern (Pattern a -> Pattern a))
+(-|) = right (-)
+
+(|-) :: P.Num a => Pattern (Pattern a -> Pattern (Pattern a -> Pattern a))
+(|-) = left (-)
 
 
-addR :: Pattern (Pattern Int -> Pattern (Pattern Int -> Pattern Int))
-addR = right add
+(|*|) :: P.Num a => Pattern (Pattern a -> Pattern (Pattern a -> Pattern a))
+(|*|) = lift2 (\x y -> x P.* y)
 
-addL :: Pattern (Pattern Int -> Pattern (Pattern Int -> Pattern Int))
-addL = left add
+(*|) :: P.Num a => Pattern (Pattern a -> Pattern (Pattern a -> Pattern a))
+(*|) = right (|*|)
+
+(|*) :: P.Num a => Pattern (Pattern a -> Pattern (Pattern a -> Pattern a))
+(|*) = left (|*|)
+
 
 -- control pattern stuff
 

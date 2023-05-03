@@ -49,9 +49,6 @@ match (x@(x2,a):xs) (y@(y2,b):ys) | x2 P.> y2 = (a,b):(match (x:xs) ys)
                                   | P.otherwise = (a,b):(match xs ys)
 
 
-infixr 0 $$
-($$) :: Pattern (Pattern a -> Pattern b) -> Pattern a -> Pattern b
-($$) = apply
 
 lift :: (a -> b) -> Pattern (a -> b)
 lift = P.pure

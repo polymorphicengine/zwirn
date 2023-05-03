@@ -14,6 +14,7 @@ compile (SStack ts) = "(T.stack [" ++ intercalate "," (map compile ts) ++ "])"
 compile (SDiv x n) = "(T.slow " ++ compile n ++ " " ++ compile x ++ ")"
 compile (SMult x n) = "(T.fast " ++ compile n ++ " " ++ compile x ++ ")"
 compile (SApp x y) = "(apply " ++ compile x ++ " " ++ compile y ++ ")"
+compile (SOp n x y) = "(apply (apply (" ++ n ++ ") " ++ compile x ++ ") " ++ compile y ++ ")"
 compile (SLambda v x) = "(P.pure (\\" ++ v ++ " -> " ++ compile x ++"))"
 
 resolveSize :: [Simple] -> [(Int,Simple)]
