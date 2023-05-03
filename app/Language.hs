@@ -8,7 +8,7 @@ type Var = String
 type BinOps = [String]
 
 binOps :: BinOps
-binOps = ["+","-","*"]
+binOps = ["+","-","*","#"]
 
 -- sugary representation of patterns
 data Term = TVar Var

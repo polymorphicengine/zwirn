@@ -1,15 +1,36 @@
+{-# LANGUAGE TypeFamilies, TypeFamilyDependencies, OverloadedStrings #-}
+
 module MiniPrelude where
 
 import qualified Prelude as P
 
 import qualified Sound.Tidal.Context as T
 
+import qualified Data.Map as Map
+
 import Functional (lift2, apply, applyOut, collect,match, ($))
 
 type Pattern = T.Pattern
+type ControlPattern = T.ControlPattern
+type ValueMap = T.ValueMap
+type Value = T.Value
+type Map = Map.Map
 type Time = T.Time
 type Int = P.Int
+type Char = P.Char
+type String = P.String
 type Bool = P.Bool
+
+-- type family Pat x where
+--   Pat (a -> b) = Pattern (Pat a -> Pat b)
+--   Pat (Pattern a) = Pattern a
+--   Pat a = Pattern a
+--
+-- class PatClass a where
+--   toPat :: a -> Pat a
+--
+-- instance PatClass P.Bool where
+--   toPat = P.pure
 
 t :: Pattern Bool
 t = P.pure P.True
@@ -101,6 +122,17 @@ addR = right add
 
 addL :: Pattern (Pattern Int -> Pattern (Pattern Int -> Pattern Int))
 addL = left add
+
+-- control pattern stuff
+
+n :: Pattern (Pattern Int -> ControlPattern)
+n = P.pure (\m -> T.n $ P.fmap (\x -> T.Note $ P.fromIntegral x) m)
+
+s :: Pattern (Pattern String -> ControlPattern)
+s = P.pure T.s
+
+(#) :: Pattern (ControlPattern -> Pattern (ControlPattern -> ControlPattern))
+(#) = lift2 (\x y -> x T.# y)
 
 -- meta functions to get the structure
 

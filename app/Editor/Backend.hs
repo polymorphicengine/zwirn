@@ -2,7 +2,7 @@ module Editor.Backend where
 
 import Control.Monad  (void)
 
-import qualified Sound.Tidal.Context as T (Stream, Note (..), streamReplace, note, s, (#))
+import qualified Sound.Tidal.Context as T (Stream, streamReplace)
 
 import Control.Concurrent.MVar  (MVar, putMVar, takeMVar)
 
@@ -54,7 +54,7 @@ interpretCommandsLine cm lineBool line env = do
                                                               RMini m -> do
                                                                 successUI
                                                                 outputUI $ show m
-                                                                liftIO $ T.streamReplace str 1 ((T.note $ fmap (T.Note . fromIntegral) m) T.# T.s (pure "superpiano"))
+                                                                liftIO $ T.streamReplace str 1 m
                                                               RError e -> errorUI e
          where successUI = liftUI $ flashSuccess cm blockLineStart blockLineEnd
                errorUI err = (liftUI $ flashError cm blockLineStart blockLineEnd) >> (void $ liftUI $ element out # set UI.text err)

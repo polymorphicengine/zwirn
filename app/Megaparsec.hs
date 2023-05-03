@@ -38,7 +38,7 @@ pInteger :: Parser Integer
 pInteger =  lexeme L.decimal
 
 pString :: Parser String
-pString = lexeme $ (:) <$> (letterChar <|> oneOf "+-") <*> many alphaNumChar
+pString = lexeme $ (:) <$> (letterChar <|> oneOf "+-#") <*> many alphaNumChar
 
 -- parsing simple values
 
@@ -46,6 +46,13 @@ pVar :: Parser Term
 pVar = do
   x <- pString
   return $ TVar x
+
+pQuote :: Parser Term
+pQuote = do
+  _ <- symbol "\""
+  x <- pString
+  _ <- symbol "\""
+  return $ TVar ("\"" ++ x ++ "\"")
 
 pRest :: Parser Term
 pRest = symbol "~" >> return TRest
@@ -55,7 +62,7 @@ pInt = fmap TInt (fmap fromIntegral pInteger)
 
 
 pVal :: Parser Term
-pVal = pRest <|> pInt <|> pVar
+pVal = pRest <|> pInt <|> pVar <|> pQuote
 
 -- parsing of a sequence of terms is context depended, usually it is parsed as
 -- function application, within brackets [] it is parsed as a tidal sequence
