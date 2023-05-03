@@ -9,7 +9,6 @@ type Name = String
 
 -- sugary representation of patterns
 data Term = TVar Var
-          | TInt Int
           | TRest
           | TElong Term
           | TSeq [Term]
@@ -25,7 +24,6 @@ data Term = TVar Var
 
 -- simple representation of patterns
 data Simple = SVar Var
-          | SInt Int
           | SRest
           | SElong Simple
           | SSeq [Simple]
@@ -39,7 +37,6 @@ data Simple = SVar Var
 
 displayTerm :: Term -> String
 displayTerm (TVar x) = x
-displayTerm (TInt i) = show i
 displayTerm (TRest) = "~"
 displayTerm (TElong t) = displayTerm t  ++ "@"
 displayTerm (TSeq ts) = "[" ++ (intercalate " " $ map displayTerm ts) ++ "]"
@@ -54,16 +51,15 @@ displayTerm (TLambda v t) = "(\\" ++ v ++ " -> " ++ displayTerm t ++ ")"
 
 simplify :: Term -> Simple
 simplify (TVar x) = SVar x
-simplify (TInt x) = SInt x
 simplify TRest = SRest
 simplify (TElong t) = SElong (simplify t)
 simplify (TSeq ts) = SSeq (map simplify ts)
 simplify (TStack ts) = SStack (map simplify ts)
-simplify (TAlt ts) = SDiv (SSeq ss) (SInt $ length ss)
+simplify (TAlt ts) = SDiv (SSeq ss) (SVar $ show $ length ss)
                    where ss = map simplify ts
 simplify (TMult x y) = SMult (simplify x) (simplify y)
 simplify (TDiv x y) = SDiv (simplify x) (simplify y)
-simplify (TPoly (TSeq ts) n) = SMult (SDiv (SSeq ss) (SInt $ length ss)) (simplify n)
+simplify (TPoly (TSeq ts) n) = SMult (SDiv (SSeq ss) (SVar $ show $ length ss)) (simplify n)
                    where ss = map simplify ts
 simplify (TPoly x n) = SMult (simplify x) (simplify n)
 simplify (TLambda x t) = SLambda x (simplify t)

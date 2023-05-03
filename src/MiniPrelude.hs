@@ -17,6 +17,7 @@ type Value = T.Value
 type Map = Map.Map
 type Time = T.Time
 type Int = P.Int
+type Double = P.Double
 type Char = P.Char
 type String = P.String
 type Bool = P.Bool
@@ -136,6 +137,9 @@ toInt = P.pure (P.fmap (\x -> if x then 1 else 0))
 (|*) :: P.Num a => Pattern (Pattern a -> Pattern (Pattern a -> Pattern a))
 (|*) = left (|*|)
 
+(//) :: (P.Num a, P.Fractional a) => Pattern (Pattern a -> Pattern (Pattern a -> Pattern a))
+(//) = lift2 (\x y -> x P./ y)
+
 
 -- control pattern stuff
 
@@ -144,6 +148,12 @@ n = P.pure (\m -> T.n $ P.fmap (\x -> T.Note $ P.fromIntegral x) m)
 
 s :: Pattern (Pattern String -> ControlPattern)
 s = P.pure T.s
+
+room :: Pattern (Pattern Double -> ControlPattern)
+room = P.pure T.room
+
+size :: Pattern (Pattern Double -> ControlPattern)
+size = P.pure T.size
 
 (#) :: Pattern (ControlPattern -> Pattern (ControlPattern -> ControlPattern))
 (#) = lift2 (\x y -> x T.# y)

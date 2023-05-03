@@ -33,9 +33,11 @@ brackets = between (symbol "[") (symbol "]")
 angles :: Parser a -> Parser a
 angles = between (symbol "<") (symbol ">")
 
-
 pInteger :: Parser Integer
 pInteger =  lexeme L.decimal
+
+pFloat :: RealFloat a => Parser a
+pFloat = lexeme L.float
 
 pString :: Parser String
 pString = lexeme $ (:) <$> letterChar <*> many alphaNumChar
@@ -57,19 +59,19 @@ pQuote = do
 pRest :: Parser Term
 pRest = symbol "~" >> return TRest
 
-pInt :: Parser Term
-pInt = fmap TInt (fmap fromIntegral pInteger)
+pNum :: Parser Term
+pNum = try (fmap (TVar . show) pFloat) <|> (fmap (TVar . show) pInteger)
 
 
 pVal :: Parser Term
-pVal = pRest <|> pInt <|> pVar <|> pQuote
+pVal = pRest <|> pNum <|> pVar <|> pQuote
 
 -- parsing of a sequence of terms is context depended, usually it is parsed as
 -- function application, within brackets [] it is parsed as a tidal sequence
 -- * and / associate to the left
 
 topOps :: [[Operator Parser Term]]
-topOps = [[manyPostfix "@" TElong], [binaryL "%" TPoly], [ binaryL  "*"  TMult, binaryL  "/"  TDiv]]
+topOps = [[manyPostfix "@" TElong], [binaryL "%" TPoly], [binaryL "//" (TOp "//")], [ binaryL  "*"  TMult, binaryL  "/"  TDiv]]
 
 topParser :: Parser Term
 topParser = makeExprParser (pVal <|> pStackSeq <|> pAltExp <|> parens fullParser) topOps
@@ -101,14 +103,14 @@ pAltExp = angles $ do
 
 bottomOps :: [[Operator Parser Term]]
 bottomOps = [[ binaryL  ""  TApp ]
-            ,[binaryR "|+" (TOp "|+")
+            ,[binaryR "|*|" (TOp "|*|")
+             ,binaryR "|*" (TOp "|*")
+             ,binaryR "|+" (TOp "|+")
              ,binaryR "+|" (TOp "+|")
              ,binaryR "+" (TOp "+")
              ,binaryR "|-" (TOp "|-")
              ,binaryR "-|" (TOp "-|")
              ,binaryR "-" (TOp "-")
-             ,binaryR "|*|" (TOp "|*|")
-             ,binaryR "|*" (TOp "|*")
              -- ,binaryR "*|" (TOp "*|") syntactically not possible
              ]
             ,[binaryR "$" (TOp "$$")], [binaryL "#" (TOp "#")]
