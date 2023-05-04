@@ -10,6 +10,7 @@ compile (SElong t) = "(" ++ compile t ++ ")"
 compile (SSeq ts) = "(T.timecat " ++ "[" ++ intercalate "," ss ++  "])"
                      where ss = map (\(n,m) -> "(" ++ show n ++ "," ++ compile m ++ ")") $ resolveSize $ ts
 compile (SStack ts) = "(T.stack [" ++ intercalate "," (map compile ts) ++ "])"
+compile (SChoice ts) = "(choice [" ++ intercalate "," (map compile ts) ++ "])"
 compile (SDiv x n) = "(T.slow " ++ compile n ++ " " ++ compile x ++ ")"
 compile (SMult x n) = "(T.fast " ++ compile n ++ " " ++ compile x ++ ")"
 compile (SApp x y) = "(apply " ++ compile x ++ " " ++ compile y ++ ")"

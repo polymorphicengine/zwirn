@@ -74,7 +74,7 @@ topOps :: [[Operator Parser Term]]
 topOps = [[manyPostfix "@" TElong], [binaryL "%" TPoly], [binaryL "//" (TOp "//")], [ binaryL  "*"  TMult, binaryL  "/"  TDiv]]
 
 topParser :: Parser Term
-topParser = makeExprParser (pVal <|> pStackSeq <|> pAltExp <|> parens fullParser) topOps
+topParser = makeExprParser (pVal <|> pChoiceSeq <|> pAltExp <|> parens fullParser) topOps
 
 
 pSeqExp :: Parser Term
@@ -86,12 +86,20 @@ pSeqExp = do
                 return $ TSeq (t:ts)
 
 pStackSeq :: Parser Term
-pStackSeq = brackets $ do
+pStackSeq = do
      t <- pSeqExp
      pStack t <|> return t
      where pStack t = do
               ts <- some $ (symbol "," >> pSeqExp)
               return $ TStack (t:ts)
+
+pChoiceSeq :: Parser Term
+pChoiceSeq = brackets $ do
+     t <- pStackSeq
+     pChoice t <|> return t
+     where pChoice t = do
+              ts <- some $ (symbol "|" >> pStackSeq)
+              return $ TChoice (t:ts)
 
 pAltExp :: Parser Term
 pAltExp = angles $ do
@@ -100,6 +108,7 @@ pAltExp = angles $ do
       where pSeq t = do
                 ts <- some topParser
                 return $ TAlt (t:ts)
+
 
 bottomOps :: [[Operator Parser Term]]
 bottomOps = [[ binaryL  ""  TApp ]
@@ -123,11 +132,22 @@ bottomParser = makeExprParser (topParser <|> pLambda) bottomOps
 pStackApp :: Parser Term
 pStackApp = do
      t <- bottomParser
-     ts <- some $ (symbol "," >> bottomParser)
-     return $ TStack (t:ts)
+     pStack t <|> return t
+     where pStack t = do
+              ts <- some $ (symbol "," >> bottomParser)
+              return $ TStack (t:ts)
+
+-- choice binds weakest
+pChoiceApp :: Parser Term
+pChoiceApp = do
+  t <- pStackApp
+  pChoice t <|> return t
+  where pChoice t = do
+           ts <- some $ (symbol "|" >> pStackApp)
+           return $ TChoice (t:ts)
 
 fullParser :: Parser Term
-fullParser = try pStackApp <|> bottomParser
+fullParser = pChoiceApp
 
 binaryR :: String -> (Term -> Term -> Term) -> Operator Parser Term
 binaryR name f = InfixR (f <$ (symbol name))

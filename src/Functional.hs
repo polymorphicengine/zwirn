@@ -62,6 +62,11 @@ lift2 f = P.pure $ \x -> P.pure $ f x
 liftF2 :: (a -> b -> c) -> (Pattern a -> Pattern b -> Pattern c)
 liftF2 _ = P.undefined
 
+--
+
+choice :: [Pattern a] -> Pattern a
+choice xs = T.innerJoin $ T.cycleChoose xs
+
 
 -- the following will be integrated in tidal in the future
 
