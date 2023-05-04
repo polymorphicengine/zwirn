@@ -8,7 +8,7 @@ import qualified Sound.Tidal.Context as T
 
 import qualified Data.Map as Map
 
-import Functional (lift2, apply, applyOut, collect, match, ($))
+import Functional (lift2, apply, ($))
 
 type Pattern = T.Pattern
 type ControlPattern = T.ControlPattern
