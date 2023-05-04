@@ -20,12 +20,6 @@ fmap = P.fmap
 eventLengths :: Pattern a -> Pattern T.Time
 eventLengths = T.withEvent (\e -> e {T.value = (T.wholeStop e) P.- (T.wholeStart e)})
 
-applyOut :: Pattern (Pattern a -> Pattern b) -> Pattern a -> Pattern b
-applyOut fp p = T.outerJoin $ fmap scale fp
-           where scale f = T.outside (eventLengths fp) f $ p
-                 fps = collect fp
-                 ps = collect p
-
 apply :: Pattern (Pattern a -> Pattern b) -> Pattern a -> Pattern b
 apply fp p = T.innerJoin $ fmap (\f -> scaleWith (collect fp) f $ p) fp
             where scaleWith st f = T.outside (eventLengths st) f
