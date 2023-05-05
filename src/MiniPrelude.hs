@@ -28,11 +28,21 @@ type Bool = P.Bool
 --   Pat (Pattern a) = Pattern a
 --   Pat a = Pattern a
 --
--- class PatClass a where
---   toPat :: a -> Pat a
---
--- instance PatClass P.Bool where
+-- class Pat a where
+--   type Patt a
+--   toPat :: a -> Patt a
+-- --
+-- instance Pat P.Bool where
+--   type Patt P.Bool = Pattern P.Bool
 --   toPat = P.pure
+
+-- Pattern (Pattern (Pattern Bool -> Pattern Bool) -> Pattern Bool)
+
+-- fmap :: (a -> b) -> (Patt a -> Patt b)
+
+-- instance (Pat a, Pat b) => Pat (a -> b) where
+--   type Patt (a -> b) = Pattern (Patt a -> Patt b)
+--   toPat g = P.undefined --P.pure $ (\x -> toPat $ g x)
 
 infixr 0 $$
 ($$) :: Pattern (Pattern (Pattern a -> Pattern b) -> Pattern (Pattern a -> Pattern b))
@@ -98,6 +108,12 @@ while = P.pure (\i -> P.pure (\g -> P.pure (T.while i (apply g))))
 superimpose :: Pattern (Pattern (Pattern a -> Pattern a) -> Pattern (Pattern a -> Pattern a))
 superimpose = P.pure (\g -> P.pure (T.superimpose (apply g)))
 
+jux :: Pattern (Pattern (ControlPattern -> ControlPattern) -> Pattern (ControlPattern -> ControlPattern))
+jux = P.pure (\g -> P.pure (T.jux (apply g)))
+
+iter :: Pattern (Pattern Int -> Pattern (Pattern a -> Pattern a))
+iter = lift2 T.iter
+
 sometimes :: Pattern (Pattern (Pattern a -> Pattern a) -> Pattern (Pattern a -> Pattern a))
 sometimes = P.pure (\g -> P.pure (T.sometimes (apply g)))
 
@@ -149,14 +165,40 @@ n = P.pure (\m -> T.n $ P.fmap (\x -> T.Note $ P.fromIntegral x) m)
 s :: Pattern (Pattern String -> ControlPattern)
 s = P.pure T.s
 
+sound :: Pattern (Pattern String -> ControlPattern)
+sound = s
+
 room :: Pattern (Pattern Double -> ControlPattern)
 room = P.pure T.room
 
 size :: Pattern (Pattern Double -> ControlPattern)
 size = P.pure T.size
 
+speed :: Pattern (Pattern Double -> ControlPattern)
+speed = P.pure T.speed
+
+accelerate :: Pattern (Pattern Double -> ControlPattern)
+accelerate = P.pure T.accelerate
+
+gain :: Pattern (Pattern Double -> ControlPattern)
+gain = P.pure T.gain
+
+pan :: Pattern (Pattern Double -> ControlPattern)
+pan = P.pure T.pan
+
+krush :: Pattern (Pattern Double -> ControlPattern)
+krush = P.pure T.krush
+
 (#) :: Pattern (ControlPattern -> Pattern (ControlPattern -> ControlPattern))
 (#) = lift2 (\x y -> x T.# y)
+
+-- samples
+
+bd :: Pattern String
+bd = P.pure "bd"
+
+sn :: Pattern String
+sn = P.pure "sn"
 
 -- meta functions to get the structure
 
