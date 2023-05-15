@@ -122,7 +122,7 @@ bottomOps = [[ binaryL  ""  TApp ]
              ,binaryR "-" (TOp "-")
              -- ,binaryR "*|" (TOp "*|") syntactically not possible
              ]
-            ,[binaryR "$" (TOp "$$")], [binaryL "#" (TOp "#")]
+            ,[binaryL "#" (TOp "#")], [binaryR "$" (TOp "$$")]
             ]
 
 bottomParser :: Parser Term
