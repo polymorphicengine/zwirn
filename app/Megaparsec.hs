@@ -113,17 +113,8 @@ pAltExp = angles $ do
 bottomOps :: [[Operator Parser Term]]
 bottomOps = [[ binaryL  ""  TApp ]
              ,[binaryR "." (TOp ".")]
-             ,[binaryR "|*|" (TOp "|*|")
-             ,binaryR "|*" (TOp "|*")
-             ,binaryR "|+" (TOp "|+")
-             ,binaryR "+|" (TOp "+|")
-             ,binaryR "+" (TOp "+")
-             ,binaryR "|-" (TOp "|-")
-             ,binaryR "-|" (TOp "-|")
-             ,binaryR "-" (TOp "-")
-             -- ,binaryR "*|" (TOp "*|") syntactically not possible
-             ]
-            ,[binaryL "#" (TOp "#")], [binaryR "$" (TOp "$$")]
+             ,[binaryL "#" (TOp "#")]
+             ,[binaryR "$" (TOp "$$")]
             ]
 
 bottomParser :: Parser Term
