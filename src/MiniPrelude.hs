@@ -28,25 +28,6 @@ type Char = P.Char
 type String = P.String
 type Bool = P.Bool
 
--- g :: a -> b
--- fmap g :: Pattern a -> Pattern b
---
--- toPat :: a -> ToPat a
--- flat :: Pattern (ToPat a) -> ToPat a
---
--- x :: ToPat a
-
---impossible
--- fmap g :: Pattern (x -> y) -> Pattern z
--- fm
--- not gonna happen
-try:: ((x -> y) -> z) -> Pattern (Pattern (Pattern x -> Pattern y) -> Pattern z) -- = ToPat ((x -> y) -> z)
-try g = P.pure $ \x -> P.fmap g (try2 x)
-        where try2 :: Pattern (Pattern x -> Pattern y) -> Pattern (x -> y)
-              try2 y = P.undefined
-
-try3 :: ((Pattern x -> Pattern y) -> Pattern z) -> Pattern (Pattern (Pattern x -> Pattern y) -> Pattern z)
-try3 g = P.pure $ \l -> g (apply l)
 
 type family P x where
   P (Pattern a -> b) = Pattern (Pattern a -> P b)
@@ -54,12 +35,6 @@ type family P x where
   P (Pattern a) = Pattern a
   P a = Pattern a
 
--- type family ToPat x where
---   ToPat (a -> b) = Pattern (ToPat a -> ToPat b)
---   ToPat (Pattern a) = ToPat a
---   ToPat (m a) = Pattern (m (ToPat a))
---   ToPat a = Pattern a
---
 class Pat a where
   toPat :: a -> P a
 
@@ -81,29 +56,6 @@ instance Pat Double where
 instance Pat ValueMap where
   toPat = P.pure
 
-  --from :: ToPat a -> Pattern a
---
--- instance Pat P.Bool where
---   toPat = P.return
---   flat = T.outerJoin
---   --from = P.id
---
--- instance (Pat a, Pat b) => Pat (a -> b) where
---   toPat g = P.undefined --P.pure (\x -> toPat $ g x)
---   flat = T.outerJoin
---   --from p = P.fmap help p
---   --       where help g x = ((from @b) $ g (toPat x))
---
--- instance Pat a => Pat (T.Pattern a) where
---   toPat x = (flat @a) (P.fmap toPat x)
---   flat = (flat @a)
-
-
--- revv :: forall a. Pat a => ToPat (a -> a)
--- revv = (toPat @(Pattern a -> Pattern a)) T.rev
---
--- sometime :: forall a. Pat a => ToPat ((a -> a) -> a -> a)
--- sometime = (toPat @((Pattern a -> Pattern a) -> Pattern a -> Pattern a)) T.sometimes
 
 infixr 0 $$
 ($$) :: Pat b => P ((Pattern a -> Pattern b) -> Pattern a -> Pattern b)
