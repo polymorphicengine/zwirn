@@ -1,8 +1,5 @@
-{-# LANGUAGE TypeFamilies, TypeFamilyDependencies, OverloadedStrings, GADTs #-}
-{-# LANGUAGE AllowAmbiguousTypes, FlexibleContexts, UndecidableInstances #-}
-{-# LANGUAGE StandaloneDeriving, DeriveFunctor #-}
-{-# LANGUAGE TypeApplications, ScopedTypeVariables, InstanceSigs, TypeOperators, AllowAmbiguousTypes#-}
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE TypeFamilies, TypeSynonymInstances, FlexibleInstances #-}
+
 
 
 module MiniPrelude where
@@ -56,22 +53,31 @@ instance Pat Double where
 instance Pat ValueMap where
   toPat = P.pure
 
+instance Pat Bool where
+  toPat = P.pure
+
+instance Pat String where
+  toPat = P.pure
 
 infixr 0 $$
 ($$) :: Pat b => P ((Pattern a -> Pattern b) -> Pattern a -> Pattern b)
 ($$) = toPat apply
 
 t :: Pattern Bool
-t = P.pure P.True
+t = toPat P.True
 
 f :: Pattern Bool
-f = P.pure P.False
+f = toPat P.False
 
-id :: Pattern (Pattern a -> Pattern a)
-id = P.pure P.id
+id :: Pat a => P (Pattern a -> Pattern a)
+id = toPat (P.id :: Pattern a -> Pattern a)
 
-const :: Pattern (Pattern a -> Pattern (Pattern b -> Pattern a))
-const = P.pure (\x -> P.pure (\_ -> x))
+const :: Pat a => P (Pattern a -> Pattern b -> Pattern a)
+const = toPat (P.const :: Pattern a -> Pattern b -> Pattern a)
+
+(.) :: Pat d => P ((Pattern b -> Pattern d) -> (Pattern a -> Pattern b)-> Pattern a -> Pattern d)
+(.) = toPat compose
+    where compose = (P..) :: ((Pattern b -> Pattern d) -> (Pattern a -> Pattern b)-> Pattern a -> Pattern d)
 
 rev :: Pat a => P (Pattern a -> Pattern a)
 rev = toPat T.rev
@@ -88,7 +94,7 @@ ply = toPat T.ply
 rot :: (Pat a, P.Ord a) => P (Pattern Int -> Pattern a -> Pattern a)
 rot = toPat T.rot
 
-run :: P(Pattern Int -> Pattern Int)
+run :: P (Pattern Int -> Pattern Int)
 run = toPat T.run
 
 irand :: P (Pattern Int -> Pattern Int)
@@ -106,7 +112,7 @@ struct = toPat T.struct
 toBool :: P (Pattern a -> Pattern Bool)
 toBool = P.pure (P.fmap (\_ -> P.True))
 
-structFrom :: Pattern (Pattern b -> Pattern (Pattern a -> Pattern a))
+structFrom :: P (Pattern b -> Pattern a -> Pattern a)
 structFrom = P.pure (\b -> P.pure (T.struct (apply toBool b)))
 
 mask :: Pat a => P (Pattern Bool -> Pattern a -> Pattern a)
@@ -200,7 +206,7 @@ krush :: P (Pattern Double -> ControlPattern)
 krush = P.pure T.krush
 
 (#) :: P (ControlPattern -> ControlPattern -> ControlPattern)
-(#) = toPat (\x y -> x T.# y)
+(#) = toPat (T.#)
 
 -- samples
 

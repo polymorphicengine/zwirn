@@ -60,7 +60,7 @@ pRest :: Parser Term
 pRest = symbol "~" >> return TRest
 
 pNum :: Parser Term
-pNum = try (fmap (TVar . show) pFloat) <|> (fmap (TVar . show) pInteger)
+pNum = try (fmap (TVar . (show :: Double -> String)) pFloat) <|> (fmap (TVar . show) pInteger)
 
 
 pVal :: Parser Term
@@ -111,7 +111,8 @@ pAltExp = angles $ do
 
 
 bottomOps :: [[Operator Parser Term]]
-bottomOps = [[ binaryL  ""  TApp ]
+bottomOps = [[binaryR "." (TOp ".")]
+            ,[ binaryL  ""  TApp ]
             ,[binaryR "|*|" (TOp "|*|")
              ,binaryR "|*" (TOp "|*")
              ,binaryR "|+" (TOp "|+")
