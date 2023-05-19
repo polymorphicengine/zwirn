@@ -1,6 +1,6 @@
 module Editor.Hint where
 
-import Control.Exception  (SomeException)
+--import Control.Exception  (SomeException)
 import Control.Monad.Catch (catch)
 import Control.Concurrent.MVar  (MVar, putMVar, takeMVar)
 
@@ -23,7 +23,7 @@ exts = [OverloadedStrings, BangPatterns, MonadComprehensions, LambdaCase]
 hintJob :: MVar InterpreterMessage -> MVar InterpreterResponse -> IO ()
 hintJob mMV rMV = do
                 result <- catch (Hint.runInterpreter $ staticInterpreter >> (interpreterLoop mMV rMV))
-                          (\e -> return (Left $ UnknownError $ show (e :: SomeException)))
+                          (\e -> return (Left $ UnknownError $ show (parseError e)))
                 -- can this happen? If it happens all definitions made interactively are lost...
                 let response = case result of
                         Left err -> RError (parseError err)
@@ -37,7 +37,7 @@ staticInterpreter = Hint.set [languageExtensions := exts] >> Hint.loadModules ["
 interpreterLoop :: MVar InterpreterMessage -> MVar InterpreterResponse -> Interpreter ()
 interpreterLoop mMV rMV = do
                     cont <- liftIO $ takeMVar mMV
-                    catch (interpretMini cont rMV) (\e -> liftIO $ putMVar rMV $ RError $ show (e :: SomeException))
+                    catch (interpretMini cont rMV) (\e -> liftIO $ putMVar rMV $ RError $ parseError e)
                     interpreterLoop mMV rMV
 
 
