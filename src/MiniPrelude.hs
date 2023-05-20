@@ -1,15 +1,12 @@
 {-# LANGUAGE TypeFamilies, TypeSynonymInstances, FlexibleInstances #-}
 
-
-
 module MiniPrelude where
 
 import qualified Prelude as P
 
-import qualified Sound.Tidal.Context as T
+import qualified Sound.Tidal.Context as T hiding (fromList)
 
 import qualified Data.Map as Map
-
 
 import Functional (apply, ($))
 
@@ -25,11 +22,11 @@ type Char = P.Char
 type String = P.String
 type Bool = P.Bool
 
-
 type family P x where
   P (Pattern a -> b) = Pattern (Pattern a -> P b)
   P ((Pattern a -> Pattern b) -> c) = Pattern (Pattern (Pattern a -> Pattern b) -> P c)
   P (Pattern a) = Pattern a
+  P ([Pattern a]) = Pattern [Pattern a]
   P a = Pattern a
 
 class Pat a where
@@ -41,8 +38,11 @@ instance Pat a => (Pat (Pattern a)) where
 instance Pat b => Pat (Pattern a -> b) where
   toPat g = P.pure (\x -> toPat $ g x)
 
-instance Pat c => Pat ((Pattern a -> Pattern b) -> c) where
+instance (Pat b, Pat c) => Pat ((Pattern a -> Pattern b) -> c) where
   toPat g = P.pure (\x -> toPat (g $ apply x))
+
+instance Pat ([Pattern a]) where
+  toPat = P.pure
 
 instance Pat Int where
   toPat = P.pure
@@ -60,8 +60,9 @@ instance Pat String where
   toPat = P.pure
 
 infixr 0 $$
-($$) :: Pat b => P ((Pattern a -> Pattern b) -> Pattern a -> Pattern b)
+($$) :: Pat b => P (Pattern (Pattern a -> Pattern b) -> Pattern a -> Pattern b)
 ($$) = toPat apply
+
 
 t :: Pattern Bool
 t = toPat P.True
@@ -75,7 +76,7 @@ id = toPat (P.id :: Pattern a -> Pattern a)
 const :: Pat a => P (Pattern a -> Pattern b -> Pattern a)
 const = toPat (P.const :: Pattern a -> Pattern b -> Pattern a)
 
-(.) :: Pat d => P ((Pattern b -> Pattern d) -> (Pattern a -> Pattern b)-> Pattern a -> Pattern d)
+(.) :: (Pat b, Pat d) => P ((Pattern b -> Pattern d) -> (Pattern a -> Pattern b)-> Pattern a -> Pattern d)
 (.) = toPat compose
     where compose = (P..) :: ((Pattern b -> Pattern d) -> (Pattern a -> Pattern b)-> Pattern a -> Pattern d)
 
@@ -97,7 +98,7 @@ rot = toPat T.rot
 run :: P (Pattern Int -> Pattern Int)
 run = toPat T.run
 
-irand :: P (Pattern Int -> Pattern Int)
+irand :: (Pat a, P.Num a) => P (Pattern Int -> Pattern a)
 irand = toPat T.irand
 
 rotL :: Pat a => P (Pattern Time -> Pattern a -> Pattern a)
@@ -175,13 +176,16 @@ rarely = toPat T.rarely
 
 -- control pattern stuff
 
-n :: P (Pattern Int -> ControlPattern)
+n :: P.Integral a => P (Pattern a -> ControlPattern)
 n = P.pure (\m -> T.n $ P.fmap (\x -> T.Note $ P.fromIntegral x) m)
+
+note :: P.Integral a => P (Pattern a -> ControlPattern)
+note = P.pure (\m -> T.note $ P.fmap (\x -> T.Note $ P.fromIntegral x) m)
 
 s :: P (Pattern String -> ControlPattern)
 s = P.pure T.s
 
-sound :: P(Pattern String -> ControlPattern)
+sound :: P (Pattern String -> ControlPattern)
 sound = s
 
 room :: P (Pattern Double -> ControlPattern)
@@ -216,10 +220,42 @@ bd = P.pure "bd"
 sn :: Pattern String
 sn = P.pure "sn"
 
+--
+
+c :: P.Num a => Pattern a
+c = 0
+
+e :: P.Num a => Pattern a
+e = 4
+
 -- meta functions to get the structure
 
-right :: Pattern (Pattern a -> Pattern (Pattern b -> Pattern c)) -> Pattern (Pattern a -> Pattern (Pattern b -> Pattern c))
+right :: Pat c => Pattern (Pattern a -> Pattern (Pattern b -> Pattern c)) -> Pattern (Pattern a -> Pattern (Pattern b -> Pattern c))
 right op = P.pure (\x -> P.pure (\y -> apply (apply structFrom y) (apply (apply op x) y)))
 
-left :: Pattern (Pattern a -> Pattern (Pattern b -> Pattern c)) -> Pattern (Pattern a -> Pattern (Pattern b -> Pattern c))
+left :: Pat c => Pattern (Pattern a -> Pattern (Pattern b -> Pattern c)) -> Pattern (Pattern a -> Pattern (Pattern b -> Pattern c))
 left op = P.pure (\x -> P.pure (\y -> apply (apply structFrom x) (apply (apply op x) y)))
+
+
+-- list stuff
+
+maj :: P.Num a => Pattern [Pattern a]
+maj = P.pure [0,4,7]
+
+min :: P.Num a => Pattern [Pattern a]
+min = P.pure [0,3,7]
+
+stack :: Pattern (Pattern [Pattern a] -> Pattern a)
+stack = P.pure (\x -> T.innerJoin $ P.fmap T.stack x)
+
+mapT :: Pattern (Pattern a -> Pattern b) -> Pattern [Pattern a] -> Pattern [Pattern b]
+mapT g pxs = P.fmap (\xs -> P.map (apply g) xs) pxs
+
+map :: P (Pattern (Pattern a -> Pattern b) -> Pattern [Pattern a] -> Pattern [Pattern b])
+map = toPat mapT
+
+layerT :: Pattern [Pattern (Pattern a -> Pattern b)] -> Pattern a -> Pattern [Pattern b]
+layerT fsp x = P.fmap (\fs -> P.map (\g -> apply g x) fs) fsp
+
+layer :: Pattern (Pattern [Pattern (Pattern a -> Pattern b)] -> Pattern (Pattern a -> Pattern [Pattern b]))
+layer = toPat layerT
