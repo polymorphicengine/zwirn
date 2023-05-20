@@ -1,4 +1,5 @@
 {-# LANGUAGE TypeFamilies, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE ExtendedDefaultRules, OverloadedStrings #-}
 
 module MiniPrelude where
 
@@ -21,6 +22,8 @@ type Double = P.Double
 type Char = P.Char
 type String = P.String
 type Bool = P.Bool
+
+default (Pattern Int, Pattern String)
 
 type family P x where
   P (Pattern a -> b) = Pattern (Pattern a -> P b)
@@ -259,3 +262,17 @@ layerT fsp x = P.fmap (\fs -> P.map (\g -> apply g x) fs) fsp
 
 layer :: Pattern (Pattern [Pattern (Pattern a -> Pattern b)] -> Pattern (Pattern a -> Pattern [Pattern b]))
 layer = toPat layerT
+
+-- type conversions
+
+int :: Pattern (Pattern Int -> Pattern Int)
+int = id
+
+double :: Pattern (Pattern Double -> Pattern Double)
+double = id
+
+string :: Pattern (Pattern String -> Pattern String)
+string = id
+
+bool :: Pattern (Pattern Bool -> Pattern Bool)
+bool = id

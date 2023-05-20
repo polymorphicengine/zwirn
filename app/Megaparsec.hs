@@ -156,10 +156,39 @@ manyPostfix name f = Postfix $ foldr1 (.) <$> some (f <$ symbol name)
 pLambda :: Parser Term
 pLambda = do
   _ <- symbol "\\"
-  x <- pString
+  xs <- some pString
   _ <- symbol "->"
   t <- fullParser
-  return $ TLambda x t
+  return $ TLambda xs t
 
 parseTerm :: String -> Either (ParseErrorBundle String Void) Term
 parseTerm s = runParser (fullParser <* eof) "" s
+
+-- parsing definitions
+
+parserDef :: Parser Def
+parserDef = do
+      _ <- symbol "let"
+      name <- pString
+      vs <- many pString
+      _ <- symbol "="
+      t <- fullParser
+      return $ Let name vs t
+
+parseDef :: String -> Either (ParseErrorBundle String Void) Def
+parseDef s = runParser (parserDef <* eof) "" s
+
+
+-- parsing actions
+
+parserTypes :: Parser Action
+parserTypes = do
+          _ <- symbol ":t"
+          t <- fullParser
+          return $ Type t
+
+parserAction :: Parser Action
+parserAction = parserTypes <|> try (fmap Def parserDef) <|> fmap Exec fullParser
+
+parseAction :: String -> Either (ParseErrorBundle String Void) Action
+parseAction s = runParser (parserAction <* eof) "" s

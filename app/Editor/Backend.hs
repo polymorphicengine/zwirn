@@ -42,13 +42,13 @@ interpretCommandsLine cm lineBool line env = do
     case blockMaybe of
         Nothing -> void $ liftUI $ element out # set UI.text "Failed to get Block"
         Just (Block blockLineStart blockLineEnd block) ->  do
-                                              -- evaluate the given expression, if a string is returned, print it to the console
-                                              case parseTerm block of
-                                                    Left err -> errorUI $ show err
-                                                    Right t -> do
+                                              case parseAction block of
+                                                -- evaluate the given expression, if a string is returned, print it to the console
+                                                Left err -> errorUI $ show err
+                                                Right (Exec t) -> do
                                                             liftIO $ putStrLn $ show t
                                                             liftIO $ putStrLn $ (compile $ simplify t)
-                                                            liftIO $ putMVar mMV $ (compile $ simplify t)
+                                                            liftIO $ putMVar mMV $ MMini (compile $ simplify t)
                                                             res <- liftIO $ takeMVar rMV
                                                             case res of
                                                               RMini m -> do
@@ -56,6 +56,23 @@ interpretCommandsLine cm lineBool line env = do
                                                                 outputUI $ show m
                                                                 liftIO $ T.streamReplace str 1 m
                                                               RError e -> errorUI e
+                                                              _ -> errorUI "Unknown error!"
+                                                Right (Def def) -> do
+                                                             liftIO $ putMVar mMV $ MDef (compileDef $ simplifyDef def)
+                                                             res <- liftIO $ takeMVar rMV
+                                                             case res of
+                                                               RSucc -> successUI
+                                                               RError e -> errorUI e
+                                                               _ -> errorUI "Unknown error!"
+                                                Right (Type t) -> do
+                                                            liftIO $ putMVar mMV $ MType (compile $ simplify t)
+                                                            res <- liftIO $ takeMVar rMV
+                                                            case res of
+                                                              RType typ -> do
+                                                                successUI
+                                                                outputUI $ show typ
+                                                              RError e -> errorUI e
+                                                              _ -> errorUI "Unknown error!"
          where successUI = liftUI $ flashSuccess cm blockLineStart blockLineEnd
                errorUI err = (liftUI $ flashError cm blockLineStart blockLineEnd) >> (void $ liftUI $ element out # set UI.text err)
                outputUI o = void $ liftUI $ element out # set UI.text o

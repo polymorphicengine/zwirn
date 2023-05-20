@@ -18,7 +18,7 @@ data Term = TVar Var
           | TMult Term Term
           | TDiv Term Term
           | TPoly Term Term
-          | TLambda Var Term
+          | TLambda [Var] Term
           | TApp Term Term
           | TOp Name Term Term
           deriving (Eq, Show)
@@ -37,6 +37,12 @@ data Simple = SVar Var
           | SOp Name Simple Simple
           deriving (Eq, Show)
 
+data Def = Let String [Var] Term deriving (Eq,Show)
+
+data SimpleDef = LetS String Simple deriving (Eq,Show)
+
+data Action = Exec Term | Def Def | Type Term deriving (Eq,Show)
+
 displayTerm :: Term -> String
 displayTerm (TVar x) = x
 displayTerm (TRest) = "~"
@@ -50,7 +56,7 @@ displayTerm (TDiv t1 t2) = displayTerm t1 ++ "/" ++ displayTerm t2
 displayTerm (TPoly t1 t2) = displayTerm t1 ++ "%" ++ displayTerm t2
 displayTerm (TApp t1 t2) = "(" ++ displayTerm t1 ++ "$" ++ displayTerm t2 ++ ")"
 displayTerm (TOp n t1 t2) = "(" ++ displayTerm t1 ++ " " ++ n ++ " " ++ displayTerm t2 ++ ")"
-displayTerm (TLambda v t) = "(\\" ++ v ++ " -> " ++ displayTerm t ++ ")"
+displayTerm (TLambda vs t) = "(\\" ++ (intercalate " " vs) ++ " -> " ++ displayTerm t ++ ")"
 
 simplify :: Term -> Simple
 simplify (TVar x) = SVar x
@@ -66,6 +72,11 @@ simplify (TDiv x y) = SDiv (simplify x) (simplify y)
 simplify (TPoly (TSeq ts) n) = SMult (SDiv (SSeq ss) (SVar $ show $ length ss)) (simplify n)
                    where ss = map simplify ts
 simplify (TPoly x n) = SMult (simplify x) (simplify n)
-simplify (TLambda x t) = SLambda x (simplify t)
+simplify (TLambda [] t) = simplify t
+simplify (TLambda (x:xs) t) = SLambda x (simplify $ TLambda xs t)
 simplify (TApp x y) = SApp (simplify x) (simplify y)
 simplify (TOp n x y) = SOp n (simplify x) (simplify y)
+
+
+simplifyDef :: Def -> SimpleDef
+simplifyDef (Let x vs t) = LetS x (simplify $ TLambda vs t)

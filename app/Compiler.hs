@@ -23,3 +23,6 @@ resolveSize = map (\m -> (elongAmount m, m))
 elongAmount :: Simple -> Int
 elongAmount (SElong t) = elongAmount t + 1
 elongAmount _ = 1
+
+compileDef :: SimpleDef -> String
+compileDef (LetS n t) = "let " ++ n ++ " = " ++ compile t

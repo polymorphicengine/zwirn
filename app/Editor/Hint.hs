@@ -11,14 +11,18 @@ import Data.List (intercalate)
 
 import Sound.Tidal.Context (ControlPattern)
 
-type InterpreterMessage = String
+data InterpreterMessage = MMini String
+                        | MDef String
+                        | MType String
 
 data InterpreterResponse = RMini ControlPattern
+                         | RType String
                          | RError String
+                         | RSucc
                          deriving Show
 
 exts :: [Extension]
-exts = [OverloadedStrings, BangPatterns, MonadComprehensions, LambdaCase]
+exts = [OverloadedStrings, BangPatterns, MonadComprehensions, LambdaCase, ExtendedDefaultRules]
 
 hintJob :: MVar InterpreterMessage -> MVar InterpreterResponse -> IO ()
 hintJob mMV rMV = do
@@ -32,12 +36,19 @@ hintJob mMV rMV = do
                 hintJob mMV rMV
 
 staticInterpreter :: Interpreter ()
-staticInterpreter = Hint.set [languageExtensions := exts] >> Hint.loadModules ["src/Functional.hs","src/MiniPrelude.hs"] >> Hint.setTopLevelModules ["Functional","MiniPrelude"]
+staticInterpreter = do
+        Hint.set [languageExtensions := exts]
+        Hint.loadModules ["src/Functional.hs","src/MiniPrelude.hs"]
+        Hint.setTopLevelModules ["Functional","MiniPrelude"]
+        --Hint.runStmt "default (Pattern Int, Pattern String)"
 
 interpreterLoop :: MVar InterpreterMessage -> MVar InterpreterResponse -> Interpreter ()
 interpreterLoop mMV rMV = do
                     cont <- liftIO $ takeMVar mMV
-                    catch (interpretMini cont rMV) (\e -> liftIO $ putMVar rMV $ RError $ parseError e)
+                    case cont of
+                      MMini s -> catch (interpretMini s rMV) (\e -> liftIO $ putMVar rMV $ RError $ parseError e)
+                      MType s -> catch (interpretType s rMV) (\e -> liftIO $ putMVar rMV $ RError $ parseError e)
+                      MDef s -> catch ((Hint.runStmt s) >> (liftIO $ putMVar rMV $ RSucc)) (\e -> liftIO $ putMVar rMV $ RError $ parseError e)
                     interpreterLoop mMV rMV
 
 
@@ -46,6 +57,12 @@ interpretMini s rMV = do
                       p <- Hint.interpret s (Hint.as :: ControlPattern)
                       liftIO $ putMVar rMV $ RMini p
 
+interpretType :: String -> MVar InterpreterResponse -> Interpreter ()
+interpretType cont rMV = do
+                  t <- Hint.typeChecksWithDetails cont
+                  case t of
+                    Left errors -> liftIO $ putMVar rMV $ RError $ intercalate "\n" $ map errMsg errors
+                    Right out -> liftIO $ putMVar rMV $ RType out
 
 
 parseError:: InterpreterError -> String
