@@ -17,6 +17,9 @@ infixl 0 $
 fmap :: P.Functor f => (a -> b) -> f a -> f b
 fmap = P.fmap
 
+pat :: a -> Pattern a
+pat = P.pure
+
 eventLengths :: Pattern a -> Pattern T.Time
 eventLengths = T.withEvent (\e -> e {T.value = (T.wholeStop e) P.- (T.wholeStart e)})
 

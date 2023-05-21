@@ -9,13 +9,13 @@ compile (SRest) = "T.silence"
 compile (SElong t) = "(" ++ compile t ++ ")"
 compile (SSeq ts) = "(T.timecat " ++ "[" ++ intercalate "," ss ++  "])"
                      where ss = map (\(n,m) -> "(" ++ show n ++ "," ++ compile m ++ ")") $ resolveSize $ ts
-compile (SStack ts) = "(P.pure [" ++ intercalate "," (map compile ts) ++ "])"
+compile (SStack ts) = "(pat [" ++ intercalate "," (map compile ts) ++ "])"
 compile (SChoice ts) = "(choice [" ++ intercalate "," (map compile ts) ++ "])"
 compile (SDiv x n) = "(T.slow " ++ compile n ++ " " ++ compile x ++ ")"
 compile (SMult x n) = "(T.fast " ++ compile n ++ " " ++ compile x ++ ")"
 compile (SApp x y) = "(apply " ++ compile x ++ " " ++ compile y ++ ")"
 compile (SOp n x y) = "(apply (apply (" ++ n ++ ") " ++ compile x ++ ") " ++ compile y ++ ")"
-compile (SLambda v x) = "(P.pure (\\" ++ v ++ " -> " ++ compile x ++"))"
+compile (SLambda v x) = "(pat (\\" ++ v ++ " -> " ++ compile x ++"))"
 
 resolveSize :: [Simple] -> [(Int,Simple)]
 resolveSize = map (\m -> (elongAmount m, m))

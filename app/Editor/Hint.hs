@@ -22,7 +22,7 @@ data InterpreterResponse = RMini ControlPattern
                          deriving Show
 
 exts :: [Extension]
-exts = [OverloadedStrings, BangPatterns, MonadComprehensions, LambdaCase, ExtendedDefaultRules]
+exts = [OverloadedStrings, BangPatterns, MonadComprehensions, LambdaCase, ExtendedDefaultRules, NoMonomorphismRestriction]
 
 hintJob :: MVar InterpreterMessage -> MVar InterpreterResponse -> IO ()
 hintJob mMV rMV = do

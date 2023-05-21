@@ -70,7 +70,7 @@ interpretCommandsLine cm lineBool line env = do
                                                             case res of
                                                               RType typ -> do
                                                                 successUI
-                                                                outputUI $ show typ
+                                                                outputUI $ typ
                                                               RError e -> errorUI e
                                                               _ -> errorUI "Unknown error!"
          where successUI = liftUI $ flashSuccess cm blockLineStart blockLineEnd
