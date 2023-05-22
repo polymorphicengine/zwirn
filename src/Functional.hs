@@ -27,17 +27,6 @@ apply :: Pattern (Pattern a -> Pattern b) -> Pattern a -> Pattern b
 apply fp p = T.innerJoin $ fmap (\f -> scaleWith (collect fp) f $ p) fp
             where scaleWith st f = T.outside (eventLengths st) f
 
--- apply :: Pattern (Pattern a -> Pattern b) -> Pattern a -> Pattern b
--- apply fp p = T.innerJoin $ (T.uncollect $ do
---                                 fps <- collect fp
---                                 ps <- collect p
---                                 let xs = P.zipWith (\x i -> ((P.fromIntegral i) P./ (P.fromIntegral (P.length fps)), scale (collect fp) x)) fps [1..P.length fps]
---                                     ys = P.zipWith (\y i -> ((P.fromIntegral i) P./ (P.fromIntegral (P.length ps)), p)) ps [1..P.length ps]
---                                     ms = P.map (\(g,n) -> g n) $ match xs ys
---                                 P.return ms)
---            where scale st f = T.outside (eventLengths st) f
-
-
 match :: [(P.Double,a)] -> [(P.Double,b)] -> [(a,b)]
 match [] _ = []
 match _ [] = []
@@ -45,18 +34,6 @@ match (x@(x2,a):xs) (y@(y2,b):ys) | x2 P.> y2 = (a,b):(match (x:xs) ys)
                                   | y2 P.> x2 = (a,b):(match xs (y:ys))
                                   | P.otherwise = (a,b):(match xs ys)
 
-
-
-lift :: (a -> b) -> Pattern (a -> b)
-lift = P.pure
-
-liftF :: (a -> b) -> (Pattern a -> Pattern b)
-liftF = fmap
-
-lift2 :: (a -> b -> c) -> Pattern (a -> Pattern (b -> c))
-lift2 f = P.pure $ \x -> P.pure $ f x
-
---
 
 choiceBy :: Int -> [Pattern a] -> Pattern a
 choiceBy seed xs = T.innerJoin (T.segment 1 $ T.chooseBy (T.rotL (0.0001 P.* P.fromIntegral seed) T.rand) xs)
