@@ -1,14 +1,15 @@
 module Megaparsec where
 
 import Data.Void
-import Text.Megaparsec
+import Text.Megaparsec hiding (State)
 import Text.Megaparsec.Char
 import Control.Monad.Combinators.Expr
+import Control.Monad.State (evalState, State, modify, get)
 import qualified Text.Megaparsec.Char.Lexer as L
 
 import Language
 
-type Parser = Parsec Void String
+type Parser = ParsecT Void String (State Int)
 
 -- lexer and helpers
 
@@ -99,7 +100,9 @@ pChoiceSeq = brackets $ do
      pChoice t <|> return t
      where pChoice t = do
               ts <- some $ (symbol "|" >> pStackSeq)
-              return $ TChoice (t:ts)
+              seed <- get
+              modify (+1)
+              return $ TChoice seed (t:ts)
 
 pAltExp :: Parser Term
 pAltExp = angles $ do
@@ -136,7 +139,9 @@ pChoiceApp = do
   pChoice t <|> return t
   where pChoice t = do
            ts <- some $ (symbol "|" >> pStackApp)
-           return $ TChoice (t:ts)
+           seed <- get
+           modify (+1)
+           return $ TChoice seed (t:ts)
 
 fullParser :: Parser Term
 fullParser = pChoiceApp
@@ -162,7 +167,7 @@ pLambda = do
   return $ TLambda xs t
 
 parseTerm :: String -> Either (ParseErrorBundle String Void) Term
-parseTerm s = runParser (fullParser <* eof) "" s
+parseTerm s = evalState (runParserT (fullParser <* eof) "" s) 0
 
 -- parsing definitions
 
@@ -176,7 +181,7 @@ parserDef = do
       return $ Let name vs t
 
 parseDef :: String -> Either (ParseErrorBundle String Void) Def
-parseDef s = runParser (parserDef <* eof) "" s
+parseDef s = evalState (runParserT (parserDef <* eof) "" s) 0
 
 
 -- parsing actions
@@ -191,4 +196,4 @@ parserAction :: Parser Action
 parserAction = parserTypes <|> try (fmap Def parserDef) <|> fmap Exec fullParser
 
 parseAction :: String -> Either (ParseErrorBundle String Void) Action
-parseAction s = runParser (parserAction <* eof) "" s
+parseAction s = evalState (runParserT (parserAction <* eof) "" s) 0

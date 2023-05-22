@@ -58,8 +58,8 @@ lift2 f = P.pure $ \x -> P.pure $ f x
 
 --
 
-choice :: [Pattern a] -> Pattern a
-choice xs = T.innerJoin $ T.cycleChoose xs
+choiceBy :: Int -> [Pattern a] -> Pattern a
+choiceBy seed xs = T.innerJoin (T.segment 1 $ T.chooseBy (T.rotL (0.0001 P.* P.fromIntegral seed) T.rand) xs)
 
 
 -- the following will be integrated in tidal in the future

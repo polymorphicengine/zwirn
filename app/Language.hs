@@ -14,7 +14,7 @@ data Term = TVar Var
           | TSeq [Term]
           | TStack [Term]
           | TAlt [Term]
-          | TChoice [Term]
+          | TChoice Int [Term]
           | TMult Term Term
           | TDiv Term Term
           | TPoly Term Term
@@ -29,7 +29,7 @@ data Simple = SVar Var
           | SElong Simple
           | SSeq [Simple]
           | SStack [Simple]
-          | SChoice [Simple]
+          | SChoice Int [Simple]
           | SMult Simple Simple
           | SDiv Simple Simple
           | SLambda Var Simple
@@ -49,7 +49,7 @@ displayTerm (TRest) = "~"
 displayTerm (TElong t) = displayTerm t  ++ "@"
 displayTerm (TSeq ts) = "[" ++ (intercalate " " $ map displayTerm ts) ++ "]"
 displayTerm (TAlt ts) = "<" ++ (intercalate " " $ map displayTerm ts) ++ ">"
-displayTerm (TChoice ts) = "[" ++ (intercalate "|" $ map displayTerm ts) ++ "]"
+displayTerm (TChoice _ ts) = "[" ++ (intercalate "|" $ map displayTerm ts) ++ "]"
 displayTerm (TStack ts) = "(" ++ (intercalate "," $ map displayTerm ts) ++ ")"
 displayTerm (TMult t1 t2) = displayTerm t1 ++ "*" ++ displayTerm t2
 displayTerm (TDiv t1 t2) = displayTerm t1 ++ "/" ++ displayTerm t2
@@ -64,7 +64,7 @@ simplify TRest = SRest
 simplify (TElong t) = SElong (simplify t)
 simplify (TSeq ts) = SSeq (map simplify ts)
 simplify (TStack ts) = SStack (map simplify ts)
-simplify (TChoice ts) = SChoice (map simplify ts)
+simplify (TChoice i ts) = SChoice i (map simplify ts)
 simplify (TAlt ts) = SDiv (SSeq ss) (SVar $ show $ length ss)
                    where ss = map simplify ts
 simplify (TMult x y) = SMult (simplify x) (simplify y)

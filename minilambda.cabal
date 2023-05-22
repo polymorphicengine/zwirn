@@ -42,6 +42,7 @@ executable minilambda-interpreter
     build-depends:    base,
                       megaparsec,
                       parser-combinators,
+                      mtl,
                       containers,
                       tidal == 1.9.2,
                       minilambda,
