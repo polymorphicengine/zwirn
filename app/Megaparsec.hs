@@ -49,6 +49,7 @@ pVar :: Parser Term
 pVar = do
   x <- pString
   return $ TVar x
+  <?> "variable"
 
 pQuote :: Parser Term
 pQuote = do
@@ -56,12 +57,13 @@ pQuote = do
   x <- pString
   _ <- symbol "\""
   return $ TVar ("\"" ++ x ++ "\"")
+  <?> "string"
 
 pRest :: Parser Term
-pRest = symbol "~" >> return TRest
+pRest = symbol "~" >> return TRest <?> "rest"
 
 pNum :: Parser Term
-pNum = try (fmap (TVar . (show :: Double -> String)) pFloat) <|> (fmap (TVar . show) pInteger)
+pNum = try (fmap (TVar . (show :: Double -> String)) pFloat) <|> (fmap (TVar . show) pInteger) <?> "number"
 
 
 pVal :: Parser Term

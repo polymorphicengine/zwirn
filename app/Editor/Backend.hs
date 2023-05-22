@@ -11,6 +11,8 @@ import Foreign.JavaScript (JSObject)
 import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core as C hiding (text)
 
+import Text.Megaparsec (errorBundlePretty)
+
 import Editor.Hint
 import Editor.Block
 import Editor.UI
@@ -44,7 +46,7 @@ interpretCommandsLine cm lineBool line env = do
         Just (Block blockLineStart blockLineEnd block) ->  do
                                               case parseAction block of
                                                 -- evaluate the given expression, if a string is returned, print it to the console
-                                                Left err -> errorUI $ show err
+                                                Left err -> errorUI $ errorBundlePretty err
                                                 Right (Exec t) -> do
                                                             liftIO $ putStrLn $ show t
                                                             liftIO $ putStrLn $ (compile $ simplify t)
@@ -61,7 +63,7 @@ interpretCommandsLine cm lineBool line env = do
                                                              liftIO $ putMVar mMV $ MDef (compileDef $ simplifyDef def)
                                                              res <- liftIO $ takeMVar rMV
                                                              case res of
-                                                               RSucc -> successUI
+                                                               RSucc -> successUI >> outputUI ""
                                                                RError e -> errorUI e
                                                                _ -> errorUI "Unknown error!"
                                                 Right (Type t) -> do
