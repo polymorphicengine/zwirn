@@ -44,7 +44,7 @@ interpretCommandsLine cm lineBool line env = do
     case blockMaybe of
         Nothing -> void $ liftUI $ element out # set UI.text "Failed to get Block"
         Just (Block blockLineStart blockLineEnd block) ->  do
-                                              case parseAction block of
+                                              case parseWithPos (blockLineStart + 1) block of
                                                 -- evaluate the given expression, if a string is returned, print it to the console
                                                 Left err -> errorUI $ errorBundlePretty err
                                                 Right (Exec t) -> do

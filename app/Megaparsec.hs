@@ -1,15 +1,15 @@
 module Megaparsec where
 
 import Data.Void
-import Text.Megaparsec hiding (State)
+import Text.Megaparsec
 import Text.Megaparsec.Char
 import Control.Monad.Combinators.Expr
-import Control.Monad.State (evalState, State, modify, get)
+import qualified Control.Monad.State as ST (evalState, State, modify, get)
 import qualified Text.Megaparsec.Char.Lexer as L
 
 import Language
 
-type Parser = ParsecT Void String (State Int)
+type Parser = ParsecT Void String (ST.State Int)
 
 -- lexer and helpers
 
@@ -117,8 +117,8 @@ pChoiceSeq = brackets $ do
      pChoice t <|> return t
      where pChoice t = do
               ts <- some $ (symbol "|" >> pStackSeq)
-              seed <- get
-              modify (+1)
+              seed <- ST.get
+              ST.modify (+1)
               return $ TChoice seed (t:ts)
 
 pAltExp :: Parser Term
@@ -156,8 +156,8 @@ pChoiceApp = do
   pChoice t <|> return t
   where pChoice t = do
            ts <- some $ (symbol "|" >> pStackApp)
-           seed <- get
-           modify (+1)
+           seed <- ST.get
+           ST.modify (+1)
            return $ TChoice seed (t:ts)
 
 fullParser :: Parser Term
@@ -184,7 +184,7 @@ pLambda = do
   return $ TLambda xs t
 
 parseTerm :: String -> Either (ParseErrorBundle String Void) Term
-parseTerm s = evalState (runParserT (fullParser <* eof) "" s) 0
+parseTerm s = ST.evalState (runParserT (fullParser <* eof) "" s) 0
 
 -- parsing definitions
 
@@ -198,7 +198,7 @@ parserDef = do
       return $ Let name vs t
 
 parseDef :: String -> Either (ParseErrorBundle String Void) Def
-parseDef s = evalState (runParserT (parserDef <* eof) "" s) 0
+parseDef s = ST.evalState (runParserT (parserDef <* eof) "" s) 0
 
 
 -- parsing actions
@@ -213,4 +213,24 @@ parserAction :: Parser Action
 parserAction = parserTypes <|> try (fmap Def parserDef) <|> fmap Exec fullParser
 
 parseAction :: String -> Either (ParseErrorBundle String Void) Action
-parseAction s = evalState (runParserT (parserAction <* eof) "" s) 0
+parseAction s = ST.evalState (runParserT (parserAction <* eof) "" s) 0
+
+-- initial state
+
+initialState :: SourcePos -> String -> State String Void
+initialState pos input = State
+      { stateInput = input
+      , stateOffset = 0
+      , statePosState = PosState
+        { pstateInput = input
+        , pstateOffset = 0
+        , pstateSourcePos = pos
+        , pstateTabWidth = mkPos 4
+        , pstateLinePrefix = ""
+        }
+      , stateParseErrors = []
+      }
+
+parseWithPos :: Int -> String -> Either (ParseErrorBundle String Void) Action
+parseWithPos line s = snd (ST.evalState (runParserT' (parserAction <* eof) (initialState pos s)) 0)
+                    where pos = SourcePos "" (mkPos line) (mkPos 1)
