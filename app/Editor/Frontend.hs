@@ -48,6 +48,11 @@ setup str win = void $ do
 
      createShortcutFunctions str mainEditor
 
+     buf <- liftIO $ newMVar []
+     high <- liftIO $ newMVar True
+     createHaskellFunction "toggleHighlight" (runUI win $ toggleHighlight high buf)
+     _ <- liftIO $ forkIO $ highlightLoopOuter win str buf
+
      _ <- (element body) #+
                        [element container #+ [element editorContainer
                                              , element outputWrapper]
@@ -61,8 +66,6 @@ setup str win = void $ do
                         ]
      makeEditor "editor0"
 
-     buf <- liftIO $ newMVar []
-     liftIO $ forkIO $ highlightLoopOuter win str buf
 
 
 tidalSettings :: UI Element

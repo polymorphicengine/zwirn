@@ -8,6 +8,7 @@ const extraKeys = {
 		   "Ctrl-O": loadFile,
 		   "Ctrl-A": addEditor,
 		   "Ctrl-B": removeEditor,
+			 "Ctrl-M": toggleHighlight,
 		   "Ctrl-/": 'toggleComment',
 		   "Shift-Ctrl--": increaseFontSize,
 		   "Ctrl--": decreaseFontSize,

@@ -92,3 +92,23 @@ streamGetnow' ss str = do
   now <- Link.clock (sLink str)
   beat <- Link.beatAtTime ss now (cQuantum $! sConfig str)
   return $ coerce $! beat / (cBeatsPerCycle $! sConfig str)
+
+
+-- to turn highlighting on/off
+
+highlightOff :: MVar Buffer -> UI ()
+highlightOff buffMV = do
+              buffer <- liftIO $ takeMVar buffMV
+              unhighlightMany [x | (_,x) <- buffer]
+
+highlightOn :: MVar Buffer -> IO ()
+highlightOn buffMV = putMVar buffMV []
+
+toggleHighlight :: MVar Bool -> MVar Buffer -> UI ()
+toggleHighlight boolMV buffMV = do
+                    bool <- liftIO $ takeMVar boolMV
+                    liftIO $ putStrLn "toggle"
+                    case bool of
+                      True -> highlightOff buffMV
+                      False -> liftIO $ highlightOn buffMV
+                    liftIO $ putMVar boolMV (not bool)
