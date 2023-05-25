@@ -48,8 +48,6 @@ interpretCommandsLine cm lineBool line env = do
                                                 -- evaluate the given expression, if a string is returned, print it to the console
                                                 Left err -> errorUI $ errorBundlePretty err
                                                 Right (Exec t) -> do
-                                                            liftIO $ putStrLn $ show t
-                                                            liftIO $ putStrLn $ (compile $ simplify t)
                                                             liftIO $ putMVar mMV $ MMini (compile $ simplify t)
                                                             res <- liftIO $ takeMVar rMV
                                                             case res of
