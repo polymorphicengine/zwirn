@@ -25,7 +25,13 @@ eventLengths = T.withEvent (\e -> e {T.value = (T.wholeStop e) P.- (T.wholeStart
 
 apply :: Pattern (Pattern a -> Pattern b) -> Pattern a -> Pattern b
 apply fp p = T.innerJoin $ fmap (\f -> scaleWith (collect fp) f $ p) fp
-            where scaleWith st f = T.outside (eventLengths st) f
+            where scaleWith st f = T.outside (deleteContext $ eventLengths st) f
+
+deleteContext :: Pattern a -> Pattern a
+deleteContext = T.withEvent (\e -> e {T.context = T.Context []})
+
+addContext :: ((Int,Int),(Int,Int)) -> Pattern a -> Pattern a
+addContext i = T.withEvent (\e -> e {T.context = T.combineContexts [(T.context e),(T.Context [i])] })
 
 match :: [(P.Double,a)] -> [(P.Double,b)] -> [(a,b)]
 match [] _ = []

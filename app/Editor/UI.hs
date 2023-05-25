@@ -48,7 +48,7 @@ createHaskellFunction name fn = do
  -- adding and removing editors
 
 makeEditor :: String -> UI ()
-makeEditor i = runFunction $ ffi $ "CodeMirror.fromTextArea(document.getElementById('" ++ i ++ "'), editorSettings);"
+makeEditor i = runFunction $ ffi $ i++"cm = CodeMirror.fromTextArea(document.getElementById('" ++ i ++ "'), editorSettings);"
 
 addEditor :: IORef [Element]  -> UI ()
 addEditor ref = do

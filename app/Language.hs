@@ -7,8 +7,10 @@ type Var = String
 
 type Name = String
 
+type Position = ((Int,Int),(Int,Int))
+
 -- sugary representation of patterns
-data Term = TVar Var
+data Term = TVar Position Var
           | TRest
           | TElong Term
           | TSeq [Term]
@@ -24,7 +26,7 @@ data Term = TVar Var
           deriving (Eq, Show)
 
 -- simple representation of patterns
-data Simple = SVar Var
+data Simple = SVar (Maybe Position) Var
           | SRest
           | SElong Simple
           | SSeq [Simple]
@@ -44,7 +46,7 @@ data SimpleDef = LetS String Simple deriving (Eq,Show)
 data Action = Exec Term | Def Def | Type Term deriving (Eq,Show)
 
 displayTerm :: Term -> String
-displayTerm (TVar x) = x
+displayTerm (TVar _ x) = x
 displayTerm (TRest) = "~"
 displayTerm (TElong t) = displayTerm t  ++ "@"
 displayTerm (TSeq ts) = "[" ++ (intercalate " " $ map displayTerm ts) ++ "]"
@@ -59,17 +61,17 @@ displayTerm (TOp n t1 t2) = "(" ++ displayTerm t1 ++ " " ++ n ++ " " ++ displayT
 displayTerm (TLambda vs t) = "(\\" ++ (intercalate " " vs) ++ " -> " ++ displayTerm t ++ ")"
 
 simplify :: Term -> Simple
-simplify (TVar x) = SVar x
-simplify TRest = SRest
+simplify (TVar p x) = SVar (Just p) x
+simplify (TRest) = SRest
 simplify (TElong t) = SElong (simplify t)
 simplify (TSeq ts) = SSeq (map simplify ts)
 simplify (TStack ts) = SStack (map simplify ts)
 simplify (TChoice i ts) = SChoice i (map simplify ts)
-simplify (TAlt ts) = SDiv (SSeq ss) (SVar $ show $ length ss)
+simplify (TAlt ts) = SDiv (SSeq ss) (SVar Nothing (show $ length ss))
                    where ss = map simplify ts
 simplify (TMult x y) = SMult (simplify x) (simplify y)
 simplify (TDiv x y) = SDiv (simplify x) (simplify y)
-simplify (TPoly (TSeq ts) n) = SMult (SDiv (SSeq ss) (SVar $ show $ length ss)) (simplify n)
+simplify (TPoly (TSeq ts) n) = SMult (SDiv (SSeq ss) (SVar Nothing (show $ length ss))) (simplify n)
                    where ss = map simplify ts
 simplify (TPoly x n) = SMult (simplify x) (simplify n)
 simplify (TLambda [] t) = simplify t

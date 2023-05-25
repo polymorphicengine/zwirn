@@ -36,6 +36,7 @@ executable minilambda-interpreter
                       Editor.Hint
                       Editor.Setup
                       Editor.UI
+                      Editor.Highlight
                       Language
                       Compiler
                       Megaparsec
@@ -45,9 +46,10 @@ executable minilambda-interpreter
                       mtl,
                       containers,
                       tidal == 1.9.2,
+                      tidal-link,
+                      deepseq,
                       minilambda,
                       hint,
-                      QuickCheck,
                       threepenny-gui,
                       exceptions,
                       filepath

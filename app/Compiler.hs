@@ -4,7 +4,8 @@ import Language
 import Data.List (intercalate)
 
 compile :: Simple -> String
-compile (SVar x) = x
+compile (SVar (Just p) x) = "(addContext " ++ show p ++ " " ++ x ++ ")"
+compile (SVar Nothing x) = x
 compile (SRest) = "T.silence"
 compile (SElong t) = "(" ++ compile t ++ ")"
 compile (SSeq ts) = "(T.timecat " ++ "[" ++ intercalate "," ss ++  "])"

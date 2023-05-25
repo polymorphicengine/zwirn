@@ -35,39 +35,54 @@ angles :: Parser a -> Parser a
 angles = between (symbol "<") (symbol ">")
 
 pInteger :: Parser Integer
-pInteger =  lexeme L.decimal
+pInteger = L.decimal
 
 pFloat :: RealFloat a => Parser a
-pFloat = lexeme L.float
+pFloat = L.float
 
 pString :: Parser String
-pString = lexeme $ (:) <$> letterChar <*> many alphaNumChar
+pString = (:) <$> letterChar <*> many alphaNumChar
 
 -- parsing simple values
 
+getCoord :: Parser (Int,Int)
+getCoord = do
+  pos <- getSourcePos
+  return (unPos $ sourceLine pos,unPos $ sourceColumn pos)
+
 pVar :: Parser Term
-pVar = do
+pVar = lexeme $ (do
+  i <- getCoord
   x <- pString
-  return $ TVar x
-  <?> "variable"
+  j <- getCoord
+  return $ TVar (i,j) x
+  <?> "variable")
 
 pQuote :: Parser Term
-pQuote = do
+pQuote = lexeme $ (do
+  i <- getCoord
   _ <- symbol "\""
   x <- pString
   _ <- symbol "\""
-  return $ TVar ("\"" ++ x ++ "\"")
-  <?> "string"
+  j <- getCoord
+  return $ TVar (i,j) ("\"" ++ x ++ "\"")
+  <?> "string")
 
 pRest :: Parser Term
-pRest = symbol "~" >> return TRest <?> "rest"
+pRest = symbol "~" >> (return TRest) <?> "rest"
 
 pNum :: Parser Term
-pNum = try (fmap (TVar . (show :: Double -> String)) pFloat) <|> (fmap (TVar . show) pInteger) <?> "number"
+pNum = lexeme $ (do
+  i <- getCoord
+  n <- try (fmap (show :: Double -> String) pFloat) <|> (fmap show pInteger)
+  j <- getCoord
+  return $ TVar (i,j) n
+  <?> "number")
 
 
 pVal :: Parser Term
 pVal = pRest <|> pNum <|> pVar <|> pQuote
+
 
 -- parsing of a sequence of terms is context depended, usually it is parsed as
 -- function application, within brackets [] it is parsed as a tidal sequence
@@ -163,7 +178,7 @@ manyPostfix name f = Postfix $ foldr1 (.) <$> some (f <$ symbol name)
 pLambda :: Parser Term
 pLambda = do
   _ <- symbol "\\"
-  xs <- some pString
+  xs <- some $ lexeme pString
   _ <- symbol "->"
   t <- fullParser
   return $ TLambda xs t
@@ -176,8 +191,8 @@ parseTerm s = evalState (runParserT (fullParser <* eof) "" s) 0
 parserDef :: Parser Def
 parserDef = do
       _ <- symbol "let"
-      name <- pString
-      vs <- many pString
+      name <- lexeme pString
+      vs <- many $ lexeme pString
       _ <- symbol "="
       t <- fullParser
       return $ Let name vs t

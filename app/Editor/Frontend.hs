@@ -4,6 +4,8 @@ import System.FilePath  (dropFileName)
 import System.Environment (getExecutablePath)
 
 import Control.Monad  (void)
+import Control.Concurrent (forkIO)
+import Control.Concurrent.MVar  (newMVar)
 
 import Sound.Tidal.Context (Stream)
 
@@ -12,6 +14,7 @@ import Graphics.UI.Threepenny.Core as C hiding (text)
 
 import Editor.Setup
 import Editor.UI
+import Editor.Highlight
 
 
 
@@ -57,6 +60,10 @@ setup str win = void $ do
                         ,tidalSettings
                         ]
      makeEditor "editor0"
+
+     buf <- liftIO $ newMVar []
+     liftIO $ forkIO $ highlightLoopOuter win str buf
+
 
 tidalSettings :: UI Element
 tidalSettings = do
