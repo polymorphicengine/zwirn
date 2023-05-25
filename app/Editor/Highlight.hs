@@ -23,7 +23,7 @@ type Location = (Int,Int,Int)
 type Buffer = [(Location, JSObject)]
 
 highlight :: Location -> UI JSObject
-highlight (line, start, end) = callFunction $ ffi "(editor0cm.markText({line: %1, ch: %2}, {line: %1, ch: %3}, {css: \"background-color: blue\"}))" line start end
+highlight (line, start, end) = callFunction $ ffi "(editor0cm.markText({line: %1, ch: %2}, {line: %1, ch: %3}, {css: \"outline: 2px solid blue;\"}))" line start end
 
 
 highlightMany :: [Location] -> UI [JSObject]
