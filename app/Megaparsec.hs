@@ -25,6 +25,9 @@ lexeme = L.lexeme sc
 symbol :: String -> Parser String
 symbol = L.symbol sc
 
+symbolNoSpace :: String -> Parser String
+symbolNoSpace = L.symbol (return ())
+
 parens :: Parser a -> Parser a
 parens = between (symbol "(") (symbol ")")
 
@@ -63,7 +66,7 @@ pQuote = lexeme $ (do
   i <- getCoord
   _ <- symbol "\""
   x <- pString
-  _ <- symbol "\""
+  _ <- symbolNoSpace "\""
   j <- getCoord
   return $ TVar (i,j) ("\"" ++ x ++ "\"")
   <?> "string")
@@ -183,9 +186,6 @@ pLambda = do
   t <- fullParser
   return $ TLambda xs t
 
-parseTerm :: String -> Either (ParseErrorBundle String Void) Term
-parseTerm s = ST.evalState (runParserT (fullParser <* eof) "" s) 0
-
 -- parsing definitions
 
 parserDef :: Parser Def
@@ -197,9 +197,6 @@ parserDef = do
       t <- fullParser
       return $ Let name vs t
 
-parseDef :: String -> Either (ParseErrorBundle String Void) Def
-parseDef s = ST.evalState (runParserT (parserDef <* eof) "" s) 0
-
 
 -- parsing actions
 
@@ -210,10 +207,7 @@ parserTypes = do
           return $ Type t
 
 parserAction :: Parser Action
-parserAction = parserTypes <|> try (fmap Def parserDef) <|> fmap Exec fullParser
-
-parseAction :: String -> Either (ParseErrorBundle String Void) Action
-parseAction s = ST.evalState (runParserT (parserAction <* eof) "" s) 0
+parserAction = sc >> (parserTypes <|> try (fmap Def parserDef) <|> fmap Exec fullParser)
 
 -- initial state
 
