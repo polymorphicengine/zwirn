@@ -1,5 +1,5 @@
 {-# LANGUAGE TypeFamilies, TypeSynonymInstances, FlexibleInstances #-}
-{-# LANGUAGE ExtendedDefaultRules, OverloadedStrings #-}
+{-# LANGUAGE ExtendedDefaultRules, OverloadedStrings, TypeApplications #-}
 
 module MiniPrelude where
 
@@ -16,7 +16,7 @@ type ControlPattern = T.ControlPattern
 type ValueMap = T.ValueMap
 type Value = T.Value
 type Map = Map.Map
-type Time = T.Time
+--type Time = T.Time
 type Int = P.Int
 type Double = P.Double
 type Char = P.Char
@@ -86,14 +86,14 @@ const = toPat (P.const :: Pattern a -> Pattern b -> Pattern a)
 rev :: Pat a => P (Pattern a -> Pattern a)
 rev = toPat T.rev
 
-fast :: Pat a => P (Pattern Time -> Pattern a -> Pattern a)
-fast = toPat T.fast
+fast :: Pat a => P (Pattern Double -> Pattern a -> Pattern a)
+fast = toPat (\x -> T.fast (P.fmap P.toRational x))
 
-slow :: Pat a => P (Pattern Time -> Pattern a -> Pattern a)
-slow = toPat T.slow
+slow :: Pat a => P (Pattern Double -> Pattern a -> Pattern a)
+slow = toPat (\x -> T.slow (P.fmap P.toRational x))
 
-ply :: Pat a => P (Pattern Time -> Pattern a -> Pattern a)
-ply = toPat T.ply
+ply :: Pat a => P (Pattern Double -> Pattern a -> Pattern a)
+ply = toPat (\x -> T.ply (P.fmap P.toRational x))
 
 rot :: (Pat a, P.Ord a) => P (Pattern Int -> Pattern a -> Pattern a)
 rot = toPat T.rot
@@ -104,11 +104,17 @@ run = toPat T.run
 irand :: (Pat a, P.Num a) => P (Pattern Int -> Pattern a)
 irand = toPat T.irand
 
-rotL :: Pat a => P (Pattern Time -> Pattern a -> Pattern a)
-rotL = toPat (\x y -> x T.<~ y)
+rotL :: Pat a => P (Pattern Double -> Pattern a -> Pattern a)
+rotL = toPat (\x y -> (P.fmap P.toRational x) T.<~ y)
 
-rotR :: Pat a => P (Pattern Time -> Pattern a -> Pattern a)
-rotR = toPat (\x y -> x T.~> y)
+(<~) :: Pat a => P (Pattern Double -> Pattern a -> Pattern a)
+(<~) = rotL
+
+rotR :: Pat a => P (Pattern Double -> Pattern a -> Pattern a)
+rotR = toPat (\x y -> (P.fmap P.toRational x) T.~> y)
+
+(~>) :: Pat a => P (Pattern Double -> Pattern a -> Pattern a)
+(~>) = rotR
 
 struct :: Pat a => P (Pattern Bool -> Pattern a -> Pattern a)
 struct = toPat T.struct
@@ -145,7 +151,7 @@ rarely = toPat T.rarely
 
 
 (+) :: (Pat a, P.Num a) => P (Pattern a -> Pattern a -> Pattern a)
-(+) = toPat (+)
+(+) = toPat ((T.|+|) @Pattern)
 
 (+|) :: (Pat a, P.Num a) => P (Pattern a -> Pattern a -> Pattern a)
 (+|) = right (+)
@@ -154,28 +160,33 @@ rarely = toPat T.rarely
 (|+) = left (+)
 
 
--- (-) :: (Pat a, P.Num a) => P (Pattern a -> Pattern a -> Pattern a)
--- (-) = toPat (\x y -> x T.-| y)
---
--- (-|) :: (Pat a, P.Num a) => P (Pattern a -> Pattern a -> Pattern a)
--- (-|) = right (-)
---
--- (|-) :: (Pat a, P.Num a) => P (Pattern a -> Pattern a -> Pattern a)
--- (|-) = left (-)
---
---
--- (|*|) :: P.Num a => Pattern (Pattern a -> Pattern (Pattern a -> Pattern a))
--- (|*|) = toPat (\x y -> x T.* y)
---
--- (*|) :: P.Num a => Pattern (Pattern a -> Pattern (Pattern a -> Pattern a))
--- (*|) = right (|*|)
---
--- (|*) :: P.Num a => Pattern (Pattern a -> Pattern (Pattern a -> Pattern a))
--- (|*) = left (|*|)
+(-) :: (Pat a, P.Num a) => P (Pattern a -> Pattern a -> Pattern a)
+(-) = toPat ((T.|-|) @Pattern)
 
--- (//) :: (Pat a, P.Num a, P.Fractional a) => Pattern (Pattern a -> Pattern (Pattern a -> Pattern a))
--- (//) = lift2 (\x y -> x P./ y)
+(-|) :: (Pat a, P.Num a) => P (Pattern a -> Pattern a -> Pattern a)
+(-|) = right (-)
 
+(|-) :: (Pat a, P.Num a) => P (Pattern a -> Pattern a -> Pattern a)
+(|-) = left (-)
+
+
+(|*|) :: (Pat a, P.Num a) => P (Pattern a -> Pattern a -> Pattern a)
+(|*|) = toPat ((T.|*|) @Pattern)
+
+(*|) :: (Pat a, P.Num a) => P (Pattern a -> Pattern a -> Pattern a)
+(*|) = right (|*|)
+
+(|*) :: (Pat a, P.Num a) => P (Pattern a -> Pattern a -> Pattern a)
+(|*) = left (|*|)
+
+(//) :: (Pat a, P.Num a, P.Fractional a) => Pattern (Pattern a -> Pattern (Pattern a -> Pattern a))
+(//) = toPat ((T.|/|) @Pattern)
+
+(/|) :: (Pat a, P.Num a, P.Fractional a) => Pattern (Pattern a -> Pattern (Pattern a -> Pattern a))
+(/|) = right (//)
+
+(|/) :: (Pat a, P.Num a, P.Fractional a) => Pattern (Pattern a -> Pattern (Pattern a -> Pattern a))
+(|/) = left (//)
 
 -- control pattern stuff
 

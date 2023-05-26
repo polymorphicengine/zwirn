@@ -91,8 +91,23 @@ pVal = pRest <|> pNum <|> pVar <|> pQuote
 -- function application, within brackets [] it is parsed as a tidal sequence
 -- * and / associate to the left
 
+arithmOps :: [Operator Parser Term]
+arithmOps = [binaryL "//" (TOp "//")
+            ,binaryL "*|" (TOp "*|")
+            ,binaryL "|*|" (TOp "|*|")
+            ,binaryL "|*" (TOp "|*")
+            ,binaryL "|+" (TOp "|+")
+            ,binaryL "+|" (TOp "+|")
+            ,binaryL "+" (TOp "+")
+            ,binaryL "|-" (TOp "|-")
+            ,binaryL "-|" (TOp "-|")
+            ,binaryL "-" (TOp "-")
+            ,binaryL "~>" (TOp "~>")
+            ,binaryL "<~" (TOp "<~")
+            ]
+
 topOps :: [[Operator Parser Term]]
-topOps = [[manyPostfix "@" TElong], [binaryL "%" TPoly], [binaryL "//" (TOp "//")], [ binaryL  "*"  TMult, binaryL  "/"  TDiv]]
+topOps = [[manyPostfix "@" TElong], [binaryL "%" TPoly], arithmOps, [ binaryL  "*"  TMult, binaryL  "/"  TDiv]]
 
 topParser :: Parser Term
 topParser = makeExprParser (pVal <|> pChoiceSeq <|> pAltExp <|> parens fullParser) topOps
