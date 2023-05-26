@@ -19,6 +19,7 @@ data Term = TVar Position Var
           | TChoice Int [Term]
           | TMult Term Term
           | TDiv Term Term
+          | TEuclid Term Term Term Term
           | TPoly Term Term
           | TLambda [Var] Term
           | TApp Term Term
@@ -34,6 +35,7 @@ data Simple = SVar (Maybe Position) Var
           | SChoice Int [Simple]
           | SMult Simple Simple
           | SDiv Simple Simple
+          | SEuclid Simple Simple Simple Simple
           | SLambda Var Simple
           | SApp Simple Simple
           | SOp Name Simple Simple
@@ -55,6 +57,7 @@ displayTerm (TChoice _ ts) = "[" ++ (intercalate "|" $ map displayTerm ts) ++ "]
 displayTerm (TStack ts) = "(" ++ (intercalate "," $ map displayTerm ts) ++ ")"
 displayTerm (TMult t1 t2) = displayTerm t1 ++ "*" ++ displayTerm t2
 displayTerm (TDiv t1 t2) = displayTerm t1 ++ "/" ++ displayTerm t2
+displayTerm (TEuclid t1 t2 t3 t4) = displayTerm t1 ++ "{" ++ displayTerm t2 ++ "," ++ displayTerm t3 ++ "," ++ displayTerm t4 ++ "}"
 displayTerm (TPoly t1 t2) = displayTerm t1 ++ "%" ++ displayTerm t2
 displayTerm (TApp t1 t2) = "(" ++ displayTerm t1 ++ "$" ++ displayTerm t2 ++ ")"
 displayTerm (TOp n t1 t2) = "(" ++ displayTerm t1 ++ " " ++ n ++ " " ++ displayTerm t2 ++ ")"
@@ -71,6 +74,7 @@ simplify (TAlt ts) = SDiv (SSeq ss) (SVar Nothing (show $ length ss))
                    where ss = map simplify ts
 simplify (TMult x y) = SMult (simplify x) (simplify y)
 simplify (TDiv x y) = SDiv (simplify x) (simplify y)
+simplify (TEuclid t1 t2 t3 t4) = SEuclid (simplify t1) (simplify t2) (simplify t3) (simplify t4)
 simplify (TPoly (TSeq ts) n) = SMult (SDiv (SSeq ss) (SVar Nothing (show $ length ss))) (simplify n)
                    where ss = map simplify ts
 simplify (TPoly x n) = SMult (simplify x) (simplify n)

@@ -107,7 +107,7 @@ arithmOps = [binaryL "//" (TOp "//")
             ]
 
 topOps :: [[Operator Parser Term]]
-topOps = [[manyPostfix "@" TElong], [binaryL "%" TPoly], arithmOps, [ binaryL  "*"  TMult, binaryL  "/"  TDiv]]
+topOps = [[manyPostfix "@" TElong], [pEuclidPost], [binaryL "%" TPoly], arithmOps, [ binaryL  "*"  TMult, binaryL  "/"  TDiv]]
 
 topParser :: Parser Term
 topParser = makeExprParser (pVal <|> pChoiceSeq <|> pAltExp <|> parens fullParser) topOps
@@ -192,6 +192,18 @@ postfix name f = Postfix (f <$ symbol name)
 
 manyPostfix :: String -> (Term -> Term) -> Operator Parser Term
 manyPostfix name f = Postfix $ foldr1 (.) <$> some (f <$ symbol name)
+
+pEuclidPost :: Operator Parser Term
+pEuclidPost = Postfix $ do
+          _ <- symbol "{"
+          n <- fullParser
+          _ <- symbol ";"
+          m <- fullParser
+          mayK <- (Just <$> (symbol ";" >> fullParser)) <|> pure Nothing
+          _ <- symbol "}"
+          case mayK of
+            Just k -> return $ (\x -> TEuclid x n m k)
+            Nothing -> return $ (\x -> TEuclid x n m (TVar ((0,0),(0,0)) "0")) --position is wrong
 
 pLambda :: Parser Term
 pLambda = do
