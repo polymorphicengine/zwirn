@@ -53,7 +53,7 @@ interpretCommandsLine cm lineBool line env = do
                                                             case res of
                                                               RMini m -> do
                                                                 successUI
-                                                                outputUI $ show m
+                                                                --outputUI $ show m
                                                                 liftIO $ T.streamReplace str 1 m
                                                               RError e -> errorUI e
                                                               _ -> errorUI "Unknown error!"
