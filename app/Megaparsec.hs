@@ -104,6 +104,12 @@ arithmOps = [binaryL "//" (TOp "//")
             ,binaryL "-" (TOp "-")
             ,binaryL "~>" (TOp "~>")
             ,binaryL "<~" (TOp "<~")
+            ,binaryL ">=" (TOp ">=")
+            ,binaryL "<=" (TOp "<=")
+            ,binaryL "==" (TOp "==")
+            ,binaryL "&&" (TOp "&&")
+            ,binaryL "||" (TOp "||")
+            ,binaryL "?" (TOp "?")
             ]
 
 topOps :: [[Operator Parser Term]]

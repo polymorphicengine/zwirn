@@ -1,5 +1,6 @@
 {-# LANGUAGE TypeFamilies, TypeSynonymInstances, FlexibleInstances #-}
 {-# LANGUAGE ExtendedDefaultRules, OverloadedStrings, TypeApplications #-}
+{-# LANGUAGE ImplicitParams, LambdaCase #-}
 
 module MiniPrelude where
 
@@ -66,6 +67,17 @@ infixr 0 $$
 ($$) :: Pat b => P (Pattern (Pattern a -> Pattern b) -> Pattern a -> Pattern b)
 ($$) = toPat apply
 
+class IsBool a where
+  asBool :: a -> Bool
+
+instance IsBool Int where
+  asBool x = (x P.> 0)
+
+instance IsBool Double where
+  asBool x = (x P.> 0)
+
+instance IsBool Bool where
+  asBool = P.id
 
 t :: Pattern Bool
 t = toPat P.True
@@ -94,6 +106,9 @@ slow = toPat (\x -> T.slow (P.fmap P.toRational x))
 
 ply :: Pat a => P (Pattern Double -> Pattern a -> Pattern a)
 ply = toPat (\x -> T.ply (P.fmap P.toRational x))
+
+plyWith :: Pat a => P (Pattern Double -> (Pattern a -> Pattern a) -> Pattern a -> Pattern a)
+plyWith = toPat (\x -> T.plyWith (P.fmap P.toRational x))
 
 rot :: (Pat a, P.Ord a) => P (Pattern Int -> Pattern a -> Pattern a)
 rot = toPat T.rot
@@ -131,8 +146,8 @@ mask = toPat T.mask
 every :: Pat a => P (Pattern Int -> (Pattern a -> Pattern a) -> Pattern a -> Pattern a)
 every = toPat T.every
 
-while :: Pat a => P (Pattern Bool -> (Pattern a -> Pattern a) -> Pattern a -> Pattern a)
-while = toPat T.while
+while :: (IsBool b, Pat a) => P (Pattern b -> (Pattern a -> Pattern a) -> Pattern a -> Pattern a)
+while = toPat (\x -> T.while (P.fmap asBool x))
 
 superimpose :: Pat a => P ((Pattern a -> Pattern a) -> Pattern a -> Pattern a)
 superimpose = toPat T.superimpose
@@ -149,6 +164,22 @@ sometimes = toPat T.sometimes
 rarely :: Pat a => P ((Pattern a -> Pattern a) -> Pattern a -> Pattern a)
 rarely = toPat T.rarely
 
+degrade :: Pat a =>  P (Pattern a -> Pattern a)
+degrade = toPat T.degrade
+
+degradeBy :: Pat a => P (Pattern Double -> Pattern a -> Pattern a)
+degradeBy = toPat T.degradeBy
+
+(?) :: Pat a => P (Pattern a -> Pattern Double -> Pattern a)
+(?) = toPat (\x d -> T.degradeBy d x)
+
+timeLoop :: Pat a => P (Pattern Double -> Pattern a -> Pattern a)
+timeLoop = toPat (\tm -> T.timeLoop $ P.fmap P.toRational tm)
+
+loop :: Pat a => P (Pattern Double -> Pattern a -> Pattern a)
+loop = timeLoop
+
+-- arithmetic
 
 (+) :: (Pat a, P.Num a) => P (Pattern a -> Pattern a -> Pattern a)
 (+) = toPat ((T.|+|) @Pattern)
@@ -226,6 +257,22 @@ krush = P.pure T.krush
 (#) :: P (ControlPattern -> ControlPattern -> ControlPattern)
 (#) = toPat (T.#)
 
+slice :: P (Pattern Int -> Pattern Int -> ControlPattern -> ControlPattern)
+slice = toPat T.slice
+
+splice :: P (Pattern Int -> Pattern Int -> ControlPattern -> ControlPattern)
+splice = toPat T.splice
+
+striate :: P (Pattern Int -> ControlPattern -> ControlPattern)
+striate = toPat T.striate
+
+chop :: P (Pattern Int -> ControlPattern -> ControlPattern)
+chop = toPat T.chop
+
+loopAt :: P (Pattern Double -> ControlPattern -> ControlPattern)
+loopAt = toPat (\tm -> T.loopAt $ P.fmap P.toRational tm)
+
+
 -- samples
 
 bd :: Pattern String
@@ -287,3 +334,86 @@ string = id
 
 bool :: Pattern (Pattern Bool -> Pattern Bool)
 bool = id
+
+
+-- state
+
+-- setD :: (?tidal :: T.Stream) => String -> Pattern Double -> P.IO ()
+-- setD = T.streamSetF ?tidal
+
+-- pattern matching compilation
+
+-- try 0 x = x
+-- try n x = [x (try (n-1) x)]
+
+try :: Pattern (Pattern Int -> (Pattern (Pattern a -> Pattern a)))
+try = P.pure (\iP -> T.innerJoin $ P.fmap (
+                            \case {
+                              0 -> P.pure $ (\x -> x);
+                              n -> P.pure $ (\x -> T.fastcat [x, apply (apply try (P.pure (n P.- 1))) x])
+                            }) iP
+                            )
+
+-- continous
+
+sine :: Pattern Double
+sine = T.sine
+
+rand :: Pattern Double
+rand = T.rand
+
+perlin :: Pattern Double
+perlin = T.perlin
+
+saw :: Pattern Double
+saw = T.saw
+
+tri :: Pattern Double
+tri = T.tri
+
+smooth :: P (Pattern Double -> Pattern Double)
+smooth = toPat T.smooth
+
+segment :: Pat a => P (Pattern Double -> Pattern a -> Pattern a)
+segment = toPat $ \x -> (T.segment $ P.fmap P.toRational x)
+
+range :: P (Pattern Double -> Pattern Double -> Pattern Double -> Pattern Double)
+range = toPat T.range
+
+
+--- comparisons
+
+geqT :: Pattern Double -> Pattern Double -> Pattern Bool
+geqT = T.tParam func
+     where func i jP = P.fmap (\j -> i P.>= j) jP
+
+leqT :: Pattern Double -> Pattern Double -> Pattern Bool
+leqT = T.tParam func
+    where func i jP = P.fmap (\j -> i P.<= j) jP
+
+eqT :: Pattern Double -> Pattern Double -> Pattern Bool
+eqT = T.tParam func
+    where func i jP = P.fmap (\j -> i P.<= j) jP
+
+(>=) :: P (Pattern Double -> Pattern Double -> Pattern Bool)
+(>=) = toPat geqT
+
+(<=) :: P (Pattern Double -> Pattern Double -> Pattern Bool)
+(<=) = toPat leqT
+
+(==) :: P (Pattern Double -> Pattern Double -> Pattern Bool)
+(==) = toPat eqT
+
+andT :: Pattern Bool -> Pattern Bool -> Pattern Bool
+andT = T.tParam func
+    where func i jP = P.fmap (\j -> i P.&& j) jP
+
+orT :: Pattern Bool -> Pattern Bool -> Pattern Bool
+orT = T.tParam func
+    where func i jP = P.fmap (\j -> i P.|| j) jP
+
+(&&) :: P (Pattern Bool -> Pattern Bool -> Pattern Bool)
+(&&) = toPat andT
+
+(||) :: P (Pattern Bool -> Pattern Bool -> Pattern Bool)
+(||) = toPat orT
