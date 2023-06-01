@@ -17,13 +17,13 @@ import Data.Coerce (coerce)
 
 import Foreign.C.Types
 
--- location of a value in the code specified by line, start and end
-type Location = (Int,Int,Int)
+-- location of a value in the code specified by line, start, end and editor number
+type Location = (Int,Int,Int,Int)
 
 type Buffer = [(Location, JSObject)]
 
 highlight :: Location -> UI JSObject
-highlight (line, start, end) = callFunction $ ffi "(editor0cm.markText({line: %1, ch: %2}, {line: %1, ch: %3}, {css: \"outline: 2px solid blue;\"}))" line start end
+highlight (line, start, end, editorNum) = callFunction $ ffi ("(editor" ++ show editorNum ++ "cm.markText({line: %1, ch: %2}, {line: %1, ch: %3}, {css: \"outline: 2px solid blue;\"}))") line start end
 
 
 highlightMany :: [Location] -> UI [JSObject]
@@ -45,7 +45,7 @@ locs :: Double -> ControlPattern -> [Location]
 locs t pat = concatMap evToLocs $ queryArc pat (Arc (toRational t) (toRational t) )
         where evToLocs (Event {context = Context xs}) = map toLoc xs
               -- assume an event doesn't span more than one line
-              toLoc ((by, bx), (_, ex )) = (by-1,bx-1,ex-1)
+              toLoc ((by, bx), (editorNum, ex)) = (by-1,bx-1,ex-1,editorNum)
 
 locsMany :: Double -> [ControlPattern] -> [Location]
 locsMany t = concatMap (locs t)

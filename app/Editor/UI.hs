@@ -41,6 +41,13 @@ getCursorLine cm = callFunction $ (ffi "getCursorLine(%1)") cm
 getValue :: ToJS a => a -> UI String
 getValue cm = callFunction $ ffi "getV(%1)" cm
 
+getEditorNumber :: ToJS a => a -> UI Int
+getEditorNumber cm = do
+   idd <- callFunction $ ffi "(%1).getTextArea().id" cm
+   case idd of
+     'e':'d':'i':'t':'o':'r':xs -> return $ read xs
+     _ -> return 0
+
 createHaskellFunction name fn = do
  handler <- ffiExport fn
  runFunction $ ffi ("window." ++ name ++ " = %1") handler
@@ -48,7 +55,7 @@ createHaskellFunction name fn = do
  -- adding and removing editors
 
 makeEditor :: String -> UI ()
-makeEditor i = runFunction $ ffi $ i++"cm = CodeMirror.fromTextArea(document.getElementById('" ++ i ++ "'), editorSettings);"
+makeEditor i = runFunction $ ffi $ i ++ "cm = CodeMirror.fromTextArea(document.getElementById('" ++ i ++ "'), editorSettings);"
 
 addEditor :: IORef [Element]  -> UI ()
 addEditor ref = do

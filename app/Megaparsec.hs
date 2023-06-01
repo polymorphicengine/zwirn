@@ -9,7 +9,7 @@ import qualified Text.Megaparsec.Char.Lexer as L
 
 import Language
 
-type Parser = ParsecT Void String (ST.State Int)
+type Parser = ParsecT Void String (ST.State (Int,Int))
 
 operators :: [String]
 operators = ["//"
@@ -74,17 +74,26 @@ pString :: Parser String
 pString = ((:) <$> letterChar <*> many alphaNumChar) <|> pOp
 
 -- parsing simple values
+-- note that we don't store the end line number of a value, we assume every value
+-- starts ad ends on the same line, this allows us to store the number of the editor window
+-- in which the value is in there, so we can highlight across multiple editor windows
 
 getCoord :: Parser (Int,Int)
 getCoord = do
   pos <- getSourcePos
   return (unPos $ sourceLine pos,unPos $ sourceColumn pos)
 
+getCoord2 :: Parser (Int,Int)
+getCoord2 = do
+  pos <- getSourcePos
+  editorNum <- fmap snd ST.get
+  return (editorNum, unPos $ sourceColumn pos)
+
 pVar :: Parser Term
 pVar = lexeme $ (do
   i <- getCoord
   x <- pString
-  j <- getCoord
+  j <- getCoord2
   return $ TVar (i,j) x
   <?> "variable")
 
@@ -94,7 +103,7 @@ pQuote = lexeme $ (do
   _ <- symbol "\""
   x <- pString
   _ <- symbolNoSpace "\""
-  j <- getCoord
+  j <- getCoord2
   return $ TVar (i,j) ("\"" ++ x ++ "\"")
   <?> "string")
 
@@ -105,7 +114,7 @@ pNum :: Parser Term
 pNum = lexeme $ (do
   i <- getCoord
   n <- try (fmap (show :: Double -> String) pFloat) <|> (fmap show pInteger)
-  j <- getCoord
+  j <- getCoord2
   return $ TVar (i,j) n
   <?> "number")
 
@@ -152,8 +161,8 @@ pChoiceSeq = brackets $ do
      pChoice t <|> return t
      where pChoice t = do
               ts <- some $ (symbol "|" >> pStackSeq)
-              seed <- ST.get
-              ST.modify (+1)
+              seed <- fmap fst ST.get
+              ST.modify $ fmap (+1)
               return $ TChoice seed (t:ts)
 
 pAltExp :: Parser Term
@@ -191,8 +200,8 @@ pChoiceApp = do
   pChoice t <|> return t
   where pChoice t = do
            ts <- some $ (symbol "|" >> pStackApp)
-           seed <- ST.get
-           ST.modify (+1)
+           seed <- fmap fst ST.get
+           ST.modify $ fmap (+1)
            return $ TChoice seed (t:ts)
 
 fullParser :: Parser Term
@@ -272,6 +281,6 @@ initialState pos input = State
       , stateParseErrors = []
       }
 
-parseWithPos :: Int -> String -> Either (ParseErrorBundle String Void) Action
-parseWithPos line s = snd (ST.evalState (runParserT' (parserAction <* eof) (initialState pos s)) 0)
+parseWithPos :: Int -> Int -> String -> Either (ParseErrorBundle String Void) Action
+parseWithPos editorNum line s = snd (ST.evalState (runParserT' (parserAction <* eof) (initialState pos s)) (0,editorNum))
                     where pos = SourcePos "" (mkPos line) (mkPos 1)

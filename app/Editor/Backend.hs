@@ -38,13 +38,14 @@ interpretCommandsLine cm lineBool line env = do
         mMV = hintM env
         rMV = hintR env
     contentsControl <- liftUI $ getValue cm
+    editorNum <- liftUI $ getEditorNumber cm
     out <- liftUI getOutputEl
     let bs = getBlocks contentsControl
         blockMaybe = if lineBool then getLineContent line (linesNum contentsControl) else getBlock line bs
     case blockMaybe of
         Nothing -> void $ liftUI $ element out # set UI.text "Failed to get Block"
         Just (Block blockLineStart blockLineEnd block) ->  do
-                                              case parseWithPos (blockLineStart + 1) block of
+                                              case parseWithPos editorNum (blockLineStart + 1) block of
                                                 -- evaluate the given expression, if a string is returned, print it to the console
                                                 Left err -> errorUI $ errorBundlePretty err
                                                 Right (Exec t) -> do
