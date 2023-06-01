@@ -246,7 +246,7 @@ pLambda = do
 
 parserDef :: Parser Def
 parserDef = do
-      _ <- symbol "let"
+      --_ <- symbol "let"
       name <- lexeme pString
       vs <- many $ lexeme pString
       _ <- symbol "="
