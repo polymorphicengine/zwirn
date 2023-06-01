@@ -1,6 +1,7 @@
 {-# LANGUAGE TypeFamilies, TypeSynonymInstances, FlexibleInstances #-}
 {-# LANGUAGE ExtendedDefaultRules, OverloadedStrings, TypeApplications #-}
 {-# LANGUAGE ImplicitParams, LambdaCase #-}
+{-# LANGUAGE DeriveFunctor #-}
 
 module MiniPrelude where
 
@@ -417,3 +418,18 @@ orT = T.tParam func
 
 (||) :: P (Pattern Bool -> Pattern Bool -> Pattern Bool)
 (||) = toPat orT
+
+--
+
+-- replicate a sequence of i patterns
+repT :: Pattern Int -> Pattern a -> Pattern a
+repT iP x = T.innerJoin $ P.fmap (\i -> T.fastcat $ P.replicate i x) iP
+
+rep :: Pat a => P (Pattern Int -> Pattern a -> Pattern a)
+rep = toPat repT
+
+--c:maj:i:o
+data Modifier = Chord (Pattern [Pattern Int]) | Invert Int
+
+class Modifiable a where
+  modify :: a -> Pattern Modifier -> Pattern [Pattern Int]

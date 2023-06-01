@@ -11,6 +11,27 @@ import Language
 
 type Parser = ParsecT Void String (ST.State Int)
 
+operators :: [String]
+operators = ["//"
+            ,"*|"
+            ,"|*|"
+            ,"|*"
+            ,"|+"
+            ,"+|"
+            ,"+"
+            ,"|-"
+            ,"-|"
+            ,"-"
+            ,"~>"
+            ,"<~"
+            ,">="
+            ,"<="
+            ,"=="
+            ,"&&"
+            ,"||"
+            ,"?"
+            ]
+
 -- lexer and helpers
 
 sc :: Parser ()
@@ -18,6 +39,9 @@ sc = L.space
   space1
   (L.skipLineComment "--")
   (L.skipBlockComment "{-" "-}")
+
+asum :: [Parser a] -> Parser a
+asum = foldr (<|>) empty
 
 lexeme :: Parser a -> Parser a
 lexeme = L.lexeme sc
@@ -43,8 +67,11 @@ pInteger = L.decimal
 pFloat :: RealFloat a => Parser a
 pFloat = L.float
 
+pOp :: Parser String
+pOp = asum $ map symbolNoSpace operators
+
 pString :: Parser String
-pString = (:) <$> letterChar <*> many alphaNumChar
+pString = ((:) <$> letterChar <*> many alphaNumChar) <|> pOp
 
 -- parsing simple values
 
@@ -91,29 +118,13 @@ pVal = pRest <|> pNum <|> pVar <|> pQuote
 -- function application, within brackets [] it is parsed as a tidal sequence
 -- * and / associate to the left
 
-arithmOps :: [Operator Parser Term]
-arithmOps = [binaryL "//" (TOp "//")
-            ,binaryL "*|" (TOp "*|")
-            ,binaryL "|*|" (TOp "|*|")
-            ,binaryL "|*" (TOp "|*")
-            ,binaryL "|+" (TOp "|+")
-            ,binaryL "+|" (TOp "+|")
-            ,binaryL "+" (TOp "+")
-            ,binaryL "|-" (TOp "|-")
-            ,binaryL "-|" (TOp "-|")
-            ,binaryL "-" (TOp "-")
-            ,binaryL "~>" (TOp "~>")
-            ,binaryL "<~" (TOp "<~")
-            ,binaryL ">=" (TOp ">=")
-            ,binaryL "<=" (TOp "<=")
-            ,binaryL "==" (TOp "==")
-            ,binaryL "&&" (TOp "&&")
-            ,binaryL "||" (TOp "||")
-            ,binaryL "?" (TOp "?")
-            ]
+-- should they all be binaryL ?
+parserOps :: [Operator Parser Term]
+parserOps = map (\x -> binaryL x (TOp x)) operators
+
 
 topOps :: [[Operator Parser Term]]
-topOps = [[manyPostfix "@" TElong], [pEuclidPost], [binaryL "%" TPoly], arithmOps, [ binaryL  "*"  TMult, binaryL  "/"  TDiv]]
+topOps = [[manyPostfix "@" TElong], [pEuclidPost], [binaryL "%" TPoly], parserOps, [ binaryL  "*"  TMult, binaryL  "/"  TDiv]]
 
 topParser :: Parser Term
 topParser = makeExprParser (pVal <|> pChoiceSeq <|> pAltExp <|> parens fullParser) topOps
@@ -195,6 +206,9 @@ binaryL name f = InfixL (f <$ (symbol name))
 
 postfix :: String -> (Term -> Term) -> Operator Parser Term
 postfix name f = Postfix (f <$ symbol name)
+
+prefix :: String -> (Term -> Term) -> Operator Parser Term
+prefix name f = Prefix (f <$ symbol name)
 
 manyPostfix :: String -> (Term -> Term) -> Operator Parser Term
 manyPostfix name f = Postfix $ foldr1 (.) <$> some (f <$ symbol name)

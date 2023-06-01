@@ -4,7 +4,7 @@ import Language
 import Data.List (intercalate)
 
 compile :: Simple -> String
-compile (SVar (Just p) x) = "(addContext " ++ show p ++ " " ++ x ++ ")"
+compile (SVar (Just p) x) = "(addContext " ++ show p ++ " (" ++ x ++ "))"
 compile (SVar Nothing x) = x
 compile (SRest) = "T.silence"
 compile (SElong t) = "(" ++ compile t ++ ")"
