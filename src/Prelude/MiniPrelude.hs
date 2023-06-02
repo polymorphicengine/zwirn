@@ -1,84 +1,14 @@
-{-# LANGUAGE TypeFamilies, TypeSynonymInstances, FlexibleInstances #-}
-{-# LANGUAGE ExtendedDefaultRules, OverloadedStrings, TypeApplications #-}
-{-# LANGUAGE ImplicitParams, LambdaCase #-}
-{-# LANGUAGE DeriveFunctor #-}
-
-module MiniPrelude where
+{-# LANGUAGE TypeSynonymInstances, TypeApplications #-}
+module Prelude.MiniPrelude where
 
 import qualified Prelude as P
-
 import qualified Sound.Tidal.Context as T hiding (fromList)
 
-import qualified Data.Map as Map
+import Meta
 
-import Functional (apply, ($))
-
-type Pattern = T.Pattern
-type ControlPattern = T.ControlPattern
-type ValueMap = T.ValueMap
-type Value = T.Value
-type Map = Map.Map
---type Time = T.Time
-type Int = P.Int
-type Double = P.Double
-type Char = P.Char
-type String = P.String
-type Bool = P.Bool
-
-default (Pattern Int, Pattern String)
-
-type family P x where
-  P (Pattern a -> b) = Pattern (Pattern a -> P b)
-  P ((Pattern a -> Pattern b) -> c) = Pattern (Pattern (Pattern a -> Pattern b) -> P c)
-  P (Pattern a) = Pattern a
-  P ([Pattern a]) = Pattern [Pattern a]
-  P a = Pattern a
-
-class Pat a where
-  toPat :: a -> P a
-
-instance Pat a => (Pat (Pattern a)) where
-  toPat = P.id
-
-instance Pat b => Pat (Pattern a -> b) where
-  toPat g = P.pure (\x -> toPat $ g x)
-
-instance (Pat b, Pat c) => Pat ((Pattern a -> Pattern b) -> c) where
-  toPat g = P.pure (\x -> toPat (g $ apply x))
-
-instance Pat ([Pattern a]) where
-  toPat = P.pure
-
-instance Pat Int where
-  toPat = P.pure
-
-instance Pat Double where
-  toPat = P.pure
-
-instance Pat ValueMap where
-  toPat = P.pure
-
-instance Pat Bool where
-  toPat = P.pure
-
-instance Pat String where
-  toPat = P.pure
-
-infixr 0 $$
-($$) :: Pat b => P (Pattern (Pattern a -> Pattern b) -> Pattern a -> Pattern b)
-($$) = toPat apply
-
-class IsBool a where
-  asBool :: a -> Bool
-
-instance IsBool Int where
-  asBool x = (x P.> 0)
-
-instance IsBool Double where
-  asBool x = (x P.> 0)
-
-instance IsBool Bool where
-  asBool = P.id
+infixr 0 $
+($) :: Pat b => P (Pattern (Pattern a -> Pattern b) -> Pattern a -> Pattern b)
+($) = toPat apply
 
 t :: Pattern Bool
 t = toPat P.True
@@ -175,7 +105,7 @@ degradeBy = toPat T.degradeBy
 (?) = toPat (\x d -> T.degradeBy d x)
 
 timeLoop :: Pat a => P (Pattern Double -> Pattern a -> Pattern a)
-timeLoop = toPat (\tm -> T.timeLoop $ P.fmap P.toRational tm)
+timeLoop = toPat (\tm -> T.timeLoop $$ P.fmap P.toRational tm)
 
 loop :: Pat a => P (Pattern Double -> Pattern a -> Pattern a)
 loop = timeLoop
@@ -223,10 +153,10 @@ loop = timeLoop
 -- control pattern stuff
 
 n :: P.Integral a => P (Pattern a -> ControlPattern)
-n = P.pure (\m -> T.n $ P.fmap (\x -> T.Note $ P.fromIntegral x) m)
+n = P.pure (\m -> T.n $$ P.fmap (\x -> T.Note $$ P.fromIntegral x) m)
 
 note :: P.Integral a => P (Pattern a -> ControlPattern)
-note = P.pure (\m -> T.note $ P.fmap (\x -> T.Note $ P.fromIntegral x) m)
+note = P.pure (\m -> T.note $$ P.fmap (\x -> T.Note $$ P.fromIntegral x) m)
 
 s :: P (Pattern String -> ControlPattern)
 s = P.pure T.s
@@ -271,7 +201,7 @@ chop :: P (Pattern Int -> ControlPattern -> ControlPattern)
 chop = toPat T.chop
 
 loopAt :: P (Pattern Double -> ControlPattern -> ControlPattern)
-loopAt = toPat (\tm -> T.loopAt $ P.fmap P.toRational tm)
+loopAt = toPat (\tm -> T.loopAt $$ P.fmap P.toRational tm)
 
 
 -- samples
@@ -308,7 +238,7 @@ min :: P.Num a => Pattern [Pattern a]
 min = P.pure [0,3,7]
 
 stack :: Pattern (Pattern [Pattern a] -> Pattern a)
-stack = P.pure (\x -> T.innerJoin $ P.fmap T.stack x)
+stack = P.pure (\x -> T.innerJoin $$ P.fmap T.stack x)
 
 mapT :: Pattern (Pattern a -> Pattern b) -> Pattern [Pattern a] -> Pattern [Pattern b]
 mapT g pxs = P.fmap (\xs -> P.map (apply g) xs) pxs
@@ -347,13 +277,13 @@ bool = id
 -- try 0 x = x
 -- try n x = [x (try (n-1) x)]
 
-try :: Pattern (Pattern Int -> (Pattern (Pattern a -> Pattern a)))
-try = P.pure (\iP -> T.innerJoin $ P.fmap (
-                            \case {
-                              0 -> P.pure $ (\x -> x);
-                              n -> P.pure $ (\x -> T.fastcat [x, apply (apply try (P.pure (n P.- 1))) x])
-                            }) iP
-                            )
+-- try :: Pattern (Pattern Int -> (Pattern (Pattern a -> Pattern a)))
+-- try = P.pure (\iP -> T.innerJoin $ P.fmap (
+--                             \case {
+--                               0 -> P.pure $ (\x -> x);
+--                               n -> P.pure $ (\x -> T.fastcat [x, apply (apply try (P.pure (n P.- 1))) x])
+--                             }) iP
+--                             )
 
 -- continous
 
@@ -376,7 +306,7 @@ smooth :: P (Pattern Double -> Pattern Double)
 smooth = toPat T.smooth
 
 segment :: Pat a => P (Pattern Double -> Pattern a -> Pattern a)
-segment = toPat $ \x -> (T.segment $ P.fmap P.toRational x)
+segment = toPat $$ \x -> (T.segment $$ P.fmap P.toRational x)
 
 range :: P (Pattern Double -> Pattern Double -> Pattern Double -> Pattern Double)
 range = toPat T.range
@@ -419,14 +349,6 @@ orT = T.tParam func
 (||) :: P (Pattern Bool -> Pattern Bool -> Pattern Bool)
 (||) = toPat orT
 
---
-
--- replicate a sequence of i patterns
-repT :: Pattern Int -> Pattern a -> Pattern a
-repT iP x = T.innerJoin $ P.fmap (\i -> T.fastcat $ P.replicate i x) iP
-
-rep :: Pat a => P (Pattern Int -> Pattern a -> Pattern a)
-rep = toPat repT
 
 --c:maj:i:o
 data Modifier = Chord (Pattern [Pattern Int]) | Invert Int

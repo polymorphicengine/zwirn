@@ -19,8 +19,8 @@ extra-doc-files:    CHANGELOG.md, README.md
 
 library
   hs-source-dirs: src
-  exposed-modules: Functional
-                   MiniPrelude
+  exposed-modules: Meta
+                   Prelude.MiniPrelude
   build-depends: base,
                  containers,
                  tidal == 1.9.2

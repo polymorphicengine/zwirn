@@ -38,8 +38,8 @@ hintJob mMV rMV = do
 staticInterpreter :: Interpreter ()
 staticInterpreter = do
         Hint.set [languageExtensions := exts]
-        Hint.loadModules ["src/Functional.hs","src/MiniPrelude.hs"]
-        Hint.setTopLevelModules ["Functional","MiniPrelude"]
+        Hint.loadModules ["src/Meta.hs","src/Prelude/MiniPrelude.hs"]
+        Hint.setTopLevelModules ["Meta","Prelude.MiniPrelude"]
         --Hint.runStmt "default (Pattern Int, Pattern String)"
 
 interpreterLoop :: MVar InterpreterMessage -> MVar InterpreterResponse -> Interpreter ()
