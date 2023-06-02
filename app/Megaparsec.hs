@@ -162,7 +162,7 @@ pChoiceSeq = brackets $ do
      where pChoice t = do
               ts <- some $ (symbol "|" >> pStackSeq)
               seed <- fmap fst ST.get
-              ST.modify $ fmap (+1)
+              ST.modify $ (\(x,y) -> (x+1,y))
               return $ TChoice seed (t:ts)
 
 pAltExp :: Parser Term
@@ -201,7 +201,7 @@ pChoiceApp = do
   where pChoice t = do
            ts <- some $ (symbol "|" >> pStackApp)
            seed <- fmap fst ST.get
-           ST.modify $ fmap (+1)
+           ST.modify $ (\(x,y) -> (x+1,y))
            return $ TChoice seed (t:ts)
 
 fullParser :: Parser Term
