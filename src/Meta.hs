@@ -1,5 +1,5 @@
 {-# LANGUAGE TypeFamilies, TypeSynonymInstances, FlexibleInstances #-}
-{-# LANGUAGE ExtendedDefaultRules #-}
+{-# LANGUAGE ExtendedDefaultRules, GeneralizedNewtypeDeriving #-}
 module Meta where
 
 import qualified Prelude as P
@@ -8,14 +8,15 @@ import qualified Sound.Tidal.Context as T
 import qualified Data.Map as Map
 
 -- this module contains meta functions
-default (Pattern Double, Pattern String)
+default (Pattern Number, Pattern String)
 
 type Pattern = T.Pattern
-type ControlPattern = T.ControlPattern
 type ValueMap = T.ValueMap
+type ControlPattern = Pattern ValueMap
 type Value = T.Value
+type Note = T.Note
 type Map = Map.Map
---type Time = T.Time
+type Time = T.Time
 type Int = P.Int
 type Double = P.Double
 type Char = P.Char
@@ -23,6 +24,16 @@ type String = P.String
 type Bool = P.Bool
 type Maybe = P.Maybe
 
+-- this is the only number type in the system to avoid type ambiguities
+newtype Number = Num Double
+               deriving (P.Show, P.Eq, P.Num, P.Enum, P.Ord, P.Fractional)
+
+
+-- this is a helper that transforms some types to types that are useful in the system
+-- basically this can be thought of as a transformation given as follows
+-- ToPat a == (Pattern a); for any basic type a (like Bool, String, Number etc.)
+-- ToPat (a -> b) == Pattern (ToPat a) -> Pattern (ToPat a);
+-- in practice this is more difficult..
 type family P x where
   P (Pattern a -> b) = Pattern (Pattern a -> P b)
   P ((Pattern a -> Pattern b) -> c) = Pattern (Pattern (Pattern a -> Pattern b) -> P c)
@@ -32,6 +43,64 @@ type family P x where
 
 class Pat a where
   toPat :: a -> P a
+
+-- this class will help us convert anything to use our new Number type replacing
+-- Double, Int, Rational etc.
+class Convertible a where
+  type ToNum a
+  toNum :: a -> ToNum a
+  fromNum :: ToNum a -> a
+
+-- for allowing Number to act as Bool
+class IsBool a where
+  asBool :: a -> Bool
+
+instance Convertible Bool where
+  type ToNum Bool = Number
+  toNum P.True = Num 1
+  toNum P.False = Num 0
+  fromNum n = (n P.> 0)
+
+instance Convertible Double where
+  type ToNum Double = Number
+  toNum d = Num d
+  fromNum (Num n) = n
+
+instance Convertible Time where
+  type ToNum Time = Number
+  toNum d = Num $$ P.fromRational d
+  fromNum (Num n) = P.toRational n
+
+instance Convertible Int where
+  type ToNum Int = Number
+  toNum i = Num $$ P.fromIntegral i
+  fromNum (Num n) = P.floor n
+
+instance Convertible Note where
+  type ToNum Note = Number
+  toNum (T.Note i) = Num i
+  fromNum (Num n) = T.Note n
+
+instance Convertible String where
+  type ToNum String = String
+  toNum = P.id
+  fromNum = P.id
+
+instance Convertible ValueMap where
+  type ToNum ValueMap = ValueMap
+  toNum = P.id
+  fromNum = P.id
+
+instance Convertible a => Convertible (Pattern a) where
+  type ToNum (Pattern a) = Pattern (ToNum a)
+  toNum = fmap toNum
+  fromNum = fmap fromNum
+
+instance (Convertible a, Convertible b) => Convertible (a -> b) where
+  type ToNum (a -> b) = ToNum a -> ToNum b
+  toNum f x = toNum $$ f (fromNum x)
+  fromNum f x = fromNum $$ f (toNum x)
+
 
 instance Pat a => (Pat (Pattern a)) where
   toPat = P.id
@@ -45,29 +114,25 @@ instance (Pat b, Pat c) => Pat ((Pattern a -> Pattern b) -> c) where
 instance Pat ([Pattern a]) where
   toPat = P.pure
 
+instance Pat Number where
+  toPat = P.pure
+
 instance Pat Int where
   toPat = P.pure
 
-instance Pat P.Double where
+instance Pat Double where
   toPat = P.pure
 
-instance Pat T.ValueMap where
+instance Pat ValueMap where
   toPat = P.pure
 
 instance Pat Bool where
   toPat = P.pure
 
-instance Pat P.String where
+instance Pat String where
   toPat = P.pure
 
-
-class IsBool a where
-  asBool :: a -> Bool
-
-instance IsBool Int where
-  asBool x = (x P.> 0)
-
-instance IsBool Double where
+instance IsBool Number where
   asBool x = (x P.> 0)
 
 instance IsBool Bool where

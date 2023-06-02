@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeSynonymInstances, TypeApplications #-}
+{-# LANGUAGE TypeApplications #-}
 module Prelude.MiniPrelude where
 
 import qualified Prelude as P
@@ -29,37 +29,37 @@ const = toPat (P.const :: Pattern a -> Pattern b -> Pattern a)
 rev :: Pat a => P (Pattern a -> Pattern a)
 rev = toPat T.rev
 
-fast :: Pat a => P (Pattern Double -> Pattern a -> Pattern a)
-fast = toPat (\x -> T.fast (P.fmap P.toRational x))
+fast :: Pat a => P (Pattern Number -> Pattern a -> Pattern a)
+fast = toPat (\x -> T.fast (fromNum x))
 
-slow :: Pat a => P (Pattern Double -> Pattern a -> Pattern a)
-slow = toPat (\x -> T.slow (P.fmap P.toRational x))
+slow :: Pat a => P (Pattern Number -> Pattern a -> Pattern a)
+slow = toPat (\x -> T.slow (fromNum x))
 
-ply :: Pat a => P (Pattern Double -> Pattern a -> Pattern a)
-ply = toPat (\x -> T.ply (P.fmap P.toRational x))
+ply :: Pat a => P (Pattern Number -> Pattern a -> Pattern a)
+ply = toPat (\x -> T.ply (fromNum x))
 
-plyWith :: Pat a => P (Pattern Double -> (Pattern a -> Pattern a) -> Pattern a -> Pattern a)
-plyWith = toPat (\x -> T.plyWith (P.fmap P.toRational x))
+plyWith :: Pat a => P (Pattern Number -> (Pattern a -> Pattern a) -> Pattern a -> Pattern a)
+plyWith = toPat (\x -> (T.plyWith :: Pattern Double -> (Pattern a -> Pattern a) -> Pattern a -> Pattern a) (fromNum x))
 
-rot :: (Pat a, P.Ord a) => P (Pattern Int -> Pattern a -> Pattern a)
-rot = toPat T.rot
+rot :: (Pat a, P.Ord a) => P (Pattern Number -> Pattern a -> Pattern a)
+rot = toPat (\x -> T.rot $$ fromNum x)
 
-run :: P (Pattern Int -> Pattern Int)
-run = toPat T.run
+run :: P (Pattern Number -> Pattern Number)
+run = toPat $$ toNum (T.run :: Pattern Double -> Pattern Double)
 
-irand :: (Pat a, P.Num a) => P (Pattern Int -> Pattern a)
-irand = toPat T.irand
+irand :: P (Pattern Number -> Pattern Number)
+irand = toPat $$ toNum (T.irand :: Pattern Int -> Pattern Double)
 
-rotL :: Pat a => P (Pattern Double -> Pattern a -> Pattern a)
-rotL = toPat (\x y -> (P.fmap P.toRational x) T.<~ y)
+rotL :: Pat a => P (Pattern Number -> Pattern a -> Pattern a)
+rotL = toPat (\x y -> (fromNum x) T.<~ y)
 
-(<~) :: Pat a => P (Pattern Double -> Pattern a -> Pattern a)
+(<~) :: Pat a => P (Pattern Number -> Pattern a -> Pattern a)
 (<~) = rotL
 
-rotR :: Pat a => P (Pattern Double -> Pattern a -> Pattern a)
-rotR = toPat (\x y -> (P.fmap P.toRational x) T.~> y)
+rotR :: Pat a => P (Pattern Number -> Pattern a -> Pattern a)
+rotR = toPat (\x y -> (fromNum x) T.~> y)
 
-(~>) :: Pat a => P (Pattern Double -> Pattern a -> Pattern a)
+(~>) :: Pat a => P (Pattern Number -> Pattern a -> Pattern a)
 (~>) = rotR
 
 struct :: Pat a => P (Pattern Bool -> Pattern a -> Pattern a)
@@ -74,8 +74,8 @@ structFrom = P.pure (\b -> P.pure (T.struct (apply toBool b)))
 mask :: Pat a => P (Pattern Bool -> Pattern a -> Pattern a)
 mask = toPat T.mask
 
-every :: Pat a => P (Pattern Int -> (Pattern a -> Pattern a) -> Pattern a -> Pattern a)
-every = toPat T.every
+every :: Pat a => P (Pattern Number -> (Pattern a -> Pattern a) -> Pattern a -> Pattern a)
+every = toPat (\x -> T.every $$ fromNum x)
 
 while :: (IsBool b, Pat a) => P (Pattern b -> (Pattern a -> Pattern a) -> Pattern a -> Pattern a)
 while = toPat (\x -> T.while (P.fmap asBool x))
@@ -86,8 +86,8 @@ superimpose = toPat T.superimpose
 jux :: P ((ControlPattern -> ControlPattern) -> ControlPattern -> ControlPattern)
 jux = toPat T.jux
 
-iter :: Pat a => P (Pattern Int -> Pattern a -> Pattern a)
-iter = toPat T.iter
+iter :: Pat a => P (Pattern Number -> Pattern a -> Pattern a)
+iter = toPat (\x -> T.iter $$ fromNum x)
 
 sometimes :: Pat a => P ((Pattern a -> Pattern a) -> Pattern a -> Pattern a)
 sometimes = toPat T.sometimes
@@ -98,16 +98,16 @@ rarely = toPat T.rarely
 degrade :: Pat a =>  P (Pattern a -> Pattern a)
 degrade = toPat T.degrade
 
-degradeBy :: Pat a => P (Pattern Double -> Pattern a -> Pattern a)
-degradeBy = toPat T.degradeBy
+degradeBy :: Pat a => P (Pattern Number -> Pattern a -> Pattern a)
+degradeBy = toPat (\x -> T.degradeBy $$ fromNum x)
 
-(?) :: Pat a => P (Pattern a -> Pattern Double -> Pattern a)
-(?) = toPat (\x d -> T.degradeBy d x)
+(?) :: Pat a => P (Pattern a -> Pattern Number -> Pattern a)
+(?) = toPat (\x d -> T.degradeBy (fromNum d) x)
 
-timeLoop :: Pat a => P (Pattern Double -> Pattern a -> Pattern a)
-timeLoop = toPat (\tm -> T.timeLoop $$ P.fmap P.toRational tm)
+timeLoop :: Pat a => P (Pattern Number -> Pattern a -> Pattern a)
+timeLoop = toPat (\tm -> T.timeLoop $$ fromNum tm)
 
-loop :: Pat a => P (Pattern Double -> Pattern a -> Pattern a)
+loop :: Pat a => P (Pattern Number -> Pattern a -> Pattern a)
 loop = timeLoop
 
 -- arithmetic
@@ -152,56 +152,59 @@ loop = timeLoop
 
 -- control pattern stuff
 
-n :: P.Integral a => P (Pattern a -> ControlPattern)
-n = P.pure (\m -> T.n $$ P.fmap (\x -> T.Note $$ P.fromIntegral x) m)
+n :: P (Pattern Number -> ControlPattern)
+n = toPat $$ toNum T.n
 
-note :: P.Integral a => P (Pattern a -> ControlPattern)
-note = P.pure (\m -> T.note $$ P.fmap (\x -> T.Note $$ P.fromIntegral x) m)
+note :: P (Pattern Number -> ControlPattern)
+note = toPat $$ toNum T.note
 
 s :: P (Pattern String -> ControlPattern)
-s = P.pure T.s
+s = toPat T.s
 
 sound :: P (Pattern String -> ControlPattern)
 sound = s
 
-room :: P (Pattern Double -> ControlPattern)
-room = P.pure T.room
+room :: P (Pattern Number -> ControlPattern)
+room = toPat $$ toNum T.room
 
-size :: P (Pattern Double -> ControlPattern)
-size = P.pure T.size
+size :: P (Pattern Number -> ControlPattern)
+size = toPat $$ toNum T.size
 
-speed :: P (Pattern Double -> ControlPattern)
-speed = P.pure T.speed
+speed :: P (Pattern Number -> ControlPattern)
+speed = toPat $$ toNum T.speed
 
-accelerate :: P (Pattern Double -> ControlPattern)
-accelerate = P.pure T.accelerate
+accelerate :: P (Pattern Number -> ControlPattern)
+accelerate = toPat $$ toNum T.accelerate
 
-gain :: P (Pattern Double -> ControlPattern)
-gain = P.pure T.gain
+gain :: P (Pattern Number -> ControlPattern)
+gain = toPat $$ toNum T.gain
 
-pan :: P (Pattern Double -> ControlPattern)
-pan = P.pure T.pan
+amp :: P (Pattern Number -> ControlPattern)
+amp = toPat $$ toNum T.amp
 
-krush :: P (Pattern Double -> ControlPattern)
-krush = P.pure T.krush
+pan :: P (Pattern Number -> ControlPattern)
+pan = toPat $$ toNum T.pan
+
+krush :: P (Pattern Number -> ControlPattern)
+krush = toPat $$ toNum T.krush
 
 (#) :: P (ControlPattern -> ControlPattern -> ControlPattern)
 (#) = toPat (T.#)
 
-slice :: P (Pattern Int -> Pattern Int -> ControlPattern -> ControlPattern)
-slice = toPat T.slice
+slice :: P (Pattern Number -> Pattern Number -> ControlPattern -> ControlPattern)
+slice = toPat $$ toNum T.slice
 
-splice :: P (Pattern Int -> Pattern Int -> ControlPattern -> ControlPattern)
-splice = toPat T.splice
+splice :: P (Pattern Number -> Pattern Number -> ControlPattern -> ControlPattern)
+splice = toPat $$ toNum T.splice
 
-striate :: P (Pattern Int -> ControlPattern -> ControlPattern)
-striate = toPat T.striate
+striate :: P (Pattern Number -> ControlPattern -> ControlPattern)
+striate = toPat $$ toNum T.striate
 
-chop :: P (Pattern Int -> ControlPattern -> ControlPattern)
-chop = toPat T.chop
+chop :: P (Pattern Number -> ControlPattern -> ControlPattern)
+chop = toPat $$ toNum T.chop
 
-loopAt :: P (Pattern Double -> ControlPattern -> ControlPattern)
-loopAt = toPat (\tm -> T.loopAt $$ P.fmap P.toRational tm)
+loopAt :: P (Pattern Number -> ControlPattern -> ControlPattern)
+loopAt = toPat $$ toNum T.loopAt
 
 
 -- samples
@@ -214,10 +217,10 @@ sn = P.pure "sn"
 
 --
 
-c :: P.Num a => Pattern a
+c :: Pattern Number
 c = 0
 
-e :: P.Num a => Pattern a
+e :: Pattern Number
 e = 4
 
 -- meta functions to get the structure
@@ -231,10 +234,10 @@ left op = P.pure (\x -> P.pure (\y -> apply (apply structFrom x) (apply (apply o
 
 -- list stuff
 
-maj :: P.Num a => Pattern [Pattern a]
+maj :: Pattern [Pattern Number]
 maj = P.pure [0,4,7]
 
-min :: P.Num a => Pattern [Pattern a]
+min :: Pattern [Pattern Number]
 min = P.pure [0,3,7]
 
 stack :: Pattern (Pattern [Pattern a] -> Pattern a)
@@ -253,18 +256,18 @@ layer :: Pattern (Pattern [Pattern (Pattern a -> Pattern b)] -> Pattern (Pattern
 layer = toPat layerT
 
 -- type conversions
-
-int :: Pattern (Pattern Int -> Pattern Int)
-int = id
-
-double :: Pattern (Pattern Double -> Pattern Double)
-double = id
-
-string :: Pattern (Pattern String -> Pattern String)
-string = id
-
-bool :: Pattern (Pattern Bool -> Pattern Bool)
-bool = id
+-- not neccessary?
+-- int :: Pattern (Pattern Int -> Pattern Int)
+-- int = id
+--
+-- double :: Pattern (Pattern Double -> Pattern Double)
+-- double = id
+--
+-- string :: Pattern (Pattern String -> Pattern String)
+-- string = id
+--
+-- bool :: Pattern (Pattern Bool -> Pattern Bool)
+-- bool = id
 
 
 -- state
@@ -287,52 +290,52 @@ bool = id
 
 -- continous
 
-sine :: Pattern Double
-sine = T.sine
+sine :: Pattern Number
+sine = toNum (T.sine :: Pattern Double)
 
-rand :: Pattern Double
-rand = T.rand
+rand :: Pattern Number
+rand = toNum (T.rand :: Pattern Double)
 
-perlin :: Pattern Double
-perlin = T.perlin
+perlin :: Pattern Number
+perlin = toNum (T.perlin :: Pattern Double)
 
-saw :: Pattern Double
-saw = T.saw
+saw :: Pattern Number
+saw = toNum (T.saw :: Pattern Double)
 
-tri :: Pattern Double
-tri = T.tri
+tri :: Pattern Number
+tri = toNum (T.tri :: Pattern Double)
 
-smooth :: P (Pattern Double -> Pattern Double)
-smooth = toPat T.smooth
+smooth :: P (Pattern Number -> Pattern Number)
+smooth = toNum $$ toPat (T.smooth :: Pattern Double -> Pattern Double)
 
-segment :: Pat a => P (Pattern Double -> Pattern a -> Pattern a)
-segment = toPat $$ \x -> (T.segment $$ P.fmap P.toRational x)
+segment :: Pat a => P (Pattern Number -> Pattern a -> Pattern a)
+segment = toPat $$ (\x -> T.segment $$ fromNum x)
 
-range :: P (Pattern Double -> Pattern Double -> Pattern Double -> Pattern Double)
-range = toPat T.range
+range :: P (Pattern Number -> Pattern Number -> Pattern Number -> Pattern Number)
+range = toPat $$ toNum (T.range ::  Pattern Double -> Pattern Double -> Pattern Double -> Pattern Double)
 
 
 --- comparisons
 
-geqT :: Pattern Double -> Pattern Double -> Pattern Bool
+geqT :: Pattern Number -> Pattern Number -> Pattern Bool
 geqT = T.tParam func
      where func i jP = P.fmap (\j -> i P.>= j) jP
 
-leqT :: Pattern Double -> Pattern Double -> Pattern Bool
+leqT :: Pattern Number -> Pattern Number -> Pattern Bool
 leqT = T.tParam func
     where func i jP = P.fmap (\j -> i P.<= j) jP
 
-eqT :: Pattern Double -> Pattern Double -> Pattern Bool
+eqT :: Pattern Number -> Pattern Number -> Pattern Bool
 eqT = T.tParam func
     where func i jP = P.fmap (\j -> i P.<= j) jP
 
-(>=) :: P (Pattern Double -> Pattern Double -> Pattern Bool)
+(>=) :: P (Pattern Number -> Pattern Number -> Pattern Bool)
 (>=) = toPat geqT
 
-(<=) :: P (Pattern Double -> Pattern Double -> Pattern Bool)
+(<=) :: P (Pattern Number -> Pattern Number -> Pattern Bool)
 (<=) = toPat leqT
 
-(==) :: P (Pattern Double -> Pattern Double -> Pattern Bool)
+(==) :: P (Pattern Number -> Pattern Number -> Pattern Bool)
 (==) = toPat eqT
 
 andT :: Pattern Bool -> Pattern Bool -> Pattern Bool
