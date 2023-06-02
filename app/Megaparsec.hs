@@ -262,8 +262,14 @@ parserTypes = do
           t <- fullParser
           return $ Type t
 
+parserShow :: Parser Action
+parserShow = do
+          _ <- symbol ":show"
+          t <- fullParser
+          return $ Show t
+
 parserAction :: Parser Action
-parserAction = sc >> (parserTypes <|> try (fmap Def parserDef) <|> fmap Exec fullParser)
+parserAction = sc >> (try parserShow <|> parserTypes <|> try (fmap Def parserDef) <|> fmap Exec fullParser)
 
 -- initial state
 

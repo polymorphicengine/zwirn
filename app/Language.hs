@@ -45,7 +45,7 @@ data Def = Let String [Var] Term deriving (Eq,Show)
 
 data SimpleDef = LetS String Simple deriving (Eq,Show)
 
-data Action = Exec Term | Def Def | Type Term deriving (Eq,Show)
+data Action = Exec Term | Def Def | Type Term | Show Term deriving (Eq,Show)
 
 displayTerm :: Term -> String
 displayTerm (TVar _ x) = x

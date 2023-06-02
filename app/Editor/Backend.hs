@@ -58,6 +58,15 @@ interpretCommandsLine cm lineBool line env = do
                                                                 liftIO $ T.streamReplace str 1 m
                                                               RError e -> errorUI e
                                                               _ -> errorUI "Unknown error!"
+                                                Right (Show t) -> do
+                                                            liftIO $ putMVar mMV $ MMini (compile $ simplify t)
+                                                            res <- liftIO $ takeMVar rMV
+                                                            case res of
+                                                              RMini m -> do
+                                                                successUI
+                                                                outputUI $ show m
+                                                              RError e -> errorUI e
+                                                              _ -> errorUI "Unknown error!"
                                                 Right (Def def) -> do
                                                              liftIO $ putMVar mMV $ MDef (compileDef $ simplifyDef def)
                                                              res <- liftIO $ takeMVar rMV
