@@ -286,7 +286,14 @@ parserShow = do
           return $ Show t
 
 parserAction :: Parser Action
-parserAction = sc >> (try parserShow <|> parserTypes <|> try (fmap Def parserDef) <|> parserExec)
+parserAction = sc >> (try parserShow <|> try parserTypes <|> try (fmap Def parserDef) <|> try parserExec)
+
+parserActions :: Parser [Action]
+parserActions = do
+          a <- parserAction
+          as <- many (symbol ";" >> parserAction)
+          return $ (a:as)
+
 
 -- initial state
 
@@ -304,6 +311,6 @@ initialState pos input = State
       , stateParseErrors = []
       }
 
-parseWithPos :: Int -> Int -> String -> Either (ParseErrorBundle String Void) Action
-parseWithPos editorNum line s = snd (ST.evalState (runParserT' (parserAction <* eof) (initialState pos s)) (0,editorNum))
+parseWithPos :: Int -> Int -> String -> Either (ParseErrorBundle String Void) [Action]
+parseWithPos editorNum line s = snd (ST.evalState (runParserT' (parserActions <* eof) (initialState pos s)) (0,editorNum))
                     where pos = SourcePos "" (mkPos line) (mkPos 1)

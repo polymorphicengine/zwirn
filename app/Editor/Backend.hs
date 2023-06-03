@@ -44,44 +44,46 @@ interpretCommandsLine cm lineBool line env = do
         blockMaybe = if lineBool then getLineContent line (linesNum contentsControl) else getBlock line bs
     case blockMaybe of
         Nothing -> void $ liftUI $ element out # set UI.text "Failed to get Block"
-        Just (Block blockLineStart blockLineEnd block) ->  do
-                                              case parseWithPos editorNum (blockLineStart + 1) block of
-                                                -- evaluate the given expression, if a string is returned, print it to the console
-                                                Left err -> errorUI $ errorBundlePretty err
-                                                Right (Exec idd t) -> do
-                                                            liftIO $ putMVar mMV $ MMini (compile $ simplify t)
-                                                            res <- liftIO $ takeMVar rMV
-                                                            case res of
-                                                              RMini m -> do
-                                                                successUI
-                                                                liftIO $ T.streamReplace str idd m
-                                                              RError e -> errorUI e
-                                                              _ -> errorUI "Unknown error!"
-                                                Right (Show t) -> do
-                                                            liftIO $ putMVar mMV $ MMini (compile $ simplify t)
-                                                            res <- liftIO $ takeMVar rMV
-                                                            case res of
-                                                              RMini m -> do
-                                                                successUI
-                                                                outputUI $ show m
-                                                              RError e -> errorUI e
-                                                              _ -> errorUI "Unknown error!"
-                                                Right (Def def) -> do
-                                                             liftIO $ putMVar mMV $ MDef (compileDef $ simplifyDef def)
-                                                             res <- liftIO $ takeMVar rMV
-                                                             case res of
-                                                               RSucc -> successUI >> outputUI ""
-                                                               RError e -> errorUI e
-                                                               _ -> errorUI "Unknown error!"
-                                                Right (Type t) -> do
-                                                            liftIO $ putMVar mMV $ MType (compile $ simplify t)
-                                                            res <- liftIO $ takeMVar rMV
-                                                            case res of
-                                                              RType typ -> do
-                                                                successUI
-                                                                outputUI $ typ
-                                                              RError e -> errorUI e
-                                                              _ -> errorUI "Unknown error!"
+        Just (Block blockLineStart blockLineEnd block) -> case parseWithPos editorNum (blockLineStart + 1) block of
+                  Left err -> errorUI $ errorBundlePretty err
+                  Right actions -> processActions actions
          where successUI = liftUI $ flashSuccess cm blockLineStart blockLineEnd
                errorUI err = (liftUI $ flashError cm blockLineStart blockLineEnd) >> (void $ liftUI $ element out # set UI.text err)
                outputUI o = void $ liftUI $ element out # set UI.text o
+               processActions [] = return ()
+               processActions (a:as) = processSingleAction a >> processActions as
+               processSingleAction action = case action of
+                           (Exec idd t) -> do
+                                       liftIO $ putMVar mMV $ MMini (compile $ simplify t)
+                                       res <- liftIO $ takeMVar rMV
+                                       case res of
+                                         RMini m -> do
+                                           successUI
+                                           liftIO $ T.streamReplace str idd m
+                                         RError e -> errorUI e
+                                         _ -> errorUI "Unknown error!"
+                           (Show t) -> do
+                                       liftIO $ putMVar mMV $ MMini (compile $ simplify t)
+                                       res <- liftIO $ takeMVar rMV
+                                       case res of
+                                         RMini m -> do
+                                           successUI
+                                           outputUI $ show m
+                                         RError e -> errorUI e
+                                         _ -> errorUI "Unknown error!"
+                           (Def def) -> do
+                                        liftIO $ putMVar mMV $ MDef (compileDef $ simplifyDef def)
+                                        res <- liftIO $ takeMVar rMV
+                                        case res of
+                                          RSucc -> successUI >> outputUI ""
+                                          RError e -> errorUI e
+                                          _ -> errorUI "Unknown error!"
+                           (Type t) -> do
+                                       liftIO $ putMVar mMV $ MType (compile $ simplify t)
+                                       res <- liftIO $ takeMVar rMV
+                                       case res of
+                                         RType typ -> do
+                                           successUI
+                                           outputUI $ typ
+                                         RError e -> errorUI e
+                                         _ -> errorUI "Unknown error!"
