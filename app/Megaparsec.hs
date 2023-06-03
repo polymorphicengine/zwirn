@@ -4,6 +4,7 @@ import Data.Void
 import Text.Megaparsec
 import Text.Megaparsec.Char
 import Control.Monad.Combinators.Expr
+import Sound.Tidal.ID (ID(..))
 import qualified Control.Monad.State as ST (evalState, State, modify, get)
 import qualified Text.Megaparsec.Char.Lexer as L
 
@@ -253,6 +254,22 @@ parserDef = do
       t <- fullParser
       return $ Let name vs t
 
+-- parsing execs
+
+parserID :: Parser ID
+parserID = (do
+      _ <- symbol "\""
+      n <- lexeme pString
+      _ <- symbol "\""
+      return $ ID n)
+      <|> fmap (ID . show) (lexeme pInteger)
+
+parserExec :: Parser Action
+parserExec = do
+         idd <- parserID
+         _ <- symbol "<-"
+         t <- fullParser
+         return $ Exec idd t
 
 -- parsing actions
 
@@ -269,7 +286,7 @@ parserShow = do
           return $ Show t
 
 parserAction :: Parser Action
-parserAction = sc >> (try parserShow <|> parserTypes <|> try (fmap Def parserDef) <|> fmap Exec fullParser)
+parserAction = sc >> (try parserShow <|> parserTypes <|> try (fmap Def parserDef) <|> parserExec)
 
 -- initial state
 

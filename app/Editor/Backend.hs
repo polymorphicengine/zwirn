@@ -48,14 +48,13 @@ interpretCommandsLine cm lineBool line env = do
                                               case parseWithPos editorNum (blockLineStart + 1) block of
                                                 -- evaluate the given expression, if a string is returned, print it to the console
                                                 Left err -> errorUI $ errorBundlePretty err
-                                                Right (Exec t) -> do
+                                                Right (Exec idd t) -> do
                                                             liftIO $ putMVar mMV $ MMini (compile $ simplify t)
                                                             res <- liftIO $ takeMVar rMV
                                                             case res of
                                                               RMini m -> do
                                                                 successUI
-                                                                --outputUI $ (compile $ simplify t)
-                                                                liftIO $ T.streamReplace str 1 m
+                                                                liftIO $ T.streamReplace str idd m
                                                               RError e -> errorUI e
                                                               _ -> errorUI "Unknown error!"
                                                 Right (Show t) -> do
