@@ -22,7 +22,7 @@ data InterpreterResponse = RMini ControlPattern
                          deriving Show
 
 exts :: [Extension]
-exts = [OverloadedStrings, BangPatterns, MonadComprehensions, LambdaCase, ExtendedDefaultRules, NoMonomorphismRestriction]
+exts = [OverloadedStrings, BangPatterns, MonadComprehensions, LambdaCase, ExtendedDefaultRules, NoMonomorphismRestriction, NoImplicitPrelude]
 
 hintJob :: MVar InterpreterMessage -> MVar InterpreterResponse -> IO ()
 hintJob mMV rMV = do
@@ -38,8 +38,8 @@ hintJob mMV rMV = do
 staticInterpreter :: Interpreter ()
 staticInterpreter = do
         Hint.set [languageExtensions := exts]
-        Hint.loadModules ["src/Meta.hs","src/Prelude/MiniPrelude.hs"]
-        Hint.setTopLevelModules ["Meta","Prelude.MiniPrelude"]
+        Hint.loadModules ["src/Meta.hs","src/Generic.hs","src/Prelude/MiniPrelude.hs","src/Prelude/Control.hs", "src/Prelude/Params.hs"]
+        Hint.setTopLevelModules ["Meta","Generic","Prelude.MiniPrelude","Prelude.Control", "Prelude.Params"]
         --Hint.runStmt "default (Pattern Int, Pattern String)"
 
 interpreterLoop :: MVar InterpreterMessage -> MVar InterpreterResponse -> Interpreter ()

@@ -1,5 +1,5 @@
 {-# LANGUAGE TypeFamilies, TypeSynonymInstances, FlexibleInstances #-}
-{-# LANGUAGE ExtendedDefaultRules, GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE ExtendedDefaultRules, GeneralizedNewtypeDeriving, TemplateHaskell #-}
 module Meta where
 
 import qualified Prelude as P
