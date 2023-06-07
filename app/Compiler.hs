@@ -28,3 +28,12 @@ elongAmount _ = 1
 
 compileDef :: SimpleDef -> String
 compileDef (LetS n t) = "let " ++ n ++ " = " ++ compile t
+
+-- without context
+
+compileWithoutContext :: Simple -> String
+compileWithoutContext (SVar _ x) = x
+compileWithoutContext x = compile x
+
+compileDefWithoutContext :: SimpleDef -> String
+compileDefWithoutContext (LetS n t) = "let " ++ n ++ " = " ++ compileWithoutContext t

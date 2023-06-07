@@ -254,6 +254,13 @@ parserDef = do
       t <- fullParser
       return $ Let name vs t
 
+parserDefs :: Parser [Def]
+parserDefs = do
+  d <- parserDef
+  ds <- many (try $ symbol ";" >> parserDef)
+  _ <- optional $ symbol ";"
+  return $ (d:ds)
+
 -- parsing execs
 
 parserID :: Parser ID
@@ -271,6 +278,14 @@ parserExec = do
          t <- fullParser
          return $ Exec idd t
 
+-- parsing load
+
+parserLoad :: Parser Action
+parserLoad = do
+        _ <- symbol ":load"
+        path <- lexeme $ many (alphaNumChar <|> letterChar <|> oneOf "./-")
+        return $ Load path
+
 -- parsing actions
 
 parserTypes :: Parser Action
@@ -286,12 +301,13 @@ parserShow = do
           return $ Show t
 
 parserAction :: Parser Action
-parserAction = sc >> (try parserShow <|> try parserTypes <|> try (fmap Def parserDef) <|> try parserExec)
+parserAction = sc >> (try parserShow <|> try parserTypes <|> try parserLoad <|> try (fmap Def parserDef) <|> try parserExec)
 
 parserActions :: Parser [Action]
 parserActions = do
           a <- parserAction
-          as <- many (symbol ";" >> parserAction)
+          as <- many (try $ symbol ";" >> parserAction)
+          _ <- optional $ symbol ";"
           return $ (a:as)
 
 
@@ -313,4 +329,8 @@ initialState pos input = State
 
 parseWithPos :: Int -> Int -> String -> Either (ParseErrorBundle String Void) [Action]
 parseWithPos editorNum line s = snd (ST.evalState (runParserT' (parserActions <* eof) (initialState pos s)) (0,editorNum))
+                    where pos = SourcePos "" (mkPos line) (mkPos 1)
+
+parseDef :: Int -> Int -> String -> Either (ParseErrorBundle String Void) [Def]
+parseDef editorNum line s = snd (ST.evalState (runParserT' (parserDefs <* eof) (initialState pos s)) (0,editorNum))
                     where pos = SourcePos "" (mkPos line) (mkPos 1)
