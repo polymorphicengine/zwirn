@@ -6,10 +6,14 @@ import qualified Prelude as P
 import qualified Sound.Tidal.Context as T
 
 import qualified Data.Map as Map
+import qualified Data.String as St
 import qualified Control.Monad as M
 
 -- this module contains meta functions
 default (Pattern Number, Pattern String)
+
+instance {-# INCOHERENT #-} St.IsString (Pattern String) where
+  fromString = P.pure
 
 type Pattern = T.Pattern
 type ValueMap = T.ValueMap

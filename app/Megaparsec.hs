@@ -101,7 +101,7 @@ pVar = lexeme $ (do
 pQuote :: Parser Term
 pQuote = lexeme $ (do
   i <- getCoord
-  _ <- symbol "\""
+  _ <- symbolNoSpace "\""
   x <- pString
   _ <- symbolNoSpace "\""
   j <- getCoord2
