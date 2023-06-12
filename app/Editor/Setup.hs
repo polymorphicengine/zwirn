@@ -2,10 +2,10 @@ module Editor.Setup where
 
 import Control.Monad  (void)
 
-import Sound.Tidal.Context (Stream)
+import Sound.Tidal.Context (Stream, Pattern)
 
 import Control.Concurrent (forkIO)
-import Control.Concurrent.MVar  (newEmptyMVar)
+import Control.Concurrent.MVar  (MVar, newEmptyMVar, newMVar)
 
 import Data.IORef (newIORef)
 
@@ -15,10 +15,11 @@ import Editor.Backend
 import Editor.UI
 import Editor.Hint
 
-setupBackend :: Stream -> UI ()
+setupBackend :: Stream -> UI Env
 setupBackend str = do
 
-       env <- startInterpreter str
+       hyd <- liftIO $ newMVar (pure "solid().out()")
+       env <- startInterpreter str hyd
 
        win <- askWindow
 
@@ -27,15 +28,16 @@ setupBackend str = do
 
        createHaskellFunction "evaluateBlockLine" (\cm l ->  (runUI win $ interpretCommandsLine cm False l env))
        createHaskellFunction "evaluateLineLine" (\cm l -> (runUI win $ interpretCommandsLine cm True l env))
+       return env
 
 
-startInterpreter :: Stream -> UI Env
-startInterpreter str = do
+startInterpreter :: Stream -> MVar (Pattern String) -> UI Env
+startInterpreter str hyd = do
            win <- askWindow
            mMV <- liftIO newEmptyMVar
            rMV <- liftIO newEmptyMVar
            void $ liftIO $ forkIO $ hintJob mMV rMV
-           return $ Env win str mMV rMV
+           return $ Env win str mMV rMV hyd
 
 createShortcutFunctions :: Stream -> Element -> UI ()
 createShortcutFunctions str mainEditor = do

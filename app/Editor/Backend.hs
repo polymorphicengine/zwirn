@@ -2,9 +2,9 @@ module Editor.Backend where
 
 import Control.Monad  (void)
 
-import qualified Sound.Tidal.Context as T (Stream, streamReplace)
+import qualified Sound.Tidal.Context as T (streamReplace)
 
-import Control.Concurrent.MVar  (MVar, putMVar, takeMVar)
+import Control.Concurrent.MVar  (putMVar, takeMVar, modifyMVar_)
 import Control.Exception (try, SomeException)
 
 import Foreign.JavaScript (JSObject)
@@ -20,12 +20,6 @@ import Editor.UI
 import Megaparsec
 import Compiler
 import Language
-
-data Env = Env {windowE :: Window
-               ,streamE :: T.Stream
-               ,hintM :: MVar InterpreterMessage
-               ,hintR :: MVar InterpreterResponse
-               }
 
 data ActionResponse = ASucc String
                     | AErr String
@@ -83,6 +77,13 @@ processAction env (Type t) = do
                         res <- liftIO $ takeMVar (hintR env)
                         case res of
                           RType typ -> return (ASucc typ)
+                          RError e -> return $ AErr e
+                          _ -> return $ AErr "Unkown error!"
+processAction env (Hydra t) = do
+                        putMVar (hintM env) $ MHydra (compile $ simplify t)
+                        res <- liftIO $ takeMVar (hintR env)
+                        case res of
+                          RHydra p -> modifyMVar_ (hydraE env) (const $ pure p) >> return (ASucc "")
                           RError e -> return $ AErr e
                           _ -> return $ AErr "Unkown error!"
 processAction env (Load path) = do

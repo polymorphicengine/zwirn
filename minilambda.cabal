@@ -24,6 +24,7 @@ library
                    Prelude.MiniPrelude
                    Prelude.Control
                    Prelude.Params
+                   Prelude.Hydra
   build-depends: base,
                  containers,
                  template-haskell,
@@ -41,6 +42,7 @@ executable minilambda-interpreter
                       Editor.Setup
                       Editor.UI
                       Editor.Highlight
+                      Editor.Hydra
                       Language
                       Compiler
                       Megaparsec

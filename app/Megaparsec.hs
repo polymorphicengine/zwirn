@@ -300,8 +300,14 @@ parserShow = do
           t <- fullParser
           return $ Show t
 
+parserHydra :: Parser Action
+parserHydra = do
+          _ <- symbol ":hydra"
+          t <- fullParser
+          return $ Hydra t
+
 parserAction :: Parser Action
-parserAction = sc >> (try parserShow <|> try parserTypes <|> try parserLoad <|> try (fmap Def parserDef) <|> try parserExec)
+parserAction = sc >> (try parserShow <|> try parserHydra <|> try parserTypes <|> try parserLoad <|> try (fmap Def parserDef) <|> try parserExec)
 
 parserActions :: Parser [Action]
 parserActions = do

@@ -15,6 +15,7 @@ import Graphics.UI.Threepenny.Core as C hiding (text)
 import Editor.Setup
 import Editor.UI
 import Editor.Highlight
+import Editor.Hydra
 
 
 
@@ -29,6 +30,18 @@ setup str win = void $ do
      setCallBufferMode NoBuffering -- important for highlighting
 
      editor <- UI.textarea # set (attr "id") "editor0"
+
+     winWidth <- getWindowWidth
+     winHeight <- getWindowHeight
+
+     canvas <- UI.canvas # set UI.id_ "hydraCanvas" # set style [("position", "fixed")
+                                                                ,("left","0")
+                                                                ,("top","0")
+                                                                ,("width","100%")
+                                                                ,("height","100%")
+                                                                ,("pointer-events","none")]
+                                                    # set UI.width (round $ winWidth*2)
+                                                    # set UI.height (round $ winHeight*2)
 
      output <- UI.pre # set UI.id_ "output"
                       #. "outputBox"
@@ -54,17 +67,21 @@ setup str win = void $ do
      _ <- liftIO $ forkIO $ highlightLoopOuter win str buf
 
      _ <- (element body) #+
-                       [element container #+ [element editorContainer
+                       [element canvas
+                       ,element container #+ [element editorContainer
                                              , element outputWrapper]
                        ]
 
-     setupBackend str
+     env <- setupBackend str
 
      _ <- (element body) #+
                         [element fileInput
                         ,tidalSettings
                         ]
      makeEditor "editor0"
+     startHydra
+     hydBuf <- liftIO $ newMVar ""
+     liftIO $ forkIO $ hydraLoopInit win str (hydraE env) hydBuf
 
 
 

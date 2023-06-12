@@ -6,6 +6,7 @@ import qualified Prelude as P
 import qualified Sound.Tidal.Context as T
 
 import qualified Data.Map as Map
+import qualified Control.Monad as M
 
 -- this module contains meta functions
 default (Pattern Number, Pattern String)
@@ -187,6 +188,23 @@ groupEventsBy f (e:es) = ins (groupEventsBy f es) e
 sameDur :: T.Event a -> T.Event a -> Bool
 sameDur e1 e2 = (T.whole e1 P.== T.whole e2) P.&& (T.part e1 P.== T.part e2)
 
+-- lifting
+
+lift :: (a -> r) -> Pattern a -> Pattern r
+lift = M.liftM
+
+lift2 :: (a -> b -> r) -> Pattern a -> Pattern b -> Pattern r
+lift2 = M.liftM2
+
+lift3 :: (a -> b -> c -> r) -> Pattern a -> Pattern b -> Pattern c -> Pattern r
+lift3 = M.liftM3
+
+lift4 :: (a -> b -> c -> d -> r) -> Pattern a -> Pattern b -> Pattern c -> Pattern d -> Pattern r
+lift4 = M.liftM4
+
+lift5 :: (a -> b -> c -> d -> e -> r) -> Pattern a -> Pattern b -> Pattern c -> Pattern d -> Pattern e -> Pattern r
+lift5 = M.liftM5
+
 -- assumes that all events in the list have same whole/part
 collectEvent :: [T.Event a] -> Maybe (T.Event [a])
 collectEvent [] = P.Nothing
@@ -209,3 +227,17 @@ collectBy f = T.withEvents (collectEventsBy f)
 
 collect :: Pattern a -> Pattern [a]
 collect = collectBy sameDur
+
+--
+
+insert :: String -> [String] -> String
+insert code args = go code
+    where
+    at xs i = xs P.!! i
+    argument i = (args `at` i)
+
+    go []           = []
+    go ('%':'%':cs) = '%' : go cs
+    go ('%':c  :cs) = argument index P.++ go cs
+        where index = P.fromEnum c P.- P.fromEnum '1'
+    go (c:cs)       = c : go cs

@@ -1,12 +1,11 @@
 module Editor.UI where
 
-
 import Control.Monad  (void)
 
-import Sound.Tidal.Context (Stream, sPMapMV)
+import Sound.Tidal.Context hiding ((#))-- (Stream, sPMapMV, Pattern, queryArc, Arc(..))
 
 import Control.Concurrent (threadDelay)
-import Control.Concurrent.MVar  (modifyMVar_)
+import Control.Concurrent.MVar  (modifyMVar_, MVar)
 
 import Data.IORef (IORef, readIORef, modifyIORef)
 import Data.Map as Map  (empty)
@@ -14,7 +13,16 @@ import Data.Map as Map  (empty)
 import Foreign.JavaScript (JSObject)
 
 import qualified Graphics.UI.Threepenny as UI
-import Graphics.UI.Threepenny.Core as C hiding (text)
+import Graphics.UI.Threepenny.Core as C hiding (text, value)
+
+import Editor.Hint
+
+data Env = Env {windowE :: Window
+               ,streamE :: Stream
+               ,hintM :: MVar InterpreterMessage
+               ,hintR :: MVar InterpreterResponse
+               ,hydraE :: MVar (Pattern String)
+               }
 
 hush :: Stream -> IO ()
 hush str  = modifyMVar_ (sPMapMV str) (\_ -> return Map.empty)

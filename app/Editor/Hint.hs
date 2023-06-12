@@ -9,15 +9,17 @@ import Language.Haskell.Interpreter as Hint
 
 import Data.List (intercalate)
 
-import Sound.Tidal.Context (ControlPattern)
+import Sound.Tidal.Context (Pattern, ControlPattern)
 
 data InterpreterMessage = MMini String
                         | MDef String
                         | MType String
+                        | MHydra String
 
 data InterpreterResponse = RMini ControlPattern
                          | RType String
                          | RError String
+                         | RHydra (Pattern String)
                          | RSucc
                          deriving Show
 
@@ -38,8 +40,8 @@ hintJob mMV rMV = do
 staticInterpreter :: Interpreter ()
 staticInterpreter = do
         Hint.set [languageExtensions := exts]
-        Hint.loadModules ["src/Meta.hs","src/Generic.hs","src/Prelude/MiniPrelude.hs","src/Prelude/Control.hs", "src/Prelude/Params.hs"]
-        Hint.setTopLevelModules ["Meta","Generic","Prelude.MiniPrelude","Prelude.Control", "Prelude.Params"]
+        Hint.loadModules ["src/Meta.hs","src/Generic.hs","src/Prelude/MiniPrelude.hs","src/Prelude/Control.hs", "src/Prelude/Params.hs", "src/Prelude/Hydra.hs"]
+        Hint.setTopLevelModules ["Meta","Generic","Prelude.MiniPrelude","Prelude.Control", "Prelude.Params", "Prelude.Hydra"]
         --Hint.runStmt "default (Pattern Int, Pattern String)"
 
 interpreterLoop :: MVar InterpreterMessage -> MVar InterpreterResponse -> Interpreter ()
@@ -49,6 +51,7 @@ interpreterLoop mMV rMV = do
                       MMini s -> catch (interpretMini s rMV) (\e -> liftIO $ putMVar rMV $ RError $ parseError e)
                       MType s -> catch (interpretType s rMV) (\e -> liftIO $ putMVar rMV $ RError $ parseError e)
                       MDef s -> catch ((Hint.runStmt s) >> (liftIO $ putMVar rMV $ RSucc)) (\e -> liftIO $ putMVar rMV $ RError $ parseError e)
+                      MHydra s -> catch (interpretHydra s rMV) (\e -> liftIO $ putMVar rMV $ RError $ parseError e)
                     interpreterLoop mMV rMV
 
 
@@ -64,6 +67,10 @@ interpretType cont rMV = do
                     Left errors -> liftIO $ putMVar rMV $ RError $ intercalate "\n" $ map errMsg errors
                     Right out -> liftIO $ putMVar rMV $ RType out
 
+interpretHydra :: String -> MVar InterpreterResponse -> Interpreter ()
+interpretHydra s rMV = do
+                      p <- Hint.interpret s (Hint.as :: Pattern String)
+                      liftIO $ putMVar rMV $ RHydra p
 
 parseError:: InterpreterError -> String
 parseError (UnknownError s) = "Unknown error: " ++ s
