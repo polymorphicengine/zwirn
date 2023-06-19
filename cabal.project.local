@@ -1,1 +1,2 @@
+allow-newer: threepenny-gui:template-haskell
 ignore-project: False

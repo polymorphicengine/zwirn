@@ -17,6 +17,7 @@ operators = ["//"
             ,"*|"
             ,"|*|"
             ,"|*"
+            ,"++"
             ,"|+"
             ,"+|"
             ,"+"
@@ -72,7 +73,7 @@ pOp :: Parser String
 pOp = asum $ map symbolNoSpace operators
 
 pString :: Parser String
-pString = ((:) <$> letterChar <*> many alphaNumChar) <|> pOp
+pString = ((:) <$> letterChar <*> many alphaNumChar)
 
 -- parsing simple values
 -- note that we don't store the end line number of a value, we assume every value
@@ -109,7 +110,7 @@ pQuote = lexeme $ (do
   <?> "string")
 
 pRest :: Parser Term
-pRest = symbol "~" >> (return TRest) <?> "rest"
+pRest = symbolNoSpace "~" >> symbol " " >> (return TRest) <?> "rest"
 
 pNum :: Parser Term
 pNum = lexeme $ (do
@@ -121,7 +122,7 @@ pNum = lexeme $ (do
 
 
 pVal :: Parser Term
-pVal = pRest <|> pNum <|> pVar <|> pQuote
+pVal =  try pRest <|> pNum <|> pVar <|> pQuote -- <|> fmap (TVar ((0,0),(0,0))) (lexeme pOp)
 
 
 -- parsing of a sequence of terms is context depended, usually it is parsed as
@@ -134,7 +135,7 @@ parserOps = map (\x -> binaryL x (TOp x)) operators
 
 
 topOps :: [[Operator Parser Term]]
-topOps = [[manyPostfix "@" TElong], [pEuclidPost], [binaryL "%" TPoly], parserOps, [ binaryL  "*"  TMult, binaryL  "/"  TDiv]]
+topOps = [[manyPostfix "@" TElong], [pEuclidPost], [binaryL "%" TPoly], [ binaryL  "*"  TMult, binaryL  "/"  TDiv]]
 
 topParser :: Parser Term
 topParser = makeExprParser (pVal <|> pChoiceSeq <|> pAltExp <|> parens fullParser) topOps
@@ -176,7 +177,8 @@ pAltExp = angles $ do
 
 
 bottomOps :: [[Operator Parser Term]]
-bottomOps = [[ binaryL  ""  TApp ]
+bottomOps = [[binaryL  ""  TApp]
+             ,parserOps
              ,[binaryR "." (TOp ".")]
              ,[binaryL "#" (TOp "#")]
              ,[binaryR "$" (TOp "$")]

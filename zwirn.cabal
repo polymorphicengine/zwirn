@@ -1,5 +1,5 @@
 cabal-version:      >=1.10
-name:               minilambda
+name:               zwirn
 
 -- The package version.
 -- See the Haskell package versioning policy (PVP) for standards
@@ -33,7 +33,7 @@ library
   ghc-options: -threaded
                -Wall
 
-executable minilambda-interpreter
+executable zwirn-interpreter
     main-is:          Main.hs
     other-modules:    Editor.Backend
                       Editor.Block
@@ -54,7 +54,7 @@ executable minilambda-interpreter
                       tidal == 1.9.2,
                       tidal-link,
                       deepseq,
-                      minilambda,
+                      zwirn,
                       hint,
                       threepenny-gui,
                       exceptions,
