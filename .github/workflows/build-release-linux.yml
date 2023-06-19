@@ -84,13 +84,6 @@ jobs:
         mv binary/haskell-libs/packages/package.db binary/haskell-libs/package.db
         sed -i 's/\/home\/runner\/.cabal\/store\/ghc-${{ matrix.ghc }}/${pkgroot}\/packages/g' binary/haskell-libs/package.db/*
 
-    #- name: move ghc settings etc
-    #  run: |
-    #    mv tidal-listener/binary/haskell-libs/ghc-packages/settings tidal-listener/binary/haskell-libs/settings
-    #    mv tidal-listener/binary/haskell-libs/ghc-packages/platformConstants tidal-listener/binary/haskell-libs/platformConstants
-    #    mv tidal-listener/binary/haskell-libs/ghc-packages/llvm-targets tidal-listener/binary/haskell-libs/llvm-targets
-    #    mv tidal-listener/binary/haskell-libs/ghc-packages/llvm-passes tidal-listener/binary/haskell-libs/llvm-passes
-
     - name: ghc-pkg recache
       run: |
         ghc-pkg --package-db=binary/haskell-libs/package.conf.d recache
@@ -134,17 +127,18 @@ jobs:
 
     - name: move static
       run: cp -r static binary/static
+      
+    - name: move src
+      run: cp -r src binary/src
 
     - name: move executable
       run: |
         cp dist-newstyle/build/x86_64-linux/ghc-${{ matrix.ghc }}/zwirn-0.1.0.0/x/zwirn-interpreter/build/zwirn-interpreter/zwirn-interpreter binary/zwirn
 
-    - name: zip files
-      run: tar cvfj zwirn-release-linux.tar binary/*
-
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
-        path: zwirn-release-linux.tar
+        name: zwirn-release-linux.tar
+        path: binary
 
   release:
     runs-on: ubuntu-latest
