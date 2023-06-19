@@ -61,7 +61,7 @@ jobs:
         mkdir -p binary/haskell-libs/ghc-packages/
         mkdir -p binary/haskell-libs/package.conf.d/
         mkdir -p binary/haskell-libs/bin/
-        cp -r ${{ steps.setup-haskell-cabal.outputs.ghc-path }}/../ghc/${{ matrix.ghc }}/lib/ghc-${{ matrix.ghc }}/lib/x86_64-linux-ghc-${{ matrix.ghc }}/*binary/haskell-libs/ghc-packages
+        cp -r ${{ steps.setup-haskell-cabal.outputs.ghc-path }}/../ghc/${{ matrix.ghc }}/lib/ghc-${{ matrix.ghc }}/lib/x86_64-linux-ghc-${{ matrix.ghc }}/* binary/haskell-libs/ghc-packages
         cp -r ${{ steps.setup-haskell-cabal.outputs.ghc-path }}/../ghc/${{ matrix.ghc }}/lib/ghc-${{ matrix.ghc }}/lib/package.conf.d/* binary/haskell-libs/package.conf.d
         cp -r ${{ steps.setup-haskell-cabal.outputs.ghc-path }}/../ghc/${{ matrix.ghc }}/lib/ghc-${{ matrix.ghc }}/lib/settings binary/haskell-libs/settings
         cp -r ${{ steps.setup-haskell-cabal.outputs.ghc-path }}/../ghc/${{ matrix.ghc }}/lib/ghc-${{ matrix.ghc }}/lib/llvm-targets binary/haskell-libs/llvm-targets
