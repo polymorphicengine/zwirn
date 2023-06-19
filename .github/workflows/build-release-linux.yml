@@ -135,10 +135,13 @@ jobs:
       run: |
         cp dist-newstyle/build/x86_64-linux/ghc-${{ matrix.ghc }}/zwirn-0.1.0.0/x/zwirn-interpreter/build/zwirn-interpreter/zwirn-interpreter binary/zwirn
 
+    - name: zip files
+      run: tar cvfj zwirn-release-linux.tar binary/*
+
     - uses: actions/upload-artifact@v3
       with:
-        name: zwirn-release-linux.tar
-        path: binary
+        name: zwirn-release-linux
+        path: zwirn-release-linux
 
   release:
     runs-on: ubuntu-latest
