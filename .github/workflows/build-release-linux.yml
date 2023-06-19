@@ -22,21 +22,37 @@ jobs:
         ghc-version: ${{ matrix.ghc }}
         cabal-version: ${{ matrix.cabal }}
 
-    - name: Freeze
-      run: cabal freeze
-
-    - name: Cache
-      uses: actions/cache@v2
-      with:
-        path: |
-          ${{ steps.setup-haskell-cabal.outputs.ghc-path }}
-          ${{ steps.setup-haskell-cabal.outputs.cabal-store }}
-          dist-newstyle
-        key: ${{ runner.os }}-${{ matrix.ghc }}-${{ hashFiles('zwirn/src') }}-${{ hashFiles('zwirn/app') }}
-
-    - name: cabal update and build
+    - name: Configure the build
       run: |
         cabal update
+        cabal configure --enable-tests --enable-benchmarks --disable-documentation
+        cabal build --dry-run
+      # The last step generates dist-newstyle/cache/plan.json for the cache key.
+
+    - name: Restore cached dependencies
+      uses: actions/cache/restore@v3
+      id: cache
+      env:
+          key: ${{ runner.os }}-ghc-${{ steps.setup.outputs.ghc-version }}-cabal-${{ steps.setup.outputs.cabal-version }}
+      with:
+          path: ${{ steps.setup.outputs.cabal-store }}
+          key: ${{ env.key }}-plan-${{ hashFiles('**/plan.json') }}
+          restore-keys: ${{ env.key }}-
+          
+    - name: Install dependencies
+      run: cabal build all --only-dependencies
+
+      # Cache dependencies already here, so that we do not have to rebuild them should the subsequent steps fail.
+    - name: Save cached dependencies
+      uses: actions/cache/save@v3
+        # Caches are immutable, trying to save with the same key would error.
+      if: ${{ steps.cache.outputs.cache-primary-key != steps.cache.outputs.cache-matched-key }}
+      with:
+          path: ${{ steps.setup.outputs.cabal-store }}
+          key: ${{ steps.cache.outputs.cache-primary-key }}
+
+    - name: cabal build and install
+      run: |
         cabal build 
         cabal install zwirn --lib
 
@@ -118,7 +134,7 @@ jobs:
 
     - name: move executable
       run: |
-        cp dist-newstyle/build/x86_64-linux/ghc-${{ matrix.ghc }}/zwirn-0.1.0.0/x/zwirn/build/zwirn/zwirn zwirn/binary/zwirn
+        cp dist-newstyle/build/x86_64-linux/ghc-${{ matrix.ghc }}/zwirn-0.1.0.0/x/zwirn-interpreter/build/zwirn-interpreter/zwirn-interpreter zwirn/binary/zwirn
 
     - name: zip files
       run: |
