@@ -13,10 +13,10 @@ jobs:
 
     steps:
     - name: Check out code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Setup Haskell
-      uses: haskell/actions/setup@v1
+      uses: haskell/actions/setup@v2
       id: setup-haskell-cabal
       with:
         ghc-version: ${{ matrix.ghc }}
@@ -128,7 +128,7 @@ jobs:
 
     - name: fake gcc
       run: |
-        cp zwirn/fake_gcc.sh zwirn/binary/haskell-libs/bin/fake_gcc.sh
+        cp fake_gcc.sh zwirn/binary/haskell-libs/bin/fake_gcc.sh
         sed -i 's/gcc/bin\/fake_gcc.sh/g' zwirn/binary/haskell-libs/settings
         chmod 755 zwirn/binary/haskell-libs/bin/fake_gcc.sh
 
