@@ -12,24 +12,24 @@ jobs:
         cabal: ['3.8.1.0']
 
     steps:
-    - name: Check out code
+    - name: check out code
       uses: actions/checkout@v3
 
-    - name: Setup Haskell
+    - name: setup haskell
       uses: haskell/actions/setup@v2
       id: setup-haskell-cabal
       with:
         ghc-version: ${{ matrix.ghc }}
         cabal-version: ${{ matrix.cabal }}
 
-    - name: Configure the build
+    - name: configure the build
       run: |
         cabal update
         cabal configure --enable-tests --enable-benchmarks --disable-documentation
         cabal build --dry-run
       # The last step generates dist-newstyle/cache/plan.json for the cache key.
 
-    - name: Restore cached dependencies
+    - name: restore cached dependencies
       uses: actions/cache/restore@v3
       id: cache
       env:
@@ -38,12 +38,12 @@ jobs:
           path: ${{ steps.setup-haskell-cabal.outputs.cabal-store }}
           key: ${{ env.key }}-plan-${{ hashFiles('**/plan.json') }}
           restore-keys: ${{ env.key }}-
-          
-    - name: Install dependencies
+
+    - name: install dependencies
       run: cabal build all --only-dependencies
 
       # Cache dependencies already here, so that we do not have to rebuild them should the subsequent steps fail.
-    - name: Save cached dependencies
+    - name: save cached dependencies
       uses: actions/cache/save@v3
         # Caches are immutable, trying to save with the same key would error.
       if: ${{ steps.cache.outputs.cache-primary-key != steps.cache.outputs.cache-matched-key }}
@@ -53,7 +53,7 @@ jobs:
 
     - name: cabal build and install
       run: |
-        cabal build 
+        cabal build
         cabal install zwirn --lib
 
     - name: move GHC libs and configs
@@ -132,6 +132,9 @@ jobs:
         cp fake_gcc.sh zwirn/binary/haskell-libs/bin/fake_gcc.sh
         sed -i 's/gcc/bin\/fake_gcc.sh/g' zwirn/binary/haskell-libs/settings
         chmod 755 zwirn/binary/haskell-libs/bin/fake_gcc.sh
+
+    - name: move static
+      run: cp -r static binary/static
 
     - name: move executable
       run: |
