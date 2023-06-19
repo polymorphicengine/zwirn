@@ -141,7 +141,7 @@ jobs:
     - uses: actions/upload-artifact@v3
       with:
         name: zwirn-release-linux
-        path: zwirn-release-linux
+        path: zwirn-release-linux.tar
 
   release:
     runs-on: ubuntu-latest
