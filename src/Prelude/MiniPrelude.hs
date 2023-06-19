@@ -26,6 +26,9 @@ const = toPat (P.const :: Pattern a -> Pattern b -> Pattern a)
 (.) = toPat compose
     where compose = (P..) :: ((Pattern b -> Pattern d) -> (Pattern a -> Pattern b)-> Pattern a -> Pattern d)
 
+(++) :: P (Pattern String -> Pattern String -> Pattern String)
+(++) = toPat $$ lift2 (P.++)
+
 rev :: Pat a => P (Pattern a -> Pattern a)
 rev = toPat T.rev
 
