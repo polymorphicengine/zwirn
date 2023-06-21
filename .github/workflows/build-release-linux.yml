@@ -2,6 +2,10 @@ name: build-release-linux
 
 on: [push, pull_request]
 
+env:
+ ghc-package-path: ${{ steps.setup-haskell-cabal.outputs.ghc-path }}/../ghc/${{ matrix.ghc }}/lib/ghc-${{ matrix.ghc }}/lib
+ cabal-package-path: ${{ steps.setup-haskell-cabal.outputs.cabal-store }}/ghc-${{ matrix.ghc }} 
+
 jobs:
   build:
 
@@ -21,10 +25,6 @@ jobs:
       with:
         ghc-version: ${{ matrix.ghc }}
         cabal-version: ${{ matrix.cabal }}
-        
-    - env:
-       ghc-package-path: ${{ steps.setup-haskell-cabal.outputs.ghc-path }}/../ghc/${{ matrix.ghc }}/lib/ghc-${{ matrix.ghc }}/lib
-       cabal-package-path: ${{ steps.setup-haskell-cabal.outputs.cabal-store }}/ghc-${{ matrix.ghc }} 
         
     - name: configure the build
       run: |
