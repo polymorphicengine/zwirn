@@ -21,7 +21,11 @@ jobs:
       with:
         ghc-version: ${{ matrix.ghc }}
         cabal-version: ${{ matrix.cabal }}
-
+        
+    - env:
+       ghc-package-path: ${{ steps.setup-haskell-cabal.outputs.ghc-path }}/../ghc/${{ matrix.ghc }}/lib/ghc-${{ matrix.ghc }}/lib
+       cabal-package-path: ${{ steps.setup-haskell-cabal.outputs.cabal-store }}/ghc-${{ matrix.ghc }} 
+        
     - name: configure the build
       run: |
         cabal update
@@ -61,7 +65,7 @@ jobs:
         mkdir -p binary/haskell-libs/ghc-packages/
         mkdir -p binary/haskell-libs/package.conf.d/
         mkdir -p binary/bin/
-        cp -r ${{ steps.setup-haskell-cabal.outputs.ghc-path }}/../ghc/${{ matrix.ghc }}/lib/ghc-${{ matrix.ghc }}/lib/x86_64-linux-ghc-${{ matrix.ghc }}/* binary/haskell-libs/ghc-packages
+        cp -r ${{ env.ghc-package-path }}/x86_64-linux-ghc-${{ matrix.ghc }}/* binary/haskell-libs/ghc-packages
         cp -r ${{ steps.setup-haskell-cabal.outputs.ghc-path }}/../ghc/${{ matrix.ghc }}/lib/ghc-${{ matrix.ghc }}/lib/package.conf.d/* binary/haskell-libs/package.conf.d
         cp -r ${{ steps.setup-haskell-cabal.outputs.ghc-path }}/../ghc/${{ matrix.ghc }}/lib/ghc-${{ matrix.ghc }}/lib/settings binary/haskell-libs/settings
         cp -r ${{ steps.setup-haskell-cabal.outputs.ghc-path }}/../ghc/${{ matrix.ghc }}/lib/ghc-${{ matrix.ghc }}/lib/llvm-targets binary/haskell-libs/llvm-targets
