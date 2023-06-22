@@ -60,7 +60,7 @@ jobs:
       run: |
         mkdir -p binary/haskell-libs/ghc-packages/
         mkdir -p binary/haskell-libs/package.conf.d/
-        mkdir -p binary/bin/
+        mkdir -p binary/haskell-libs/bin/
         cp -r ${{ steps.setup-haskell-cabal.outputs.ghc-path }}/../ghc/${{ matrix.ghc }}/lib/ghc-${{ matrix.ghc }}/lib/x86_64-linux-ghc-${{ matrix.ghc }}/* binary/haskell-libs/ghc-packages
         cp -r ${{ steps.setup-haskell-cabal.outputs.ghc-path }}/../ghc/${{ matrix.ghc }}/lib/ghc-${{ matrix.ghc }}/lib/package.conf.d/* binary/haskell-libs/package.conf.d
         cp -r ${{ steps.setup-haskell-cabal.outputs.ghc-path }}/../ghc/${{ matrix.ghc }}/lib/ghc-${{ matrix.ghc }}/lib/settings binary/haskell-libs/settings
@@ -120,9 +120,9 @@ jobs:
 
     - name: fake gcc
       run: |
-        cp fake_gcc.sh binary/bin/fake_gcc.sh
+        cp fake_gcc.sh binary/haskell-libs/bin/fake_gcc.sh
         sed -i 's/gcc/bin\/fake_gcc.sh/g' binary/haskell-libs/settings
-        chmod 755 binary/bin/fake_gcc.sh
+        chmod 755 binary/haskell-libs/bin/fake_gcc.sh
 
     - name: move static
       run: cp -r static binary/static
