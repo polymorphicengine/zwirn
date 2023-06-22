@@ -5,6 +5,7 @@ import Editor.Hint
 
 data Config = Config {listenPort :: Int
                      ,dirtPort :: Int
+                     ,tpPort :: Int
                      ,hintMode :: HintMode
                      } deriving (Eq,Show)
 
@@ -18,6 +19,7 @@ conf = info (configParser <**> helper)
 configParser :: Parser Config
 configParser = Config <$> listenPortParser
                       <*> dirtPortParser
+                      <*> tpPortParser
                       <*> noGhcParser
 
 listenPortParser :: Parser Int
@@ -36,6 +38,15 @@ dirtPortParser = option auto
                     <> help "Specify the dirt port"
                     <> showDefault
                     <> value 5720
+                    <> metavar "INT")
+
+tpPortParser :: Parser Int
+tpPortParser = option auto
+                     ( long "tp-port"
+                    <> short 'p'
+                    <> help "Specify the threepenny port"
+                    <> showDefault
+                    <> value 8023
                     <> metavar "INT")
 
 noGhcParser :: Parser HintMode

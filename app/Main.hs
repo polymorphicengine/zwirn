@@ -22,5 +22,6 @@ main = do
 
     startGUI C.defaultConfig {
           jsStatic = Just $ execPath ++ "static",
-          jsCustomHTML     = Just "tidal.html"
+          jsCustomHTML     = Just "tidal.html",
+          jsPort = Just (tpPort config)
         } $ setup str (hintMode config)
