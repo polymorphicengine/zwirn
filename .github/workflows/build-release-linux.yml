@@ -66,7 +66,7 @@ jobs:
         cp -r ${{ steps.setup-haskell-cabal.outputs.ghc-path }}/../ghc/${{ matrix.ghc }}/lib/ghc-${{ matrix.ghc }}/lib/settings binary/haskell-libs/settings
         cp -r ${{ steps.setup-haskell-cabal.outputs.ghc-path }}/../ghc/${{ matrix.ghc }}/lib/ghc-${{ matrix.ghc }}/lib/llvm-targets binary/haskell-libs/llvm-targets
         cp -r ${{ steps.setup-haskell-cabal.outputs.ghc-path }}/../ghc/${{ matrix.ghc }}/lib/ghc-${{ matrix.ghc }}/lib/llvm-passes binary/haskell-libs/llvm-passes
-        cp -r ${{ steps.setup-haskell-cabal.outputs.ghc-path }}/../ghc/${{ matrix.ghc }}/lib/ghc-${{ matrix.ghc }}/lib/bin/* binary/bin
+        cp -r ${{ steps.setup-haskell-cabal.outputs.ghc-path }}/../ghc/${{ matrix.ghc }}/lib/ghc-${{ matrix.ghc }}/lib/bin/* binary/haskell-libs/bin
         ls binary/haskell-libs/ghc-packages
 
     - name: move installed packages
