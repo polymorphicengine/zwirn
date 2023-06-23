@@ -159,7 +159,8 @@ round = toPat $$ toNum (lift (P.round :: Double -> Int))
 floor :: P (Pattern Number -> Pattern Number)
 floor = toPat $$ toNum (lift (P.floor :: Double -> Int))
 
-
+show :: P.Show a => P (Pattern a -> Pattern String)
+show = toPat $$ (lift P.show)
 
 
 -- samples
