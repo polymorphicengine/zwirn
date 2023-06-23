@@ -163,6 +163,7 @@ show :: P.Show a => P (Pattern a -> Pattern String)
 show = toPat $$ (lift P.show)
 
 
+
 -- samples
 
 bd :: Pattern String
