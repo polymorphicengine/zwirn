@@ -158,7 +158,7 @@ jobs:
 
     - name: Release
       uses: softprops/action-gh-release@v1
-       with:
-          files: |
+      with:
+        files: |
                 out/make/deb/x64/*.deb
                 out/make/rpm/x64/*.rpm
