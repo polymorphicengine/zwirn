@@ -43,6 +43,7 @@ executable zwirn-interpreter
                       Editor.UI
                       Editor.Highlight
                       Editor.Hydra
+                      Editor.CommandLine
                       Language
                       Compiler
                       Megaparsec
@@ -58,8 +59,12 @@ executable zwirn-interpreter
                       hint,
                       threepenny-gui,
                       exceptions,
-                      filepath
+                      filepath,
+                      optparse-applicative
     hs-source-dirs:   app
     default-language: Haskell2010
     ghc-options: -threaded
                  -Wall
+    ld-options: -Wl,-rpath -Wl,$ORIGIN/c-libs
+    if os(darwin)
+       ld-options: -mmacosx-version-min=10.9

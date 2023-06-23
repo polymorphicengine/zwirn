@@ -4,12 +4,17 @@ module Editor.Hint where
 import Control.Monad.Catch (catch)
 import Control.Concurrent.MVar  (MVar, putMVar, takeMVar)
 
+import System.FilePath  (dropFileName)
+import System.Environment (getExecutablePath)
 
 import Language.Haskell.Interpreter as Hint
+import Language.Haskell.Interpreter.Unsafe as Hint
 
 import Data.List (intercalate)
 
 import Sound.Tidal.Context (Pattern, ControlPattern)
+
+data HintMode = GHC | NoGHC deriving (Eq,Show)
 
 data InterpreterMessage = MMini String
                         | MDef String
@@ -26,23 +31,40 @@ data InterpreterResponse = RMini ControlPattern
 exts :: [Extension]
 exts = [OverloadedStrings, BangPatterns, MonadComprehensions, LambdaCase, ExtendedDefaultRules, NoMonomorphismRestriction, NoImplicitPrelude]
 
-hintJob :: MVar InterpreterMessage -> MVar InterpreterResponse -> IO ()
-hintJob mMV rMV = do
-                result <- catch (Hint.runInterpreter $ staticInterpreter >> (interpreterLoop mMV rMV))
+modulePaths :: String -> [String]
+modulePaths path = map (path ++) ["src/Meta.hs","src/Generic.hs","src/Prelude/MiniPrelude.hs","src/Prelude/Control.hs", "src/Prelude/Params.hs", "src/Prelude/Hydra.hs"]
+
+moduleNames :: [String]
+moduleNames =  ["Meta","Generic","Prelude.MiniPrelude","Prelude.Control", "Prelude.Params", "Prelude.Hydra"]
+
+ghcArgs :: String -> [String]
+ghcArgs path = ["-clear-package-db", "-package-db", path ++ "haskell-libs/package.conf.d", "-package-db", path ++ "haskell-libs/package.db", "-v"]
+
+runUnsafeInterpreter :: Interpreter a -> IO (Either InterpreterError a)
+runUnsafeInterpreter interpreter = do
+  execPath <- dropFileName <$> getExecutablePath
+  Hint.unsafeRunInterpreterWithArgsLibdir (ghcArgs execPath) (execPath ++ "haskell-libs") interpreter
+
+hintJob :: HintMode -> MVar InterpreterMessage -> MVar InterpreterResponse -> IO ()
+hintJob mode mMV rMV = do
+                execPath <- dropFileName <$> getExecutablePath
+                let (runner, path) = case mode of
+                                      GHC -> (Hint.runInterpreter, "")
+                                      NoGHC -> (runUnsafeInterpreter, execPath)
+                result <- catch (runner $ (staticInterpreter path) >> (interpreterLoop mMV rMV))
                           (\e -> return (Left $ UnknownError $ show (parseError e)))
                 -- can this happen? If it happens all definitions made interactively are lost...
                 let response = case result of
                         Left err -> RError (parseError err)
                         Right p  -> RError (show p)
                 putMVar rMV response
-                hintJob mMV rMV
+                hintJob mode mMV rMV
 
-staticInterpreter :: Interpreter ()
-staticInterpreter = do
+staticInterpreter :: String -> Interpreter ()
+staticInterpreter path = do
         Hint.set [languageExtensions := exts]
-        Hint.loadModules ["src/Meta.hs","src/Generic.hs","src/Prelude/MiniPrelude.hs","src/Prelude/Control.hs", "src/Prelude/Params.hs", "src/Prelude/Hydra.hs"]
-        Hint.setTopLevelModules ["Meta","Generic","Prelude.MiniPrelude","Prelude.Control", "Prelude.Params", "Prelude.Hydra"]
-        --Hint.runStmt "default (Pattern Int, Pattern String)"
+        Hint.loadModules (modulePaths path)
+        Hint.setTopLevelModules moduleNames
 
 interpreterLoop :: MVar InterpreterMessage -> MVar InterpreterResponse -> Interpreter ()
 interpreterLoop mMV rMV = do

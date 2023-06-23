@@ -16,13 +16,14 @@ import Editor.Setup
 import Editor.UI
 import Editor.Highlight
 import Editor.Hydra
+import Editor.Hint
 
 
 
-setup :: Stream -> Window -> UI ()
-setup str win = void $ do
+setup :: Stream -> HintMode -> Window -> UI ()
+setup str mode win = void $ do
      --setup GUI
-     void $ return win # set title "minilambda"
+     void $ return win # set title "zwirn"
 
      UI.addStyleSheet win "tidal.css"
      UI.addStyleSheet win "theme.css"
@@ -72,7 +73,7 @@ setup str win = void $ do
                                              , element outputWrapper]
                        ]
 
-     env <- setupBackend str
+     env <- setupBackend str mode
 
      _ <- (element body) #+
                         [element fileInput

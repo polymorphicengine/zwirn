@@ -15,11 +15,11 @@ import Editor.Backend
 import Editor.UI
 import Editor.Hint
 
-setupBackend :: Stream -> UI Env
-setupBackend str = do
+setupBackend :: Stream -> HintMode -> UI Env
+setupBackend str mode = do
 
        hyd <- liftIO $ newMVar (pure "solid().out()")
-       env <- startInterpreter str hyd
+       env <- startInterpreter str mode hyd
 
        win <- askWindow
 
@@ -31,12 +31,12 @@ setupBackend str = do
        return env
 
 
-startInterpreter :: Stream -> MVar (Pattern String) -> UI Env
-startInterpreter str hyd = do
+startInterpreter :: Stream -> HintMode -> MVar (Pattern String) -> UI Env
+startInterpreter str mode hyd = do
            win <- askWindow
            mMV <- liftIO newEmptyMVar
            rMV <- liftIO newEmptyMVar
-           void $ liftIO $ forkIO $ hintJob mMV rMV
+           void $ liftIO $ forkIO $ hintJob mode mMV rMV
            return $ Env win str mMV rMV hyd
 
 createShortcutFunctions :: Stream -> Element -> UI ()
