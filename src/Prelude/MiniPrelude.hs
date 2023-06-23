@@ -153,6 +153,13 @@ loop = timeLoop
 (|/) :: (Pat a, P.Num a, P.Fractional a) => Pattern (Pattern a -> Pattern (Pattern a -> Pattern a))
 (|/) = left (//)
 
+round :: P (Pattern Number -> Pattern Number)
+round = toPat $$ toNum (lift (P.round :: Double -> Int))
+
+floor :: P (Pattern Number -> Pattern Number)
+floor = toPat $$ toNum (lift (P.floor :: Double -> Int))
+
+
 
 
 -- samples
