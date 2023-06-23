@@ -10,7 +10,7 @@ initialize();
  // Time to wait for Threepenny server, milliseconds
 const timeout = 10000;
 // Relative path to the Threepenny binary.
-const relBin = './dist-newstyle/build/x86_64-linux/ghc-9.4.2/zwirn-0.1.0.0/x/zwirn-interpreter/build/zwirn-interpreter/zwirn-interpreter';
+const relBin = './dist-newstyle/build/x86_64-linux/ghc-9.4.2/zwirn-0.1.0.0/x/zwirn-interpreter/build/zwirn-interpreter/zwirn-interpreter'; //binary/zwirn
 
 // Assign a random port to run on.
 freeport((err, port) => {
