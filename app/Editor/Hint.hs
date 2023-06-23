@@ -48,10 +48,10 @@ runUnsafeInterpreter interpreter = do
 hintJob :: HintMode -> MVar InterpreterMessage -> MVar InterpreterResponse -> IO ()
 hintJob mode mMV rMV = do
                 execPath <- dropFileName <$> getExecutablePath
-                let runner = case mode of
-                                      GHC -> Hint.runInterpreter
-                                      NoGHC -> runUnsafeInterpreter
-                result <- catch (runner $ (staticInterpreter execPath) >> (interpreterLoop mMV rMV))
+                let (runner, path) = case mode of
+                                      GHC -> (Hint.runInterpreter, "")
+                                      NoGHC -> (runUnsafeInterpreter, execPath)
+                result <- catch (runner $ (staticInterpreter path) >> (interpreterLoop mMV rMV))
                           (\e -> return (Left $ UnknownError $ show (parseError e)))
                 -- can this happen? If it happens all definitions made interactively are lost...
                 let response = case result of
