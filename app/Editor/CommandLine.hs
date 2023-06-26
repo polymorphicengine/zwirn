@@ -37,7 +37,7 @@ dirtPortParser = option auto
                     <> short 'd'
                     <> help "Specify the dirt port"
                     <> showDefault
-                    <> value 5720
+                    <> value 57120
                     <> metavar "INT")
 
 tpPortParser :: Parser Int
