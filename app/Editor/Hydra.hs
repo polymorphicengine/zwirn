@@ -45,16 +45,16 @@ hydraLoop win str ss pM bufM = do
                                       False -> do
                                         runUI win $ runFunction $ ffi $ "solid().out()"
                                         modifyMVar_ bufM (const $ pure $ "solid().out()")
-                                        threadDelay 100000
+                                        threadDelay 10000
                                         hydraLoop win str ss pM bufM
-                                      True -> threadDelay 100000 >> hydraLoop win str ss pM bufM
+                                      True -> threadDelay 10000 >> hydraLoop win str ss pM bufM
                         (e:_) -> case value e == buf of
                                       False -> do
                                         runUI win $ runFunction $ ffi $ wrapCatchErr $ value e
                                         modifyMVar_ bufM (const $ pure $ value e)
-                                        threadDelay 100000
+                                        threadDelay 10000
                                         hydraLoop win str ss pM bufM
-                                      True -> threadDelay 100000 >> hydraLoop win str ss pM bufM
+                                      True -> threadDelay 10000 >> hydraLoop win str ss pM bufM
 
 wrapCatchErr :: String -> String
 wrapCatchErr st = "try {" ++ st ++ "} catch (err) {}"

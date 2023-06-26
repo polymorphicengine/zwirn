@@ -73,7 +73,7 @@ highlightOnce ss stream buffMV = do
                 c <- liftIO $ streamGetnow' ss stream
                 buffer <- liftIO $ takeMVar buffMV
                 newBuf <- updateBuf buffer (locsMany c ps)
-                liftIO $ threadDelay 100
+                liftIO $ threadDelay 10000
                 liftIO $ putMVar buffMV newBuf
 
 highlightLoopInner :: Window -> SessionState -> Stream -> MVar Buffer -> IO ()
@@ -107,7 +107,6 @@ highlightOn buffMV = putMVar buffMV []
 toggleHighlight :: MVar Bool -> MVar Buffer -> UI ()
 toggleHighlight boolMV buffMV = do
                     bool <- liftIO $ takeMVar boolMV
-                    liftIO $ putStrLn "toggle"
                     case bool of
                       True -> highlightOff buffMV
                       False -> liftIO $ highlightOn buffMV
