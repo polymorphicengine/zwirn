@@ -81,12 +81,14 @@ highlightLoop win stream buf = do
                             runUI win $ highlightOnce stream buf
                             highlightLoop win stream buf--runUI win $ runFunction $ ffi "requestAnimationFrame(highlightLoop)"
 
+processAhead :: Stream -> Link.Micros
+processAhead str = round $ (cProcessAhead $ sConfig str) * 1000000
 
 streamGetnow' :: Stream -> IO Double
 streamGetnow' str = do
   ss <- createAndCaptureAppSessionState (sLink str)
   now <- Link.clock (sLink str)
-  beat <- Link.beatAtTime ss now (cQuantum $! sConfig str)
+  beat <- Link.beatAtTime ss (now + (processAhead str)) (cQuantum $! sConfig str)
   Link.commitAndDestroyAppSessionState (sLink str) ss
   return $ coerce $! beat / (cBeatsPerCycle $! sConfig str)
 
