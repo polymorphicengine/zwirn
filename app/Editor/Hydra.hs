@@ -30,14 +30,9 @@ getWindowWidth = callFunction $ ffi "window.innerWidth"
 getWindowHeight :: UI Double
 getWindowHeight = callFunction $ ffi "window.innerHeight"
 
-hydraLoopInit :: Window -> Stream -> MVar (Pattern String) -> MVar String -> IO ()
-hydraLoopInit win str pM bufM = do
-              ss <- liftIO $ createAndCaptureAppSessionState (sLink str)
-              hydraLoop win str ss pM bufM
-
-hydraLoop :: Window -> Stream -> SessionState -> MVar (Pattern String) -> MVar String -> IO ()
-hydraLoop win str ss pM bufM = do
-          now <- streamGetnow' ss str
+hydraLoop :: Window -> Stream -> MVar (Pattern String) -> MVar String -> IO ()
+hydraLoop win str pM bufM = do
+          now <- streamGetnow' str
           ps <- readMVar pM
           buf <- readMVar bufM
           case queryArc (segment 32 ps) (Arc (toRational now) (toRational now)) of
@@ -46,15 +41,15 @@ hydraLoop win str ss pM bufM = do
                                         runUI win $ runFunction $ ffi $ "solid().out()"
                                         modifyMVar_ bufM (const $ pure $ "solid().out()")
                                         threadDelay 10000
-                                        hydraLoop win str ss pM bufM
-                                      True -> threadDelay 10000 >> hydraLoop win str ss pM bufM
+                                        hydraLoop win str pM bufM
+                                      True -> threadDelay 10000 >> hydraLoop win str pM bufM
                         (e:_) -> case value e == buf of
                                       False -> do
                                         runUI win $ runFunction $ ffi $ wrapCatchErr $ value e
                                         modifyMVar_ bufM (const $ pure $ value e)
                                         threadDelay 10000
-                                        hydraLoop win str ss pM bufM
-                                      True -> threadDelay 10000 >> hydraLoop win str ss pM bufM
+                                        hydraLoop win str pM bufM
+                                      True -> threadDelay 10000 >> hydraLoop win str pM bufM
 
 wrapCatchErr :: String -> String
 wrapCatchErr st = "try {" ++ st ++ "} catch (err) {}"

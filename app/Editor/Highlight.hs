@@ -67,30 +67,27 @@ getPats stream = do
               where filterPS (PlayState _ True _ _) = []
                     filterPS (PlayState p False _ _) = [p]
 
-highlightOnce :: SessionState -> Stream -> MVar Buffer -> UI ()
-highlightOnce ss stream buffMV = do
+highlightOnce :: Stream -> MVar Buffer -> UI ()
+highlightOnce stream buffMV = do
                 ps <- liftIO $ getPats stream
-                c <- liftIO $ streamGetnow' ss stream
+                c <- liftIO $ streamGetnow' stream
                 buffer <- liftIO $ takeMVar buffMV
                 newBuf <- updateBuf buffer (locsMany c ps)
                 liftIO $ threadDelay 10000
                 liftIO $ putMVar buffMV newBuf
 
-highlightLoopInner :: Window -> SessionState -> Stream -> MVar Buffer -> IO ()
-highlightLoopInner win ss stream buf = do
-                            runUI win $ highlightOnce ss stream buf
-                            highlightLoopInner win ss stream buf--runUI win $ runFunction $ ffi "requestAnimationFrame(highlightLoop)"
-
-highlightLoopOuter :: Window -> Stream -> MVar Buffer -> IO ()
-highlightLoopOuter win str buf = do
-                            ss <- createAndCaptureAppSessionState (sLink str)
-                            highlightLoopInner win ss str buf
+highlightLoop :: Window -> Stream -> MVar Buffer -> IO ()
+highlightLoop win stream buf = do
+                            runUI win $ highlightOnce stream buf
+                            highlightLoop win stream buf--runUI win $ runFunction $ ffi "requestAnimationFrame(highlightLoop)"
 
 
-streamGetnow' :: SessionState -> Stream -> IO Double
-streamGetnow' ss str = do
+streamGetnow' :: Stream -> IO Double
+streamGetnow' str = do
+  ss <- createAndCaptureAppSessionState (sLink str)
   now <- Link.clock (sLink str)
   beat <- Link.beatAtTime ss now (cQuantum $! sConfig str)
+  Link.commitAndDestroyAppSessionState (sLink str) ss
   return $ coerce $! beat / (cBeatsPerCycle $! sConfig str)
 
 

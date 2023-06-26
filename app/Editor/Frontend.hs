@@ -65,7 +65,7 @@ setup str mode win = void $ do
      buf <- liftIO $ newMVar []
      high <- liftIO $ newMVar True
      createHaskellFunction "toggleHighlight" (runUI win $ toggleHighlight high buf)
-     _ <- liftIO $ forkIO $ highlightLoopOuter win str buf
+     _ <- liftIO $ forkIO $ highlightLoop win str buf
 
      _ <- (element body) #+
                        [element canvas
@@ -82,7 +82,7 @@ setup str mode win = void $ do
      makeEditor "editor0"
      startHydra
      hydBuf <- liftIO $ newMVar ""
-     liftIO $ forkIO $ hydraLoopInit win str (hydraE env) hydBuf
+     liftIO $ forkIO $ hydraLoop win str (hydraE env) hydBuf
 
 
 
