@@ -89,7 +89,7 @@ streamGetnow' str = do
   ss <- createAndCaptureAppSessionState (sLink str)
   now <- Link.clock (sLink str)
   beat <- Link.beatAtTime ss (now + (processAhead str)) (cQuantum $! sConfig str)
-  Link.commitAndDestroyAppSessionState (sLink str) ss
+  Link.destroySessionState ss
   return $ coerce $! beat / (cBeatsPerCycle $! sConfig str)
 
 
