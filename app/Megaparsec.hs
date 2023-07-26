@@ -181,7 +181,7 @@ bottomOps = [[binaryL  ""  TApp]
              ,parserOps
              ,[binaryR "." (TOp ".")]
              ,[binaryL "#" (TOp "#")]
-             ,[binaryR "$" (TOp "$")]
+             ,[binaryR "$|" (TOp "$|"),binaryR "|$|" (TOp "|$|"),binaryR "|$" (TOp "|$"),binaryR "$" (TOp "$")]
             ]
 
 bottomParser :: Parser Term

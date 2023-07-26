@@ -10,6 +10,15 @@ infixr 0 $
 ($) :: Pat b => P (Pattern (Pattern a -> Pattern b) -> Pattern a -> Pattern b)
 ($) = toPat apply
 
+(|$|) :: Pat b => P (Pattern (Pattern a -> Pattern b) -> Pattern a -> Pattern b)
+(|$|) = toPat applyBoth
+
+(|$) :: Pat b => P (Pattern (Pattern a -> Pattern b) -> Pattern a -> Pattern b)
+(|$) = toPat applyLeft
+
+($|) :: Pat b => P (Pattern (Pattern a -> Pattern b) -> Pattern a -> Pattern b)
+($|) = toPat applyRight
+
 t :: Pattern Bool
 t = toPat P.True
 
@@ -25,6 +34,12 @@ const = toPat (P.const :: Pattern a -> Pattern b -> Pattern a)
 (.) :: (Pat b, Pat d) => P ((Pattern b -> Pattern d) -> (Pattern a -> Pattern b)-> Pattern a -> Pattern d)
 (.) = toPat compose
     where compose = (P..) :: ((Pattern b -> Pattern d) -> (Pattern a -> Pattern b)-> Pattern a -> Pattern d)
+
+leftOp :: Pat c => P (Pattern (Pattern a -> Pattern (Pattern b -> Pattern c)) -> Pattern (Pattern a -> Pattern (Pattern b -> Pattern c)))
+leftOp = toPat left
+
+rightOp :: Pat c => P (Pattern (Pattern a -> Pattern (Pattern b -> Pattern c)) -> Pattern (Pattern a -> Pattern (Pattern b -> Pattern c)))
+rightOp = toPat right
 
 (++) :: P (Pattern String -> Pattern String -> Pattern String)
 (++) = toPat $$ lift2 (P.++)
@@ -116,7 +131,7 @@ loop = timeLoop
 -- arithmetic
 
 (+) :: (Pat a, P.Num a) => P (Pattern a -> Pattern a -> Pattern a)
-(+) = toPat ((T.|+|) @Pattern)
+(+) = toPat (lift2 (P.+))
 
 (+|) :: (Pat a, P.Num a) => P (Pattern a -> Pattern a -> Pattern a)
 (+|) = right (+)
@@ -179,14 +194,6 @@ c = 0
 
 e :: Pattern Number
 e = 4
-
--- meta functions to get the structure
-
-right :: Pat c => Pattern (Pattern a -> Pattern (Pattern b -> Pattern c)) -> Pattern (Pattern a -> Pattern (Pattern b -> Pattern c))
-right op = P.pure (\x -> P.pure (\y -> apply (apply structFrom y) (apply (apply op x) y)))
-
-left :: Pat c => Pattern (Pattern a -> Pattern (Pattern b -> Pattern c)) -> Pattern (Pattern a -> Pattern (Pattern b -> Pattern c))
-left op = P.pure (\x -> P.pure (\y -> apply (apply structFrom x) (apply (apply op x) y)))
 
 
 -- list stuff

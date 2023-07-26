@@ -156,9 +156,32 @@ pat = P.pure
 eventLengths :: Pattern a -> Pattern T.Time
 eventLengths = T.withEvent (\e -> e {T.value = (T.wholeStop e) P.- (T.wholeStart e)})
 
-apply :: Pattern (Pattern a -> Pattern b) -> Pattern a -> Pattern b
-apply fp p = T.innerJoin $$ fmap (\f -> scaleWith (collect fp) f $$ p) fp
+applyLeft :: Pattern (Pattern a -> Pattern b) -> Pattern a -> Pattern b
+applyLeft fp p = T.outerJoin $$ T.applyPatToPatLeft (scaleFunction fp) (fmap P.pure p)
+
+applyRight :: Pattern (Pattern a -> Pattern b) -> Pattern a -> Pattern b
+applyRight fp p = T.outerJoin $$ T.applyPatToPatRight (scaleFunction fp) (fmap P.pure p)
+
+applyBoth :: Pattern (Pattern a -> Pattern b) -> Pattern a -> Pattern b
+applyBoth fp p = T.outerJoin $$ T.applyPatToPatBoth (scaleFunction fp) (fmap P.pure p)
+
+-- meta functions to get the structure
+
+right :: Pat c => Pattern (Pattern a -> Pattern (Pattern b -> Pattern c)) -> Pattern (Pattern a -> Pattern (Pattern b -> Pattern c))
+right op = P.pure (\x -> P.pure (\y -> applyRight (apply op x) y))
+
+left :: Pat c => Pattern (Pattern a -> Pattern (Pattern b -> Pattern c)) -> Pattern (Pattern a -> Pattern (Pattern b -> Pattern c))
+left op =  P.pure (\x -> P.pure (\y -> applyLeft (applyRight op x) y))
+
+scaleFunction :: Pattern (Pattern a -> Pattern b) -> Pattern (Pattern a -> Pattern b)
+scaleFunction fp = fmap (\f -> scaleWith (collect fp) f) fp
             where scaleWith st f = T.outside (deleteContext $$ eventLengths st) f
+
+apply :: Pattern (Pattern a -> Pattern b) -> Pattern a -> Pattern b
+apply fp p = T.innerJoin $$ fmap (\f -> f p) (scaleFunction fp)
+
+squeezeApply :: Pattern (Pattern a -> Pattern b) -> Pattern a -> Pattern b
+squeezeApply fp p = T.squeezeJoin $$ fmap (\f -> f p) (scaleFunction fp)
 
 deleteContext :: Pattern a -> Pattern a
 deleteContext = T.withEvent (\e -> e {T.context = T.Context []})
