@@ -1,6 +1,6 @@
 module Zwirn.Language.Compiler where
 
-import Zwirn.Language.Language
+import Zwirn.Language.Syntax
 import Data.List (intercalate)
 
 compile :: Simple -> String

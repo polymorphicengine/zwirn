@@ -26,7 +26,7 @@ library
                    Zwirn.Interactive.Generic
                    Zwirn.Interactive.Meta
                    Zwirn.Interactive
-                   Zwirn.Language.Language
+                   Zwirn.Language.Syntax
                    Zwirn.Language.Compiler
                    Zwirn.Language.Megaparsec
                    Zwirn.Language

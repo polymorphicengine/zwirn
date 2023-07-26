@@ -8,7 +8,7 @@ import Sound.Tidal.ID (ID(..))
 import qualified Control.Monad.State as ST (evalState, State, modify, get)
 import qualified Text.Megaparsec.Char.Lexer as L
 
-import Zwirn.Language.Language
+import Zwirn.Language.Syntax
 
 type Parser = ParsecT Void String (ST.State (Int,Int))
 

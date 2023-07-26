@@ -1,4 +1,4 @@
-module Zwirn.Language.Language where
+module Zwirn.Language.Syntax where
 
 import Data.List (intercalate)
 import Sound.Tidal.ID (ID)
