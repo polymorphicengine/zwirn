@@ -19,15 +19,23 @@ extra-doc-files:    CHANGELOG.md, README.md
 
 library
   hs-source-dirs: src
-  exposed-modules: Meta
-                   Generic
-                   Prelude.MiniPrelude
-                   Prelude.Control
-                   Prelude.Params
-                   Prelude.Hydra
+  exposed-modules: Zwirn.Interactive.Prelude.Control
+                   Zwirn.Interactive.Prelude.Hydra
+                   Zwirn.Interactive.Prelude.MiniPrelude
+                   Zwirn.Interactive.Prelude.Params
+                   Zwirn.Interactive.Generic
+                   Zwirn.Interactive.Meta
+                   Zwirn.Interactive
+                   Zwirn.Language.Language
+                   Zwirn.Language.Compiler
+                   Zwirn.Language.Megaparsec
+                   Zwirn.Language
   build-depends: base,
                  containers,
                  template-haskell,
+                 megaparsec,
+                 parser-combinators,
+                 mtl,
                  tidal == 1.9.2
   default-language: Haskell2010
   ghc-options: -threaded
@@ -44,13 +52,8 @@ executable zwirn-interpreter
                       Editor.Highlight
                       Editor.Hydra
                       Editor.CommandLine
-                      Language
-                      Compiler
-                      Megaparsec
     build-depends:    base,
                       megaparsec,
-                      parser-combinators,
-                      mtl,
                       containers,
                       tidal == 1.9.2,
                       tidal-link,

@@ -1,4 +1,4 @@
-module Megaparsec where
+module Zwirn.Language.Megaparsec where
 
 import Data.Void
 import Text.Megaparsec
@@ -8,7 +8,7 @@ import Sound.Tidal.ID (ID(..))
 import qualified Control.Monad.State as ST (evalState, State, modify, get)
 import qualified Text.Megaparsec.Char.Lexer as L
 
-import Language
+import Zwirn.Language.Language
 
 type Parser = ParsecT Void String (ST.State (Int,Int))
 

@@ -17,9 +17,7 @@ import Text.Megaparsec (errorBundlePretty)
 import Editor.Hint
 import Editor.Block
 import Editor.UI
-import Megaparsec
-import Compiler
-import Language
+import Zwirn.Language
 
 data ActionResponse = ASucc String
                     | AErr String

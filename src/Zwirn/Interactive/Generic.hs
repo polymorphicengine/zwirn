@@ -1,8 +1,8 @@
 {-# LANGUAGE TemplateHaskell #-}
-module Generic where
+module Zwirn.Interactive.Generic where
 
 import Language.Haskell.TH
-import Meta (toNum, toPat)
+import Zwirn.Interactive.Meta (toNum, toPat)
 import qualified Prelude as P
 
 -- template haskell stuff

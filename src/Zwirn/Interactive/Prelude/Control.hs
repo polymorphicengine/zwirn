@@ -1,9 +1,9 @@
-module Prelude.Control where
+module Zwirn.Interactive.Prelude.Control where
 
 import qualified Prelude as P ()
 import qualified Sound.Tidal.Context as T hiding (fromList)
 
-import Meta
+import Zwirn.Interactive.Meta
 
 -- control pattern stuff
 

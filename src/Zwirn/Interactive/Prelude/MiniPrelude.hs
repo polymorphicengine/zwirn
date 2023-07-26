@@ -1,10 +1,10 @@
 {-# LANGUAGE TypeApplications #-}
-module Prelude.MiniPrelude where
+module Zwirn.Interactive.Prelude.MiniPrelude where
 
 import qualified Prelude as P
 import qualified Sound.Tidal.Context as T hiding (fromList)
 
-import Meta
+import Zwirn.Interactive.Meta
 
 infixr 0 $
 ($) :: Pat b => P (Pattern (Pattern a -> Pattern b) -> Pattern a -> Pattern b)

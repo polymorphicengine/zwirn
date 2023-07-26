@@ -1,6 +1,6 @@
 {-# LANGUAGE TypeFamilies, TypeSynonymInstances, FlexibleInstances #-}
 {-# LANGUAGE ExtendedDefaultRules, GeneralizedNewtypeDeriving, TemplateHaskell #-}
-module Meta where
+module Zwirn.Interactive.Meta where
 
 import qualified Prelude as P
 import qualified Sound.Tidal.Context as T

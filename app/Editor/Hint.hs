@@ -32,10 +32,10 @@ exts :: [Extension]
 exts = [OverloadedStrings, BangPatterns, MonadComprehensions, LambdaCase, ExtendedDefaultRules, NoMonomorphismRestriction, NoImplicitPrelude]
 
 modulePaths :: String -> [String]
-modulePaths path = map (path ++) ["src/Meta.hs","src/Generic.hs","src/Prelude/MiniPrelude.hs","src/Prelude/Control.hs", "src/Prelude/Params.hs", "src/Prelude/Hydra.hs"]
+modulePaths path = map (path ++) ["src/Zwirn/Interactive.hs", "src/Zwirn/Interactive/Meta.hs", "src/Zwirn/Interactive/Generic.hs", "src/Zwirn/Interactive/Prelude/Control.hs", "src/Zwirn/Interactive/Prelude/Hydra.hs", "src/Zwirn/Interactive/Prelude/MiniPrelude.hs", "src/Zwirn/Interactive/Prelude/Params.hs"]
 
 moduleNames :: [String]
-moduleNames =  ["Meta","Generic","Prelude.MiniPrelude","Prelude.Control", "Prelude.Params", "Prelude.Hydra"]
+moduleNames =  ["Zwirn.Interactive"]
 
 ghcArgs :: String -> [String]
 ghcArgs path = ["-clear-package-db", "-package-db", path ++ "haskell-libs/package.conf.d", "-package-db", path ++ "haskell-libs/package.db", "-v"]

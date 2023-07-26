@@ -1,8 +1,8 @@
-module Prelude.Hydra where
+module Zwirn.Interactive.Prelude.Hydra where
 
 import qualified Prelude as P
 -- import qualified Sound.Tidal.Context as T
-import Meta
+import Zwirn.Interactive.Meta
 
 -- sources
 
