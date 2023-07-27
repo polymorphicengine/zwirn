@@ -79,27 +79,3 @@ simplify (TOp x op y) = SOp (simplify x) op (simplify y)
 
 simplifyDef :: Def -> SimpleDef
 simplifyDef (Let x vs t) = LetS x (simplify $ TLambda vs t)
-
-
--- representing the simple type system, might be useful for providing type signatures in definitions
-
-type PolyName = String
-
-data Type = Poly PolyName | Number | String | List Type | Func Type Type deriving Eq
-
-data Class = Class String deriving Eq
-
-data Annotation = Annotation [(Class, PolyName)] Type deriving Eq
-
-instance Show Type where
-  show (Poly x) = x
-  show Number = "Number"
-  show String = "String"
-  show (List x) = "[" ++ show x ++ "]"
-  show (Func x y) = show x ++ "->" ++ show y
-
-instance Show Class where
-  show (Class x) = x
-
-instance Show Annotation where
-  show (Annotation cs t) = "(" ++ intercalate "," (map (\(c,n) -> show c ++ " " ++ n) cs) ++ ") => " ++ show t
