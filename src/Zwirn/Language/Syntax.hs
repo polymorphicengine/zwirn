@@ -6,7 +6,7 @@ import Sound.Tidal.ID (ID)
 
 type Var = String
 
-type Name = String
+type OperatorSymbol = String
 
 type Position = ((Int,Int),(Int,Int))
 
@@ -18,13 +18,11 @@ data Term = TVar Position Var
           | TStack [Term]
           | TAlt [Term]
           | TChoice Int [Term]
-          | TMult Term Term
-          | TDiv Term Term
           | TEuclid Term Term Term Term
           | TPoly Term Term
           | TLambda [Var] Term
           | TApp Term Term
-          | TOp Name Term Term
+          | TOp Term OperatorSymbol Term
           deriving (Eq, Show)
 
 -- simple representation of patterns
@@ -34,12 +32,10 @@ data SimpleTerm = SVar (Maybe Position) Var
           | SSeq [SimpleTerm]
           | SStack [SimpleTerm]
           | SChoice Int [SimpleTerm]
-          | SMult SimpleTerm SimpleTerm
-          | SDiv SimpleTerm SimpleTerm
           | SEuclid SimpleTerm SimpleTerm SimpleTerm SimpleTerm
           | SLambda Var SimpleTerm
           | SApp SimpleTerm SimpleTerm
-          | SOp Name SimpleTerm SimpleTerm
+          | SOp SimpleTerm OperatorSymbol SimpleTerm
           deriving (Eq, Show)
 
 data Def = Let String [Var] Term deriving (Eq,Show)
@@ -56,12 +52,10 @@ displayTerm (TSeq ts) = "[" ++ (intercalate " " $ map displayTerm ts) ++ "]"
 displayTerm (TAlt ts) = "<" ++ (intercalate " " $ map displayTerm ts) ++ ">"
 displayTerm (TChoice _ ts) = "[" ++ (intercalate "|" $ map displayTerm ts) ++ "]"
 displayTerm (TStack ts) = "(" ++ (intercalate "," $ map displayTerm ts) ++ ")"
-displayTerm (TMult t1 t2) = displayTerm t1 ++ "*" ++ displayTerm t2
-displayTerm (TDiv t1 t2) = displayTerm t1 ++ "/" ++ displayTerm t2
 displayTerm (TEuclid t1 t2 t3 t4) = displayTerm t1 ++ "{" ++ displayTerm t2 ++ "," ++ displayTerm t3 ++ "," ++ displayTerm t4 ++ "}"
 displayTerm (TPoly t1 t2) = displayTerm t1 ++ "%" ++ displayTerm t2
 displayTerm (TApp t1 t2) = "(" ++ displayTerm t1 ++ "$" ++ displayTerm t2 ++ ")"
-displayTerm (TOp n t1 t2) = "(" ++ displayTerm t1 ++ " " ++ n ++ " " ++ displayTerm t2 ++ ")"
+displayTerm (TOp t1 n t2) = "(" ++ displayTerm t1 ++ " " ++ n ++ " " ++ displayTerm t2 ++ ")"
 displayTerm (TLambda vs t) = "(\\" ++ (intercalate " " vs) ++ " -> " ++ displayTerm t ++ ")"
 
 simplify :: Term -> SimpleTerm
@@ -71,18 +65,16 @@ simplify (TElong t) = SElong (simplify t)
 simplify (TSeq ts) = SSeq (map simplify ts)
 simplify (TStack ts) = SStack (map simplify ts)
 simplify (TChoice i ts) = SChoice i (map simplify ts)
-simplify (TAlt ts) = SDiv (SSeq ss) (SVar Nothing (show $ length ss))
+simplify (TAlt ts) = SOp (SSeq ss) "/" (SVar Nothing (show $ length ss))
                    where ss = map simplify ts
-simplify (TMult x y) = SMult (simplify x) (simplify y)
-simplify (TDiv x y) = SDiv (simplify x) (simplify y)
 simplify (TEuclid t1 t2 t3 t4) = SEuclid (simplify t1) (simplify t2) (simplify t3) (simplify t4)
-simplify (TPoly (TSeq ts) n) = SMult (SDiv (SSeq ss) (SVar Nothing (show $ length ss))) (simplify n)
+simplify (TPoly (TSeq ts) n) = SOp (SOp (SSeq ss) "/" (SVar Nothing (show $ length ss))) "*" (simplify n)
                    where ss = map simplify ts
-simplify (TPoly x n) = SMult (simplify x) (simplify n)
+simplify (TPoly x n) = SOp (simplify x) "*" (simplify n)
 simplify (TLambda [] t) = simplify t
 simplify (TLambda (x:xs) t) = SLambda x (simplify $ TLambda xs t)
 simplify (TApp x y) = SApp (simplify x) (simplify y)
-simplify (TOp n x y) = SOp n (simplify x) (simplify y)
+simplify (TOp x op y) = SOp (simplify x) op (simplify y)
 
 
 simplifyDef :: Def -> SimpleDef

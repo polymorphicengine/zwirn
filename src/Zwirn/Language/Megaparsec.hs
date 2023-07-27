@@ -131,11 +131,11 @@ pVal =  try pRest <|> pNum <|> pVar <|> pQuote -- <|> fmap (TVar ((0,0),(0,0))) 
 
 -- should they all be binaryL ?
 parserOps :: [Operator Parser Term]
-parserOps = map (\x -> binaryL x (TOp x)) operators
+parserOps = map (\x -> binaryL x (\l -> TOp l x)) operators
 
 
 topOps :: [[Operator Parser Term]]
-topOps = [[manyPostfix "@" TElong], [pEuclidPost], [binaryL "%" TPoly], [ binaryL  "*"  TMult, binaryL  "/"  TDiv]]
+topOps = [[manyPostfix "@" TElong], [pEuclidPost], [binaryL "%" TPoly]]
 
 topParser :: Parser Term
 topParser = makeExprParser (pVal <|> pChoiceSeq <|> pAltExp <|> parens fullParser) topOps
@@ -179,9 +179,9 @@ pAltExp = angles $ do
 bottomOps :: [[Operator Parser Term]]
 bottomOps = [[binaryL  ""  TApp]
              ,parserOps
-             ,[binaryR "." (TOp ".")]
-             ,[binaryL "#" (TOp "#")]
-             ,[binaryR "$|" (TOp "$|"),binaryR "|$|" (TOp "|$|"),binaryR "|$" (TOp "|$"),binaryR "$" (TOp "$")]
+             ,[binaryR "." (\l -> TOp l ".")]
+             ,[binaryL "#" (\l -> TOp l "#")]
+             ,[binaryR "$|" (\l -> TOp l "$|"),binaryR "|$|" (\l -> TOp l "|$|"),binaryR "|$" (\l -> TOp l "|$"),binaryR "$" (\l -> TOp l "$")]
             ]
 
 bottomParser :: Parser Term

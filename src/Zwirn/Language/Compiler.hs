@@ -12,11 +12,9 @@ compile (SSeq ts) = "(T.timecat " ++ "[" ++ intercalate "," ss ++  "])"
                      where ss = map (\(n,m) -> "(" ++ show n ++ "," ++ compile m ++ ")") $ resolveSize $ ts
 compile (SStack ts) = "(pat [" ++ intercalate "," (map compile ts) ++ "])"
 compile (SChoice seed ts) = "(choiceBy " ++ show seed ++ " [" ++ intercalate "," (map compile ts) ++ "])"
-compile (SDiv x n) = "(T.slow " ++ compile n ++ " " ++ compile x ++ ")"
-compile (SMult x n) = "(T.fast " ++ compile n ++ " " ++ compile x ++ ")"
 compile (SEuclid s n m k) = "(T.euclidOff " ++ compile n ++ " " ++ compile m ++ " " ++ compile k ++ " " ++ compile s ++ ")"
 compile (SApp x y) = "(apply " ++ compile x ++ " " ++ compile y ++ ")"
-compile (SOp n x y) = "(apply (apply (" ++ n ++ ") " ++ compile x ++ ") " ++ compile y ++ ")"
+compile (SOp x op y) = "(apply (apply (" ++ op ++ ") " ++ compile x ++ ") " ++ compile y ++ ")"
 compile (SLambda v x) = "(pat (\\" ++ v ++ " -> " ++ compile x ++"))"
 
 resolveSize :: [SimpleTerm] -> [(Int,SimpleTerm)]
