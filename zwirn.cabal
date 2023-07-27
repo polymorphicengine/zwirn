@@ -1,4 +1,4 @@
-cabal-version:      >=1.10
+cabal-version:      3.0
 name:               zwirn
 
 -- The package version.
@@ -27,16 +27,21 @@ library
                    Zwirn.Interactive.Meta
                    Zwirn.Interactive
                    Zwirn.Language.Syntax
+                   Zwirn.Language.Lexer
+                   Zwirn.Language.Parser
                    Zwirn.Language.Compiler
                    Zwirn.Language.Megaparsec
                    Zwirn.Language
   build-depends: base,
+                 array,
+                 text,
+                 mtl,
                  containers,
                  template-haskell,
                  megaparsec,
                  parser-combinators,
-                 mtl,
                  tidal == 1.9.2
+  build-tool-depends: alex:alex, happy:happy
   default-language: Haskell2010
   ghc-options: -threaded
                -Wall
@@ -53,6 +58,7 @@ executable zwirn-interpreter
                       Editor.Hydra
                       Editor.CommandLine
     build-depends:    base,
+                      text,
                       megaparsec,
                       containers,
                       tidal == 1.9.2,

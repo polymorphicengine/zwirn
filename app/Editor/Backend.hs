@@ -3,6 +3,7 @@ module Editor.Backend where
 import Control.Monad  (void)
 
 import qualified Sound.Tidal.Context as T (streamReplace)
+import Sound.Tidal.ID (ID (..))
 
 import Control.Concurrent.MVar  (putMVar, takeMVar, modifyMVar_)
 import Control.Exception (try, SomeException)
@@ -18,6 +19,8 @@ import Editor.Hint
 import Editor.Block
 import Editor.UI
 import Zwirn.Language
+
+import Data.Text (pack, unpack)
 
 data ActionResponse = ASucc String
                     | AErr String
@@ -37,8 +40,8 @@ interpretCommandsLine cm lineBool line env = do
         blockMaybe = if lineBool then getLineContent line (linesNum contentsControl) else getBlock line bs
     case blockMaybe of
         Nothing -> void $ liftUI $ element out # set UI.text "Failed to get Block"
-        Just (Block blockLineStart blockLineEnd block) -> case parseWithPos editorNum (blockLineStart + 1) block of
-                  Left err -> errorUI $ errorBundlePretty err
+        Just (Block blockLineStart blockLineEnd block) -> case parseWithPos editorNum (blockLineStart + 1) (pack block) of
+                  Left err -> errorUI err
                   Right actions ->  do
                                 asr <- liftIO $ sequence $ map (processAction env) actions
                                 case resolveActionResponse (ASucc "") asr of
@@ -49,20 +52,20 @@ interpretCommandsLine cm lineBool line env = do
                outputUI o = void $ liftUI $ element out # set UI.text o
 
 processAction :: Env -> Action -> IO ActionResponse
-processAction env (Exec idd t) = do
+processAction env (Stream idd t) = do
                         putMVar (hintM env) $ MMini (compile $ simplify t)
                         res <- liftIO $ takeMVar (hintR env)
                         case res of
-                          RMini m -> T.streamReplace (streamE env) idd m >> return (ASucc "")
+                          RMini m -> T.streamReplace (streamE env) (ID $ unpack idd) m >> return (ASucc "")
                           RError e -> return $ AErr e
                           _ -> return $ AErr "Unkown error!"
-processAction env (Show t) = do
-                        putMVar (hintM env) $ MMini (compile $ simplify t)
-                        res <- liftIO $ takeMVar (hintR env)
-                        case res of
-                          RMini m -> return (ASucc $ show m)
-                          RError e -> return $ AErr e
-                          _ -> return $ AErr "Unkown error!"
+-- processAction env (Show t) = do
+--                         putMVar (hintM env) $ MMini (compile $ simplify t)
+--                         res <- liftIO $ takeMVar (hintR env)
+--                         case res of
+--                           RMini m -> return (ASucc $ show m)
+--                           RError e -> return $ AErr e
+--                           _ -> return $ AErr "Unkown error!"
 processAction env (Def t) = do
                         putMVar (hintM env) $ MDef (compileDef $ simplifyDef t)
                         res <- liftIO $ takeMVar (hintR env)
@@ -77,7 +80,7 @@ processAction env (Type t) = do
                           RType typ -> return (ASucc typ)
                           RError e -> return $ AErr e
                           _ -> return $ AErr "Unkown error!"
-processAction env (Hydra t) = do
+processAction env (JS t) = do
                         putMVar (hintM env) $ MHydra (compile $ simplify t)
                         res <- liftIO $ takeMVar (hintR env)
                         case res of
@@ -85,14 +88,14 @@ processAction env (Hydra t) = do
                           RError e -> return $ AErr e
                           _ -> return $ AErr "Unkown error!"
 processAction env (Load path) = do
-           mayfile <- ((try $ readFile path) :: IO (Either SomeException String))
+           mayfile <- ((try $ readFile $ unpack path) :: IO (Either SomeException String))
            case mayfile of
              Right file -> runManyDefs (getBlocks file)
              Left _ -> return $ AErr "Could not find the file!"
            where runManyDefs [] = return $ ASucc "Successfully loaded file!"
                  runManyDefs ((Block _ _ cont):ds) = do
-                                     case parseDef 1 1 cont of
-                                               Left err -> return $ AErr $ errorBundlePretty err
+                                     case parseDefs (pack cont) of
+                                               Left err -> return $ AErr err
                                                Right ps -> do
                                                        res <- sequence $ map (\p -> (liftIO $ putMVar (hintM env) $ MDef (compileDefWithoutContext $ simplifyDef p)) >> (liftIO $ takeMVar (hintR env))) ps
                                                        case checkForErrs res of

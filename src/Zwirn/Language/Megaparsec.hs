@@ -10,6 +10,8 @@ import qualified Text.Megaparsec.Char.Lexer as L
 
 import Zwirn.Language.Syntax
 
+{-
+
 type Parser = ParsecT Void String (ST.State (Int,Int))
 
 operators :: [String]
@@ -342,3 +344,4 @@ parseWithPos editorNum line s = snd (ST.evalState (runParserT' (parserActions <*
 parseDef :: Int -> Int -> String -> Either (ParseErrorBundle String Void) [Def]
 parseDef editorNum line s = snd (ST.evalState (runParserT' (parserDefs <* eof) (initialState pos s)) (0,editorNum))
                     where pos = SourcePos "" (mkPos line) (mkPos 1)
+-}
