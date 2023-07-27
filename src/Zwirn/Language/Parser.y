@@ -114,12 +114,12 @@ polyrhythm :: { Term }
   : simple '%' term     %shift  { TPoly $1 $3 }
 
 elongate :: { Term }
-  : simple '@' number           { TElong $1 (read $ Text.unpack $ unTok $3) }
-  | simple '@'          %shift  { TElong $1 1 }
+  : simple '@' number           { TElong $1 (Just $ read $ Text.unpack $ unTok $3) }
+  | simple '@'          %shift  { TElong $1 Nothing }
 
 repeat :: { Term }
-  : simple '!' number           { TRepeat $1 (read $ Text.unpack $ unTok $3) }
-  | simple '!'          %shift  { TRepeat $1 1 }
+  : simple '!' number           { TRepeat $1 (Just $ read $ Text.unpack $ unTok $3) }
+  | simple '!'          %shift  { TRepeat $1 Nothing }
 
 fullSequence :: { Term }
   : '[' stack ']'            { TStack $2 }
