@@ -57,13 +57,13 @@ processAction env (Stream idd t) = do
                           RMini m -> T.streamReplace (streamE env) (ID $ unpack idd) m >> return (ASucc "")
                           RError e -> return $ AErr e
                           _ -> return $ AErr "Unkown error!"
--- processAction env (Show t) = do
---                         putMVar (hintM env) $ MMini (compile $ simplify t)
---                         res <- liftIO $ takeMVar (hintR env)
---                         case res of
---                           RMini m -> return (ASucc $ show m)
---                           RError e -> return $ AErr e
---                           _ -> return $ AErr "Unkown error!"
+processAction env (Show t) = do
+                        putMVar (hintM env) $ MMini (compile $ simplify t)
+                        res <- liftIO $ takeMVar (hintR env)
+                        case res of
+                          RMini m -> return (ASucc $ show m)
+                          RError e -> return $ AErr e
+                          _ -> return $ AErr "Unkown error!"
 processAction env (Def t) = do
                         putMVar (hintM env) $ MDef (compileDef $ simplifyDef t)
                         res <- liftIO $ takeMVar (hintR env)

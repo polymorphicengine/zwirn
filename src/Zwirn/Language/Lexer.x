@@ -85,6 +85,7 @@ tokens :-
 <0> "<-"                              { tok StreamA }
 <0> ":t"                              { tok TypeA }
 <0> "="                               { tok Assign }
+<0> ":show"                           { tok ShowA }
 <0> (":load") $white+ ($alpha | "/")+ { tokText (\t -> LoadA $ Text.drop 5 t) }
 <0> ":js"                             { tok JSA }
 
@@ -178,6 +179,7 @@ data Token
   | Colon
   | StreamA
   | TypeA
+  | ShowA
   | Assign
   | LoadA Text
   | JSA
@@ -209,6 +211,7 @@ instance Show Token where
  show Colon = quoted ";"
  show StreamA = quoted "<-"
  show TypeA = quoted ":t"
+ show ShowA = quoted ":show"
  show Assign = quoted "="
  show (LoadA x) = ":load " <> show x
  show JSA = quoted ":js"

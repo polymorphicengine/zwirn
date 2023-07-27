@@ -58,6 +58,7 @@ import Zwirn.Language.Syntax
   ';'        { L.RangedToken L.Colon _ }
   '<-'       { L.RangedToken L.StreamA _ }
   ':t'       { L.RangedToken L.TypeA _ }
+  ':show'       { L.RangedToken L.ShowA _ }
   '='        { L.RangedToken L.Assign _ }
   ':load'    { L.RangedToken (L.LoadA _ ) _}
   ':js'      { L.RangedToken L.JSA _ }
@@ -165,6 +166,7 @@ action :: { Action }
   | number     '<-' term   { Stream (unTok $1) $3 }
   | def                    { Def $1 }
   | ':t' term              { Type $2 }
+  | ':show' term           { Show $2 }
   | ':load'                { Load $ unTok $1 }
   | ':js' term             { JS $2 }
 
