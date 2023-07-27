@@ -30,7 +30,6 @@ library
                    Zwirn.Language.Lexer
                    Zwirn.Language.Parser
                    Zwirn.Language.Compiler
-                   Zwirn.Language.Megaparsec
                    Zwirn.Language
   build-depends: base,
                  array,
@@ -38,8 +37,6 @@ library
                  mtl,
                  containers,
                  template-haskell,
-                 megaparsec,
-                 parser-combinators,
                  tidal == 1.9.2
   build-tool-depends: alex:alex, happy:happy
   default-language: Haskell2010
@@ -59,7 +56,6 @@ executable zwirn-interpreter
                       Editor.CommandLine
     build-depends:    base,
                       text,
-                      megaparsec,
                       containers,
                       tidal == 1.9.2,
                       tidal-link,

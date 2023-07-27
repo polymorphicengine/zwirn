@@ -13,8 +13,6 @@ import Foreign.JavaScript (JSObject)
 import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core as C hiding (text)
 
-import Text.Megaparsec (errorBundlePretty)
-
 import Editor.Hint
 import Editor.Block
 import Editor.UI
