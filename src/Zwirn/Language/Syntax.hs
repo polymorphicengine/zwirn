@@ -28,23 +28,23 @@ data Term = TVar Position Var
           deriving (Eq, Show)
 
 -- simple representation of patterns
-data Simple = SVar (Maybe Position) Var
+data SimpleTerm = SVar (Maybe Position) Var
           | SRest
-          | SElong Simple
-          | SSeq [Simple]
-          | SStack [Simple]
-          | SChoice Int [Simple]
-          | SMult Simple Simple
-          | SDiv Simple Simple
-          | SEuclid Simple Simple Simple Simple
-          | SLambda Var Simple
-          | SApp Simple Simple
-          | SOp Name Simple Simple
+          | SElong SimpleTerm
+          | SSeq [SimpleTerm]
+          | SStack [SimpleTerm]
+          | SChoice Int [SimpleTerm]
+          | SMult SimpleTerm SimpleTerm
+          | SDiv SimpleTerm SimpleTerm
+          | SEuclid SimpleTerm SimpleTerm SimpleTerm SimpleTerm
+          | SLambda Var SimpleTerm
+          | SApp SimpleTerm SimpleTerm
+          | SOp Name SimpleTerm SimpleTerm
           deriving (Eq, Show)
 
 data Def = Let String [Var] Term deriving (Eq,Show)
 
-data SimpleDef = LetS String Simple deriving (Eq,Show)
+data SimpleDef = LetS String SimpleTerm deriving (Eq,Show)
 
 data Action = Exec ID Term | Def Def | Type Term | Show Term | Load String | Hydra Term deriving (Eq,Show)
 
@@ -64,7 +64,7 @@ displayTerm (TApp t1 t2) = "(" ++ displayTerm t1 ++ "$" ++ displayTerm t2 ++ ")"
 displayTerm (TOp n t1 t2) = "(" ++ displayTerm t1 ++ " " ++ n ++ " " ++ displayTerm t2 ++ ")"
 displayTerm (TLambda vs t) = "(\\" ++ (intercalate " " vs) ++ " -> " ++ displayTerm t ++ ")"
 
-simplify :: Term -> Simple
+simplify :: Term -> SimpleTerm
 simplify (TVar p x) = SVar (Just p) x
 simplify (TRest) = SRest
 simplify (TElong t) = SElong (simplify t)

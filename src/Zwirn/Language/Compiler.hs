@@ -3,7 +3,7 @@ module Zwirn.Language.Compiler where
 import Zwirn.Language.Syntax
 import Data.List (intercalate)
 
-compile :: Simple -> String
+compile :: SimpleTerm -> String
 compile (SVar (Just p) x) = "(addContext " ++ show p ++ " (" ++ x ++ "))"
 compile (SVar Nothing x) = x
 compile (SRest) = "T.silence"
@@ -19,10 +19,10 @@ compile (SApp x y) = "(apply " ++ compile x ++ " " ++ compile y ++ ")"
 compile (SOp n x y) = "(apply (apply (" ++ n ++ ") " ++ compile x ++ ") " ++ compile y ++ ")"
 compile (SLambda v x) = "(pat (\\" ++ v ++ " -> " ++ compile x ++"))"
 
-resolveSize :: [Simple] -> [(Int,Simple)]
+resolveSize :: [SimpleTerm] -> [(Int,SimpleTerm)]
 resolveSize = map (\m -> (elongAmount m, m))
 
-elongAmount :: Simple -> Int
+elongAmount :: SimpleTerm -> Int
 elongAmount (SElong t) = elongAmount t + 1
 elongAmount _ = 1
 
@@ -31,7 +31,7 @@ compileDef (LetS n t) = "let " ++ n ++ " = " ++ compile t
 
 -- without context
 
-compileWithoutContext :: Simple -> String
+compileWithoutContext :: SimpleTerm -> String
 compileWithoutContext (SVar _ x) = x
 compileWithoutContext x = compile x
 
