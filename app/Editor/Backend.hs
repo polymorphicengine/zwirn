@@ -51,35 +51,35 @@ interpretCommandsLine cm lineBool line env = do
 
 processAction :: Env -> Action -> IO ActionResponse
 processAction env (Stream idd t) = do
-                        putMVar (hintM env) $ MMini (compile $ simplify t)
+                        putMVar (hintM env) $ MMini (compile $ simplify $ rotateUnsafe t)
                         res <- liftIO $ takeMVar (hintR env)
                         case res of
                           RMini m -> T.streamReplace (streamE env) (ID $ unpack idd) m >> return (ASucc "")
                           RError e -> return $ AErr e
                           _ -> return $ AErr "Unkown error!"
 processAction env (Show t) = do
-                        putMVar (hintM env) $ MMini (compile $ simplify t)
+                        putMVar (hintM env) $ MMini (compile $ simplify $ rotateUnsafe t)
                         res <- liftIO $ takeMVar (hintR env)
                         case res of
                           RMini m -> return (ASucc $ show m)
                           RError e -> return $ AErr e
                           _ -> return $ AErr "Unkown error!"
 processAction env (Def t) = do
-                        putMVar (hintM env) $ MDef (compileDef $ simplifyDef t)
+                        putMVar (hintM env) $ MDef (compileDef $ simplifyDef t) --TODO rotate
                         res <- liftIO $ takeMVar (hintR env)
                         case res of
                           RSucc -> return (ASucc "")
                           RError e -> return $ AErr e
                           _ -> return $ AErr "Unkown error!"
 processAction env (Type t) = do
-                        putMVar (hintM env) $ MType (compile $ simplify t)
+                        putMVar (hintM env) $ MType (compile $ simplify $ rotateUnsafe t)
                         res <- liftIO $ takeMVar (hintR env)
                         case res of
                           RType typ -> return (ASucc typ)
                           RError e -> return $ AErr e
                           _ -> return $ AErr "Unkown error!"
 processAction env (JS t) = do
-                        putMVar (hintM env) $ MHydra (compile $ simplify t)
+                        putMVar (hintM env) $ MHydra (compile $ simplify $ rotateUnsafe t)
                         res <- liftIO $ takeMVar (hintR env)
                         case res of
                           RHydra p -> modifyMVar_ (hydraE env) (const $ pure p) >> return (ASucc "")
@@ -90,6 +90,7 @@ processAction env (Load path) = do
            case mayfile of
              Right file -> runManyDefs (getBlocks file)
              Left _ -> return $ AErr "Could not find the file!"
+           --TODO what about rotation?
            where runManyDefs [] = return $ ASucc "Successfully loaded file!"
                  runManyDefs ((Block _ _ cont):ds) = do
                                      case parseDefs (pack cont) of

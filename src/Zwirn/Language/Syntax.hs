@@ -58,6 +58,18 @@ data SimpleTerm = SVar (Maybe Position) Var
 
 data SimpleDef = LetS Var SimpleTerm deriving (Eq,Show)
 
+data Associativity
+  = NonA
+  | LeftA
+  | RightA
+  deriving (Eq, Show)
+
+type Precedence = Int
+
+data Declaration
+  = DOperator Associativity Precedence OperatorSymbol
+  deriving (Show)
+
 displayTerm :: Term -> String
 displayTerm (TVar _ x) = show x
 displayTerm (TRest) = "~"

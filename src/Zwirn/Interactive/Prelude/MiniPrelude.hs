@@ -50,8 +50,14 @@ rev = toPat T.rev
 fast :: Pat a => P (Pattern Number -> Pattern a -> Pattern a)
 fast = toPat (\x -> T.fast (fromNum x))
 
+(*) ::  Pat a => P (Pattern Number -> Pattern a -> Pattern a)
+(*) = fast
+
 slow :: Pat a => P (Pattern Number -> Pattern a -> Pattern a)
 slow = toPat (\x -> T.slow (fromNum x))
+
+(/) ::  Pat a => P (Pattern Number -> Pattern a -> Pattern a)
+(/) = slow
 
 ply :: Pat a => P (Pattern Number -> Pattern a -> Pattern a)
 ply = toPat (\x -> T.ply (fromNum x))
@@ -141,7 +147,7 @@ loop = timeLoop
 
 
 (-) :: (Pat a, P.Num a) => P (Pattern a -> Pattern a -> Pattern a)
-(-) = toPat ((T.|-|) @Pattern)
+(-) = toPat (lift2 (P.-))
 
 (-|) :: (Pat a, P.Num a) => P (Pattern a -> Pattern a -> Pattern a)
 (-|) = right (-)
@@ -151,7 +157,7 @@ loop = timeLoop
 
 
 (|*|) :: (Pat a, P.Num a) => P (Pattern a -> Pattern a -> Pattern a)
-(|*|) = toPat ((T.|*|) @Pattern)
+(|*|) = toPat (lift2 (P.*))
 
 (*|) :: (Pat a, P.Num a) => P (Pattern a -> Pattern a -> Pattern a)
 (*|) = right (|*|)
@@ -159,13 +165,13 @@ loop = timeLoop
 (|*) :: (Pat a, P.Num a) => P (Pattern a -> Pattern a -> Pattern a)
 (|*) = left (|*|)
 
-(//) :: (Pat a, P.Num a, P.Fractional a) => Pattern (Pattern a -> Pattern (Pattern a -> Pattern a))
-(//) = toPat ((T.|/|) @Pattern)
+(//) :: Pattern (Pattern Number -> Pattern (Pattern Number -> Pattern Number))
+(//) = toPat (lift2 (P./))
 
-(/|) :: (Pat a, P.Num a, P.Fractional a) => Pattern (Pattern a -> Pattern (Pattern a -> Pattern a))
+(/|) :: Pattern (Pattern Number -> Pattern (Pattern Number -> Pattern Number))
 (/|) = right (//)
 
-(|/) :: (Pat a, P.Num a, P.Fractional a) => Pattern (Pattern a -> Pattern (Pattern a -> Pattern a))
+(|/) :: Pattern (Pattern Number -> Pattern (Pattern Number -> Pattern Number))
 (|/) = left (//)
 
 round :: P (Pattern Number -> Pattern Number)
