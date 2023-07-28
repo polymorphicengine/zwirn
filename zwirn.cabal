@@ -31,6 +31,8 @@ library
                    Zwirn.Language.Parser
                    Zwirn.Language.Compiler
                    Zwirn.Language.Rotate
+                   Zwirn.Language.Simple
+                   Zwirn.Language.Pretty
                    Zwirn.Language
   build-depends: base,
                  array,

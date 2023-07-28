@@ -4,6 +4,8 @@ module Zwirn.Language
     , module Zwirn.Language.Lexer
     , module Zwirn.Language.Parser
     , module Zwirn.Language.Rotate
+    , module Zwirn.Language.Simple
+    , module Zwirn.Language.Pretty
     ) where
 
 import Zwirn.Language.Syntax
@@ -11,3 +13,5 @@ import Zwirn.Language.Compiler
 import Zwirn.Language.Lexer
 import Zwirn.Language.Parser
 import Zwirn.Language.Rotate
+import Zwirn.Language.Simple
+import Zwirn.Language.Pretty

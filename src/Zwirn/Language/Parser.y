@@ -1,5 +1,8 @@
 {
-module Zwirn.Language.Parser where
+module Zwirn.Language.Parser
+    ( parseWithPos
+    , parseDefs
+    ) where
 
 import           Data.Text (Text)
 import qualified Data.Text as Text

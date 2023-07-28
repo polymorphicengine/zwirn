@@ -1,6 +1,11 @@
-module Zwirn.Language.Compiler where
+module Zwirn.Language.Compiler
+    ( compile
+    , compileDef
+    , compileWithoutContext
+    , compileDefWithoutContext 
+    ) where
 
-import Zwirn.Language.Syntax
+import Zwirn.Language.Simple
 import Data.List (intercalate)
 import Data.Text (unpack)
 

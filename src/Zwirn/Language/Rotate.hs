@@ -1,8 +1,10 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Zwirn.Language.Rotate where
+module Zwirn.Language.Rotate
+    ( rotate
+    , rotateUnsafe
+    ) where
 
 import Data.List (find)
---import           Data.Text (Text)
 
 import Zwirn.Language.Syntax
 
