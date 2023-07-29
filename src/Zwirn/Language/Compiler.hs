@@ -2,7 +2,7 @@ module Zwirn.Language.Compiler
     ( compile
     , compileDef
     , compileWithoutContext
-    , compileDefWithoutContext 
+    , compileDefWithoutContext
     ) where
 
 import Zwirn.Language.Simple
@@ -21,7 +21,9 @@ compile (SChoice seed ts) = "(choiceBy " ++ show seed ++ " [" ++ intercalate ","
 compile (SEuclid s n m (Just k)) = "(T.euclidOff " ++ compile n ++ " " ++ compile m ++ " " ++ compile k ++ " " ++ compile s ++ ")"
 compile (SEuclid s n m Nothing) = "(T.euclid " ++ compile n ++ " " ++ compile m ++ " " ++ compile s ++ ")"
 compile (SApp x y) = "(apply " ++ compile x ++ " " ++ compile y ++ ")"
-compile (SInfix x op y) = "(apply (apply (" ++ unpack op ++ ") " ++ compile x ++ ") " ++ compile y ++ ")"
+compile (SInfix x op y) = case unpack op of
+                                   "'" -> "(apply (apply tick " ++ compile x ++ ") " ++ compile y ++ ")" -- TODO: make this a bit less hacky
+                                   un -> "(apply (apply (" ++ un ++ ") " ++ compile x ++ ") " ++ compile y ++ ")"
 compile (SLambda v x) = "(pat (\\" ++ unpack v ++ " -> " ++ compile x ++"))"
 
 resolveSize :: [SimpleTerm] -> [(Int,SimpleTerm)]

@@ -31,6 +31,9 @@ id = toPat (P.id :: Pattern a -> Pattern a)
 const :: Pat a => P (Pattern a -> Pattern b -> Pattern a)
 const = toPat (P.const :: Pattern a -> Pattern b -> Pattern a)
 
+tick :: Pat b => P (Pattern a -> Pattern (Pattern a -> Pattern b) -> Pattern b)
+tick = toPat (P.flip apply)
+
 (.) :: (Pat b, Pat d) => P ((Pattern b -> Pattern d) -> (Pattern a -> Pattern b)-> Pattern a -> Pattern d)
 (.) = toPat compose
     where compose = (P..) :: ((Pattern b -> Pattern d) -> (Pattern a -> Pattern b)-> Pattern a -> Pattern d)
