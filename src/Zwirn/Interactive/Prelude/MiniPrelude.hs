@@ -50,14 +50,14 @@ rev = toPat T.rev
 fast :: Pat a => P (Pattern Number -> Pattern a -> Pattern a)
 fast = toPat (\x -> T.fast (fromNum x))
 
-(*) ::  Pat a => P (Pattern Number -> Pattern a -> Pattern a)
-(*) = fast
+(*) :: Pat a => P (Pattern a -> Pattern Number -> Pattern a)
+(*) = toPat (\x n -> T.fast (fromNum n) x)
 
 slow :: Pat a => P (Pattern Number -> Pattern a -> Pattern a)
 slow = toPat (\x -> T.slow (fromNum x))
 
-(/) ::  Pat a => P (Pattern Number -> Pattern a -> Pattern a)
-(/) = slow
+(/) ::  Pat a => P (Pattern a -> Pattern Number -> Pattern a)
+(/) = toPat (\x n -> T.slow (fromNum n) x)
 
 ply :: Pat a => P (Pattern Number -> Pattern a -> Pattern a)
 ply = toPat (\x -> T.ply (fromNum x))
