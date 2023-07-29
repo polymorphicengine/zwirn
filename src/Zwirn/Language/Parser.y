@@ -138,7 +138,7 @@ euclid :: { Term }
   | simple '{' term ',' term ',' term '}'  { TEuclid  $1 $3 $5 (Just $7) }
 
 infix :: { Term }
-  : simple operator term  %shift { TInfix  $1 (unTok $2) $3 }
+  : simple operator simple  %shift { TInfix  $1 (unTok $2) $3 }
 
 simple :: { Term }
   : atom                         {$1}
