@@ -51,14 +51,14 @@ interpretCommandsLine cm lineBool line env = do
 
 processAction :: Env -> Action -> IO ActionResponse
 processAction env (Stream idd t) = do
-                        putMVar (hintM env) $ MMini (compile $ simplify $ rotateUnsafe t)
+                        putMVar (hintM env) $ MMini (compile $ simplify $ runRotateUnsafe t)
                         res <- liftIO $ takeMVar (hintR env)
                         case res of
                           RMini m -> T.streamReplace (streamE env) (ID $ unpack idd) m >> return (ASucc "")
                           RError e -> return $ AErr e
                           _ -> return $ AErr "Unkown error!"
 processAction env (Show t) = do
-                        putMVar (hintM env) $ MMini (compile $ simplify $ rotateUnsafe t)
+                        putMVar (hintM env) $ MMini (compile $ simplify $ runRotateUnsafe t)
                         res <- liftIO $ takeMVar (hintR env)
                         case res of
                           RMini m -> return (ASucc $ show m)
@@ -72,14 +72,14 @@ processAction env (Def t) = do
                           RError e -> return $ AErr e
                           _ -> return $ AErr "Unkown error!"
 processAction env (Type t) = do
-                        putMVar (hintM env) $ MType (compile $ simplify $ rotateUnsafe t)
+                        putMVar (hintM env) $ MType (compile $ simplify $ runRotateUnsafe t)
                         res <- liftIO $ takeMVar (hintR env)
                         case res of
                           RType typ -> return (ASucc typ)
                           RError e -> return $ AErr e
                           _ -> return $ AErr "Unkown error!"
 processAction env (JS t) = do
-                        putMVar (hintM env) $ MHydra (compile $ simplify $ rotateUnsafe t)
+                        putMVar (hintM env) $ MHydra (compile $ simplify $ runRotateUnsafe t)
                         res <- liftIO $ takeMVar (hintR env)
                         case res of
                           RHydra p -> modifyMVar_ (hydraE env) (const $ pure p) >> return (ASucc "")

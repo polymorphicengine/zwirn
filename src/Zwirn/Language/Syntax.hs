@@ -55,6 +55,8 @@ data Associativity
 
 type Precedence = Int
 
-data Declaration
-  = DOperator Associativity Precedence OperatorSymbol
-  deriving (Show)
+data Fixity
+  = Fixity Associativity Precedence
+  deriving (Eq, Show)
+
+type Declaration = (OperatorSymbol, Fixity)
