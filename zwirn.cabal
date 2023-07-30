@@ -26,6 +26,10 @@ library
                    Zwirn.Interactive.Generic
                    Zwirn.Interactive.Meta
                    Zwirn.Interactive
+                   Zwirn.Language.TypeCheck.Types
+                   Zwirn.Language.TypeCheck.Env
+                   Zwirn.Language.TypeCheck.Constraint
+                   Zwirn.Language.TypeCheck.Infer
                    Zwirn.Language.Syntax
                    Zwirn.Language.Lexer
                    Zwirn.Language.Parser
