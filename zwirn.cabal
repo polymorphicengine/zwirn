@@ -31,6 +31,7 @@ library
                    Zwirn.Language.TypeCheck.Constraint
                    Zwirn.Language.TypeCheck.Infer
                    Zwirn.Language.Syntax
+                   Zwirn.Language.Generator
                    Zwirn.Language.Lexer
                    Zwirn.Language.Parser
                    Zwirn.Language.Compiler

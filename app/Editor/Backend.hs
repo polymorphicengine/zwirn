@@ -51,21 +51,21 @@ interpretCommandsLine cm lineBool line env = do
 
 processAction :: Env -> Action -> IO ActionResponse
 processAction env (Stream idd t) = do
-                        putMVar (hintM env) $ MMini (compile $ runRotateUnsafe $ simplify t)
+                        putMVar (hintM env) $ MMini (generate $ runRotateUnsafe $ simplify t)
                         res <- liftIO $ takeMVar (hintR env)
                         case res of
                           RMini m -> T.streamReplace (streamE env) (ID $ unpack idd) m >> return (ASucc "")
                           RError e -> return $ AErr e
                           _ -> return $ AErr "Unkown error!"
 processAction env (Show t) = do
-                        putMVar (hintM env) $ MMini (compile $ runRotateUnsafe $ simplify t)
+                        putMVar (hintM env) $ MMini (generate $ runRotateUnsafe $ simplify t)
                         res <- liftIO $ takeMVar (hintR env)
                         case res of
                           RMini m -> return (ASucc $ show m)
                           RError e -> return $ AErr e
                           _ -> return $ AErr "Unkown error!"
 processAction env (Def t) = do
-                        putMVar (hintM env) $ MDef (compileDef $ simplifyDef t) --TODO rotate
+                        putMVar (hintM env) $ MDef (generateDef $ simplifyDef t) --TODO rotate
                         res <- liftIO $ takeMVar (hintR env)
                         case res of
                           RSucc -> return (ASucc "")
@@ -75,7 +75,7 @@ processAction env (Type t) = case (inferTerm defaultEnv $ runRotateUnsafe $ simp
                                 Right typ -> return (ASucc $ show typ)
                                 Left e -> return $ AErr $ show e
 processAction env (JS t) = do
-                        putMVar (hintM env) $ MHydra (compile $ runRotateUnsafe $ simplify t)
+                        putMVar (hintM env) $ MHydra (generate $ runRotateUnsafe $ simplify t)
                         res <- liftIO $ takeMVar (hintR env)
                         case res of
                           RHydra p -> modifyMVar_ (hydraE env) (const $ pure p) >> return (ASucc "")
@@ -92,7 +92,7 @@ processAction env (Load path) = do
                                      case parseDefs (pack cont) of
                                                Left err -> return $ AErr err
                                                Right ps -> do
-                                                       res <- sequence $ map (\p -> (liftIO $ putMVar (hintM env) $ MDef (compileDefWithoutContext $ simplifyDef p)) >> (liftIO $ takeMVar (hintR env))) ps
+                                                       res <- sequence $ map (\p -> (liftIO $ putMVar (hintM env) $ MDef (generateDefWithoutContext $ simplifyDef p)) >> (liftIO $ takeMVar (hintR env))) ps
                                                        case checkForErrs res of
                                                          RSucc -> runManyDefs ds
                                                          RError e -> return $ AErr e

@@ -2,6 +2,7 @@
 module Zwirn.Language.Rotate
     ( runRotate
     , runRotateUnsafe
+    , RotationError
     ) where
 
 import Zwirn.Language.Syntax
