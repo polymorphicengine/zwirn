@@ -71,13 +71,9 @@ processAction env (Def t) = do
                           RSucc -> return (ASucc "")
                           RError e -> return $ AErr e
                           _ -> return $ AErr "Unkown error!"
-processAction env (Type t) = do
-                        putMVar (hintM env) $ MType (compile $ runRotateUnsafe $ simplify t)
-                        res <- liftIO $ takeMVar (hintR env)
-                        case res of
-                          RType typ -> return (ASucc typ)
-                          RError e -> return $ AErr e
-                          _ -> return $ AErr "Unkown error!"
+processAction env (Type t) = case (inferTerm defaultEnv $ runRotateUnsafe $ simplify t) of
+                                Right typ -> return (ASucc $ show typ)
+                                Left e -> return $ AErr $ show e
 processAction env (JS t) = do
                         putMVar (hintM env) $ MHydra (compile $ runRotateUnsafe $ simplify t)
                         res <- liftIO $ takeMVar (hintR env)

@@ -66,7 +66,7 @@ instance Substitutable a => Substitutable [a] where
   apply = map . apply
   ftv   = foldr (Set.union . ftv) Set.empty
 
-instance Substitutable Env where
+instance Substitutable TypeEnv where
   apply s (TypeEnv ty cl) = TypeEnv (Map.map (apply s) ty) (apply s cl)
   ftv (TypeEnv ty cl) = (ftv $ Map.elems ty) `Set.union` (ftv cl)
 

@@ -6,6 +6,7 @@ module Zwirn.Language
     , module Zwirn.Language.Rotate
     , module Zwirn.Language.Simple
     , module Zwirn.Language.Pretty
+    , module Zwirn.Language.TypeCheck.Infer
     ) where
 
 import Zwirn.Language.Syntax
@@ -15,3 +16,4 @@ import Zwirn.Language.Parser
 import Zwirn.Language.Rotate
 import Zwirn.Language.Simple
 import Zwirn.Language.Pretty
+import Zwirn.Language.TypeCheck.Infer

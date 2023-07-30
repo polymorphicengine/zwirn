@@ -1,11 +1,13 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Zwirn.Language.TypeCheck.Infer
-    ( inferExpr
+    ( inferTerm
+    , defaultEnv
     ) where
 
 import Zwirn.Language.TypeCheck.Types
 import Zwirn.Language.TypeCheck.Constraint
 import Zwirn.Language.TypeCheck.Env as Env
-import Zwirn.Language.Syntax
+import Zwirn.Language.Simple
 
 import Control.Monad.Except
 import Control.Monad.State
@@ -22,7 +24,7 @@ import qualified Data.Set as Set
 
 -- | Inference monad
 type Infer a = (ReaderT
-                  Env             -- Typing environment
+                  TypeEnv             -- Typing environment
                   (StateT         -- Inference state
                   InferState
                   (Except         -- Inference errors
@@ -41,12 +43,12 @@ initInfer = InferState { count = 0 }
 -------------------------------------------------------------------------------
 
 -- | Run the inference monad
-runInfer :: Env -> Infer a -> Either TypeError a
+runInfer :: TypeEnv -> Infer a -> Either TypeError a
 runInfer env m = runExcept $ evalStateT (runReaderT m env) initInfer
 
 -- | Solve for the toplevel type of an expression in a given environment
-inferExpr :: Env -> Term -> Either TypeError Scheme
-inferExpr env ex = case runInfer env (infer ex) of
+inferTerm :: TypeEnv -> SimpleTerm -> Either TypeError Scheme
+inferTerm env ex = case runInfer env (infer ex) of
   Left err -> Left err
   Right (ty, ps, cs) -> case runSolve cs of
     Left err -> Left err
@@ -55,8 +57,8 @@ inferExpr env ex = case runInfer env (infer ex) of
         Right xs -> Right $ closeOver xs $ apply subst ty
 
 -- | Return the internal constraints used in solving for the type of an expression
--- constraintsExpr :: Env -> Term -> Either TypeError ([Constraint], Subst, Type, Scheme)
--- constraintsExpr env ex = case runInfer env (infer ex) of
+-- constraintsTerm :: Env -> SimpleTerm -> Either TypeError ([Constraint], Subst, Type, Scheme)
+-- constraintsTerm env ex = case runInfer env (infer ex) of
 --   Left err -> Left err
 --   Right (ty, cs) -> case runSolve cs of
 --     Left err -> Left err
@@ -98,7 +100,7 @@ instantiate (Forall as (Qual ps t)) = do
     let s = Subst $ Map.fromList $ zip as as'
     return $ (apply s t, apply s ps)
 
-generalize :: Env -> [Predicate] -> Type -> Scheme
+generalize :: TypeEnv -> [Predicate] -> Type -> Scheme
 generalize env ps t  = Forall as (Qual ps t)
     where as = Set.toList $ ftv t `Set.difference` ftv env
 
@@ -117,31 +119,31 @@ checkInstance p = do
                         True -> return ()
                         False -> throwError $ NoInstance p
 
-infer :: Term -> Infer (Type, [Predicate], [Constraint])
+infer :: SimpleTerm -> Infer (Type, [Predicate], [Constraint])
 infer expr = case expr of
-  TVar _ x  -> do
+  SVar _ x  -> do
       case (readMaybe $ Text.unpack x) :: Maybe Double of
         Nothing -> do
             (t, ps) <- lookupEnv x
             return (t, ps, [])
         Just _ -> return (numberT, [], [])
 
-  TRest -> do
+  SRest -> do
       tv <- fresh
       return (tv, [], [])
 
-  TLambda [x] e -> do --TODO: for more than one variable
+  SLambda x e -> do
     tv <- fresh
     (t, ps, c) <- inEnv (x, Forall [] (Qual [] tv)) (infer e)
     return (tv `TypeArr` t, ps, c)
 
-  TApp e1 e2 -> do
+  SApp e1 e2 -> do
     (t1, ps1, c1) <- infer e1
     (t2, ps2, c2) <- infer e2
     tv <- fresh
     return (tv, ps1 ++ ps2, c1 ++ c2 ++ [(t1, t2 `TypeArr` tv)])
 
-  TInfix e1 op e2 -> do
+  SInfix e1 op e2 -> do
     (t1, ps1, c1) <- infer e1
     (t2, ps2, c2) <- infer e2
     tv <- fresh
@@ -149,11 +151,37 @@ infer expr = case expr of
     (u2, p3) <- lookupEnv op
     return (tv, ps1 ++ ps2 ++ p3, c1 ++ c2 ++ [(u1, u2)])
 
-  TSeq (x:xs) -> do
+  SSeq (x:xs) -> do
     (t, ps, cs) <- infer x
     infs <- sequence $ map infer xs
     return (t, ps, cs ++ concatMap (\(_,_,y) -> y) infs ++ [(t,t') | t' <- map (\(y,_,_) -> y) infs])
 
+  SStack (x:xs) -> do
+    (t, ps, cs) <- infer x
+    infs <- sequence $ map infer xs
+    return (t, ps, cs ++ concatMap (\(_,_,y) -> y) infs ++ [(t,t') | t' <- map (\(y,_,_) -> y) infs])
+
+  SChoice _ (x:xs) -> do
+    (t, ps, cs) <- infer x
+    infs <- sequence $ map infer xs
+    return (t, ps, cs ++ concatMap (\(_,_,y) -> y) infs ++ [(t,t') | t' <- map (\(y,_,_) -> y) infs])
+
+  SElong x _ -> infer x
+
+  (SEuclid e1 e2 e3 (Just e4)) -> do
+    (t1, ps1, c1) <- infer e1
+    (t2, ps2, c2) <- infer e2
+    (t3, ps3, c3) <- infer e3
+    (t4, ps4, c4) <- infer e4
+    return (t1, ps1 ++ ps2 ++ ps3 ++ ps4, c1 ++ c2 ++ c3 ++ c4 ++ [(t2, numberT), (t3, numberT), (t4, numberT)])
+
+  (SEuclid e1 e2 e3 Nothing) -> do
+    (t1, ps1, c1) <- infer e1
+    (t2, ps2, c2) <- infer e2
+    (t3, ps3, c3) <- infer e3
+    return (t1, ps1 ++ ps2 ++ ps3, c1 ++ c2 ++ c3 ++ [(t2, numberT), (t3, numberT)])
+
+  _ -> error "Can't happen"
 
 normalize :: Scheme -> Scheme
 normalize (Forall _ (Qual ps body)) = Forall (map snd ord) (Qual (map normpred ps) $ normtype body)
@@ -172,3 +200,22 @@ normalize (Forall _ (Qual ps body)) = Forall (map snd ord) (Qual (map normpred p
         Nothing -> error "type variable not in signature"
 
     normpred (IsIn n t) = IsIn n (normtype t)
+
+
+tyv :: Text -> Type
+tyv s = TypeVar s
+
+num :: Type -> Predicate
+num t = IsIn "Num" t
+
+infixr 3 -->
+(-->) :: Type -> Type -> Type
+(-->) t1 t2 = TypeArr t1 t2
+
+defaultEnv :: TypeEnv
+defaultEnv = TypeEnv (Map.fromList [("rev", Forall ["a"] (Qual [] $ tyv "a" --> tyv "a"))
+                                   ,("fast", Forall ["a"] (Qual [] $ numberT --> tyv "a" --> tyv "a"))
+                                   ,("slow", Forall ["a"] (Qual [] $ numberT --> tyv "a" --> tyv "a"))
+                                   ,("id",Forall ["a"] (Qual [] $ tyv "a" --> tyv "a"))
+                                   ])
+                         [IsIn "Num" numberT]
