@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Zwirn.Language.Syntax where
 
-import Data.Text (Text, pack, unpack)
+import Data.Text (Text)
 
 type Var = Text
 
