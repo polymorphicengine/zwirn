@@ -38,6 +38,7 @@ library
                    Zwirn.Language.Rotate
                    Zwirn.Language.Simple
                    Zwirn.Language.Pretty
+                   Zwirn.Language.Block
                    Zwirn.Language
   build-depends: base,
                  array,

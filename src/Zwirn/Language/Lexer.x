@@ -16,6 +16,7 @@ module Zwirn.Language.Lexer
   , setEditorNum
   , getEditorNum
   , setInitialLineNum
+  , lineLexer
   ) where
 
 import           Data.Text (Text)
@@ -35,6 +36,8 @@ $alpha = [a-zA-Z]
 tokens :-
 
 <0> $white+ ;
+
+<line> (.+ (\n?) | \n)               { mkLine }
 
 -- Multi Line Comments
 
@@ -183,6 +186,9 @@ data Token
   | Assign
   | LoadA Text
   | JSA
+  -- Line & Block Tokens
+  | LineT Text
+  | BlockSep
   -- EOF
   | EOF
   deriving (Eq)
@@ -215,6 +221,8 @@ instance Show Token where
  show Assign = quoted "="
  show (LoadA x) = ":load " <> show x
  show JSA = quoted ":js"
+ show (LineT t) = "line " <> show t
+ show BlockSep = "block"
  show EOF = "end of file"
 
 quoted :: String -> String
@@ -224,6 +232,11 @@ mkRange :: AlexInput -> Int -> Range
 mkRange (st, _, _, str) len = Range{start = st, stop = end}
   where
     end = Text.foldl' alexMove st $ Text.take len str
+
+mkLine :: AlexAction RangedToken
+mkLine inp@(_, _, _, str) len = case Text.all (\c -> elem c ("\n\t " :: String)) (Text.take len str) of
+                            True -> tok BlockSep inp len
+                            False -> tokText LineT inp len
 
 tok :: Token -> AlexAction RangedToken
 tok ctor inp len =
@@ -274,6 +287,8 @@ setInitialLineNum i = Alex alex
                     where alex s = Right (s {alex_pos = AlexPn x i c }, ())
                                  where AlexPn x _ c = alex_pos s
 
+lineLexer :: Alex ()
+lineLexer = alexSetStartCode line
 
 scanMany :: Text -> Either String [Token]
 scanMany input = runAlex input go

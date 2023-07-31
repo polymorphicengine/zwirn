@@ -2,21 +2,24 @@
 module Zwirn.Language.Parser
     ( parseWithPos
     , parseDefs
+    , parseBlocks
     ) where
 
 import           Data.Text (Text)
 import qualified Data.Text as Text
 import Data.Maybe (fromJust)
 import Data.Monoid (First (..))
-import Data.List (intercalate)
+import Data.List (intercalate, sortOn)
 
 import qualified Zwirn.Language.Lexer as L
 import Zwirn.Language.Syntax
+import Zwirn.Language.Block
 }
 
 %name parse term
 %name parseActions actions
 %name parseDefinitions defs
+%name pBlocks blocks
 %tokentype { L.RangedToken }
 %errorhandlertype explist
 %error { parseError }
@@ -31,6 +34,8 @@ import Zwirn.Language.Syntax
   -- Constants
   string     { L.RangedToken (L.String _) _ }
   number     { L.RangedToken (L.Number _) _ }
+  line       { L.RangedToken (L.LineT _) _ }
+  bsep       { L.RangedToken (L.BlockSep) _ }
   '~'        { L.RangedToken L.Rest _ }
   -- Repeat
   '!'        { L.RangedToken L.Repeat _ }
@@ -176,6 +181,21 @@ action :: { Action }
 actions :: { [Action] }
   : sepBy(action, ';')           {$1}
 
+-- parsing blocks of text
+
+block :: { Block }
+  : some(line)                                      {toBlock $1}
+
+blocksrec :: { [Block] }
+  : blocksrec some(bsep) block                      {$3:$1}
+  | block                                           {[$1]}
+
+blocks :: { [Block] }
+  : some(bsep) blocksrec some(bsep)                 {$2}
+  | some(bsep) blocksrec                            {$2}
+  | blocksrec some(bsep)                            {$1}
+  | blocksrec                                       {$1}
+
 {
 parseError :: (L.RangedToken, [String]) -> L.Alex a
 parseError (L.RangedToken t _,poss) = do
@@ -193,6 +213,7 @@ unTok (L.RangedToken  (L.Number x) _ ) = x
 unTok (L.RangedToken  (L.String x) _ )= x
 unTok (L.RangedToken  (L.Operator x) _) = x
 unTok (L.RangedToken  (L.LoadA x) _) = x
+unTok (L.RangedToken  (L.LineT x) _) = x
 unTok _ = error "can't untok"
 
 mkAtom :: L.RangedToken -> L.Alex Term
@@ -203,10 +224,23 @@ mkAtom tok@(L.RangedToken _ range) = do
 toPosition :: Int -> L.Range -> Position
 toPosition ed (L.Range (L.AlexPn _ line start) (L.AlexPn _ _ end)) = Pos line start end ed
 
+toBlock :: [L.RangedToken] -> Block
+toBlock [] = error "Can't happen"
+toBlock xs = Block start end content
+           where ls = sortOn (\(x,_) -> x) $ map (\r -> (getLn r,unTok r)) xs
+                 (start, _) = head ls
+                 (end, _) = last ls
+                 content = Text.concat $ map snd ls
+                 getLn (L.RangedToken _ (L.Range (L.AlexPn _ l _) _)) = l
+
+
 parseWithPos :: Int -> Int -> Text -> Either String [Action]
 parseWithPos ed ln input = L.runAlex input (L.setEditorNum ed >> L.setInitialLineNum ln >> parseActions)
 
 parseDefs :: Text -> Either String [Def]
 parseDefs input = L.runAlex input parseDefinitions
+
+parseBlocks :: Text -> Either String [Block]
+parseBlocks input = L.runAlex input (L.lineLexer >> pBlocks)
 
 }
