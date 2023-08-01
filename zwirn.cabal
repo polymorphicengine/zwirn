@@ -39,11 +39,15 @@ library
                    Zwirn.Language.Simple
                    Zwirn.Language.Pretty
                    Zwirn.Language.Block
+                   Zwirn.Language.Hint
                    Zwirn.Language
   build-depends: base,
                  array,
                  text,
                  mtl,
+                 hint,
+                 exceptions,
+                 filepath,
                  containers,
                  template-haskell,
                  tidal == 1.9.2

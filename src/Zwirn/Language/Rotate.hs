@@ -26,7 +26,7 @@ ops = [ ("*", Fixity LeftA 2)
 defaultFixity :: Fixity
 defaultFixity = Fixity LeftA 9
 
-data RotationError = RotationError deriving (Show, Eq)
+type RotationError = String
 
 type Rotate a = ExceptT RotationError Identity a
 
@@ -77,7 +77,7 @@ rotate (SInfix l op r) = do
       opDec  <- findOp op
       opDec' <- findOp op'
       case shouldRotate opDec opDec' of
-        Fail   -> throwError RotationError
+        Fail   -> throwError "can't handle precedence of operators"
         Keep   -> return $ SInfix lRotated op rRotated
         Rotate -> return $ SInfix (SInfix lRotated op l') op' r'
     _ -> return $ SInfix lRotated op rRotated

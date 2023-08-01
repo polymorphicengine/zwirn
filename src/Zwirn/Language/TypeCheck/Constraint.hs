@@ -21,13 +21,6 @@ import           Data.Text (Text)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
-type Constraint = (Type, Type)
-
-newtype Subst = Subst (Map.Map TypeVar Type)
-  deriving (Eq, Ord, Show, Semigroup, Monoid)
-
-type Unifier = (Subst, [Constraint])
-
 data TypeError
   = UnificationFail Type Type
   | InfiniteType TypeVar Type
@@ -35,7 +28,15 @@ data TypeError
   | Ambigious [Constraint]
   | UnificationMismatch [Type] [Type]
   | NoInstance Predicate
-  deriving Show
+  deriving (Show, Eq)
+
+
+type Constraint = (Type, Type)
+
+newtype Subst = Subst (Map.Map TypeVar Type)
+  deriving (Eq, Ord, Show, Semigroup, Monoid)
+
+type Unifier = (Subst, [Constraint])
 
 -- | Constraint solver monad
 type Solve a = ExceptT TypeError Identity a

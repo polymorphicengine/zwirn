@@ -34,3 +34,7 @@ textT = TypeCon "Text"
 
 valMapT :: Type
 valMapT = TypeCon "ValueMap"
+
+isBasicType :: Scheme -> Bool
+isBasicType (Forall [] (Qual [] (TypeCon _))) = True
+isBasicType _ = False

@@ -1,7 +1,7 @@
 {
 module Zwirn.Language.Parser
-    ( parseWithPos
-    , parseDefs
+    ( parseActionsWithPos
+    , parseActions
     , parseBlocks
     ) where
 
@@ -17,8 +17,7 @@ import Zwirn.Language.Block
 }
 
 %name parse term
-%name parseActions actions
-%name parseDefinitions defs
+%name pActions actions
 %name pBlocks blocks
 %tokentype { L.RangedToken }
 %errorhandlertype explist
@@ -234,11 +233,11 @@ toBlock xs = Block start end content
                  getLn (L.RangedToken _ (L.Range (L.AlexPn _ l _) _)) = l
 
 
-parseWithPos :: Int -> Int -> Text -> Either String [Action]
-parseWithPos ed ln input = L.runAlex input (L.setEditorNum ed >> L.setInitialLineNum ln >> parseActions)
+parseActionsWithPos :: Int -> Int -> Text -> Either String [Action]
+parseActionsWithPos ed ln input = L.runAlex input (L.setEditorNum ed >> L.setInitialLineNum ln >> pActions)
 
-parseDefs :: Text -> Either String [Def]
-parseDefs input = L.runAlex input parseDefinitions
+parseActions :: Text -> Either String [Action]
+parseActions input = L.runAlex input pActions
 
 parseBlocks :: Text -> Either String [Block]
 parseBlocks input = L.runAlex input (L.lineLexer >> pBlocks)
