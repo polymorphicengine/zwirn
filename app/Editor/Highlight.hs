@@ -45,7 +45,7 @@ locs :: Double -> ControlPattern -> [Location]
 locs t pat = concatMap evToLocs $ queryArc pat (Arc (toRational t) (toRational t) )
         where evToLocs (Event {context = Context xs}) = map toLoc xs
               -- assume an event doesn't span more than one line
-              toLoc ((by, bx), (editorNum, ex)) = (by-1,bx-1,ex-1,editorNum)
+              toLoc ((by, bx), (editorNum, ex)) = (by,bx-1,ex-1,editorNum)
 
 locsMany :: Double -> [ControlPattern] -> [Location]
 locsMany t = concatMap (locs t)

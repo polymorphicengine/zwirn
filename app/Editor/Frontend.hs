@@ -16,7 +16,9 @@ import Editor.Setup
 import Editor.UI
 import Editor.Highlight
 import Editor.Hydra
-import Editor.Hint
+
+import Zwirn.Language.Hint
+--import Editor.Hint
 
 
 

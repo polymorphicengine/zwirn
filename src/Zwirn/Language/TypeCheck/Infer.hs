@@ -215,7 +215,15 @@ infixr 3 -->
 defaultEnv :: TypeEnv
 defaultEnv = TypeEnv (Map.fromList [("rev", Forall ["a"] (Qual [] $ tyv "a" --> tyv "a"))
                                    ,("fast", Forall ["a"] (Qual [] $ numberT --> tyv "a" --> tyv "a"))
+                                   ,("*", Forall ["a"] (Qual [] $ tyv "a" --> numberT --> tyv "a"))
                                    ,("slow", Forall ["a"] (Qual [] $ numberT --> tyv "a" --> tyv "a"))
+                                   ,("/", Forall ["a"] (Qual [] $ tyv "a" --> numberT --> tyv "a"))
                                    ,("id",Forall ["a"] (Qual [] $ tyv "a" --> tyv "a"))
+                                   ,("n",Forall [] (Qual [] $ numberT --> valMapT))
+                                   ,("s",Forall [] (Qual [] $ textT --> valMapT))
+                                   ,("bd",Forall [] (Qual [] $ textT))
+                                   ,("sn",Forall [] (Qual [] $ textT))
+                                   ,("out",Forall [] (Qual [] $ numberT --> textT --> textT))
+                                   ,("osc",Forall [] (Qual [] $ numberT --> textT))
                                    ])
                          [IsIn "Num" numberT]

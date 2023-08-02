@@ -13,7 +13,9 @@ import Graphics.UI.Threepenny.Core as C hiding (text)
 
 import Editor.Backend
 import Editor.UI
-import Editor.Hint
+
+import Zwirn.Language.Hint
+-- import Editor.Hint
 
 setupBackend :: Stream -> HintMode -> UI Env
 setupBackend str mode = do

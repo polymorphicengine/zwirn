@@ -234,12 +234,12 @@ toBlock xs = Block start end content
 
 
 parseActionsWithPos :: Int -> Int -> Text -> Either String [Action]
-parseActionsWithPos ed ln input = L.runAlex input (L.setEditorNum ed >> L.setInitialLineNum ln >> pActions)
+parseActionsWithPos ln ed input = L.runAlex input (L.setEditorNum ed >> L.setInitialLineNum ln >> pActions)
 
 parseActions :: Text -> Either String [Action]
 parseActions input = L.runAlex input pActions
 
-parseBlocks :: Text -> Either String [Block]
-parseBlocks input = L.runAlex input (L.lineLexer >> pBlocks)
+parseBlocks :: Int -> Text -> Either String [Block]
+parseBlocks line input = L.runAlex input (L.lineLexer >> L.setInitialLineNum line >> pBlocks)
 
 }

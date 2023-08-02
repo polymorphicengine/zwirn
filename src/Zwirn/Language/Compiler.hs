@@ -19,10 +19,11 @@ import Zwirn.Language.TypeCheck.Infer
 
 import Control.Monad.State
 import Control.Monad.Except
-import Control.Concurrent.MVar (MVar, putMVar, takeMVar)
+import Control.Concurrent.MVar (MVar, putMVar, takeMVar, modifyMVar_)
 import Control.Exception (try, SomeException)
 
-import Sound.Tidal.Context (Pattern, ControlPattern)
+import Sound.Tidal.Context (Pattern, ControlPattern, Stream, streamReplace)
+import Sound.Tidal.ID (ID(..))
 
 import Data.Text (Text, unpack)
 import Data.Text.IO (readFile)
@@ -36,7 +37,11 @@ data HintEnv = HintEnv { hMode :: HintMode
                        , hR :: MVar InterpreterResponse
                        }
 
-data Environment = Environment { typeEnv :: TypeEnv
+
+
+data Environment = Environment { tStream :: Stream
+                               , jsMV :: Maybe (MVar (Pattern String))
+                               , typeEnv :: TypeEnv
                                , hintEnv :: HintEnv
                                }
 
@@ -47,6 +52,92 @@ type CI a = StateT Environment (ExceptT CIError IO) a
 runCI :: Environment -> CI a -> IO (Either CIError a)
 runCI env m = runExceptT $ evalStateT m env
 
+compilerInterpreter :: Int -> Int -> Text -> CI (String, Environment, Int, Int)
+compilerInterpreter line editor input = do
+                       blocks <- runBlocks 0 input
+                       (Block start end content) <- runGetBlock line blocks
+                       as <- runParserWithPos line editor content
+                       liftIO $ putStrLn $ show as
+                       r <- runActions True as
+                       e <- get
+                       return (r, e, start, end)
+
+
+-----------------------------------------------------
+---------------------- Parser -----------------------
+-----------------------------------------------------
+
+runParserWithPos :: Int -> Int -> Text -> CI [Action]
+runParserWithPos ln ed t = case parseActionsWithPos ln ed t of
+                      Left err -> throwError err
+                      Right as -> return as
+
+runParser :: Text -> CI [Action]
+runParser t = case parseActions t of
+                      Left err -> throwError err
+                      Right as -> return as
+
+runBlocks :: Int -> Text -> CI [Block]
+runBlocks ln t = case parseBlocks ln t of
+                     Left err -> throwError err
+                     Right bs -> return bs
+
+runGetBlock :: Int -> [Block] -> CI Block
+runGetBlock i bs = case getBlock i bs of
+                    Left err -> throwError err
+                    Right b -> return b
+
+
+-----------------------------------------------------
+---------------------- Desugar ----------------------
+-----------------------------------------------------
+
+runSimplify :: Term -> CI SimpleTerm
+runSimplify t = return $ simplify t
+
+runSimplifyDef :: Def -> CI SimpleDef
+runSimplifyDef d = return $ simplifyDef d
+
+
+-----------------------------------------------------
+------------------- AST Rotation --------------------
+-----------------------------------------------------
+
+runRotate :: SimpleTerm -> CI SimpleTerm
+runRotate s = case R.runRotate s of
+                      Left err -> throwError err
+                      Right t -> return t
+
+
+-----------------------------------------------------
+-------------------- Type Check ---------------------
+-----------------------------------------------------
+
+runTypeCheck :: SimpleTerm -> CI Scheme
+runTypeCheck s = do
+              Environment {typeEnv = tenv} <- get
+              case inferTerm tenv s of
+                      Left err -> throwError $ show err
+                      Right t -> return t
+
+
+-----------------------------------------------------
+-------------- Generate Haskell Code ----------------
+-----------------------------------------------------
+
+-- | True runs the generator with inserting context, False without
+runGenerator :: Bool -> SimpleTerm -> CI String
+runGenerator True s = return $ generate s
+runGenerator False s = return $ generateWithoutContext s
+
+-- | True runs the generator with inserting context, False without
+runGeneratorDef :: Bool -> SimpleDef -> CI String
+runGeneratorDef True s = return $ generateDef s
+runGeneratorDef False s = return $ generateDefWithoutContext s
+
+-----------------------------------------------------
+---------------- Haskell interpreter ----------------
+-----------------------------------------------------
 
 interpretAsControlPattern :: String -> CI ControlPattern
 interpretAsControlPattern input = do
@@ -78,58 +169,17 @@ interpretDefinition input = do
               RError err -> throwError $ err
               _ -> throwError $ "Unkown Hint Error"
 
-runParserWithPos :: Int -> Int -> Text -> CI [Action]
-runParserWithPos ed ln t = case parseActionsWithPos ed ln t of
-                      Left err -> throwError err
-                      Right as -> return as
+-----------------------------------------------------
+----------------- Compiling Actions -----------------
+-----------------------------------------------------
 
-runParser :: Text -> CI [Action]
-runParser t = case parseActions t of
-                      Left err -> throwError err
-                      Right as -> return as
-
-
-runBlocks :: Text -> CI [Block]
-runBlocks t = case parseBlocks t of
-                     Left err -> throwError err
-                     Right bs -> return bs
-
-runGetBlock :: Int -> [Block] -> CI Block
-runGetBlock i bs = case getBlock i bs of
-                    Left err -> throwError err
-                    Right b -> return b
-
-runSimplify :: Term -> CI SimpleTerm
-runSimplify t = return $ simplify t
-
-runSimplifyDef :: Def -> CI SimpleDef
-runSimplifyDef d = return $ simplifyDef d
-
-runRotate :: SimpleTerm -> CI SimpleTerm
-runRotate s = case R.runRotate s of
-                      Left err -> throwError err
-                      Right t -> return t
-
-runTypeCheck :: SimpleTerm -> CI Scheme
-runTypeCheck s = do
-              Environment {typeEnv = tenv} <- get
-              case inferTerm tenv s of
-                      Left err -> throwError $ show err
-                      Right t -> return t
-
-runGenerator :: SimpleTerm -> CI String
-runGenerator s = return $ generate s
-
-runGeneratorDef :: SimpleDef -> CI String
-runGeneratorDef s = return $ generateDef s
-
-defAction :: Def -> CI ()
-defAction d = do
+defAction :: Bool -> Def -> CI ()
+defAction b d = do
            sd@(LetS x st) <- runSimplifyDef d
            rot <- runRotate st
            ty <- runTypeCheck rot
            modify (\env -> env{typeEnv = extend (typeEnv env) (x, ty)})
-           gd <- runGeneratorDef sd
+           gd <- runGeneratorDef b sd
            interpretDefinition gd
            return ()
 
@@ -141,7 +191,7 @@ showAction t = do
           case isBasicType ty of
               False -> throwError $ "Can't show terms of type " ++ show ty
               True -> do
-                gen <- runGenerator rot
+                gen <- runGenerator True rot
                 cp <- interpretAsControlPattern gen
                 return $ show cp
 
@@ -158,24 +208,47 @@ loadAction path = do
       case mayfile of
         Left _ -> throwError "file note found"
         Right input -> do
-          blocks <- runBlocks input
+          blocks <- runBlocks 0 input
           ass <- sequence $ map (runParser . bContent) blocks
-          _ <- sequence $ map runActions ass                  -- TODO: versions without context
+          _ <- sequence $ map (runActions False) ass
           return ()
 
+streamAction :: Bool -> Text -> Term -> CI ()
+streamAction ctx idd t = do
+              s <- runSimplify t
+              rot <- runRotate s
+              ty <- runTypeCheck rot
+              case ty of
+                  (Forall [] (Qual [] (TypeCon "ValueMap"))) -> do
+                        gen <- runGenerator ctx rot
+                        cp <- interpretAsControlPattern gen
+                        (Environment {tStream = str}) <- get
+                        liftIO $ streamReplace str (ID (unpack idd)) cp
+                  _ -> throwError $ "Type Error: can only stream value maps"
 
-runAction :: Action -> CI String
-runAction (Show t) = showAction t
-runAction (Def d) = defAction d >> return ""
-runAction (Type t) = typeAction t
-runAction (Load p) = loadAction p >> return ""
+jsAction :: Bool -> Term -> CI ()
+jsAction ctx t = do
+              s <- runSimplify t
+              rot <- runRotate s
+              ty <- runTypeCheck rot
+              case ty of
+                  (Forall [] (Qual [] (TypeCon "Text"))) -> do
+                    gen <- runGenerator ctx rot
+                    p <- interpretAsStringPattern gen
+                    (Environment {jsMV = maybemv}) <- get
+                    case maybemv of
+                      Just mv -> liftIO $ modifyMVar_ mv (const $ pure p)
+                      Nothing -> throwError $ "No JavaScript Interpreter available"
+                  _ -> throwError $ "Type Error: can only accept text"
 
-runActions :: [Action] -> CI String
-runActions as = fmap last $ sequence $ map runAction as
 
-compilerInterpreter :: Text -> CI (String, Environment)
-compilerInterpreter input = do
-                       as <- runParserWithPos 0 1 input
-                       r <- runActions as
-                       e <- get
-                       return (r,e)
+runAction :: Bool -> Action -> CI String
+runAction b (Stream i t) = streamAction b i t >> return ""
+runAction _ (Show t) = showAction t
+runAction b (Def d) = defAction b d >> return ""
+runAction _ (Type t) = typeAction t
+runAction _ (Load p) = loadAction p >> return ""
+runAction b (JS t) = jsAction b t >> return ""
+
+runActions :: Bool -> [Action] -> CI String
+runActions b as = fmap last $ sequence $ map (runAction b) as

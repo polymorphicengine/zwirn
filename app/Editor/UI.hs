@@ -15,7 +15,8 @@ import Foreign.JavaScript (JSObject)
 import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core as C hiding (text, value)
 
-import Editor.Hint
+-- import Editor.Hint
+import Zwirn.Language.Hint
 
 data Env = Env {windowE :: Window
                ,streamE :: Stream

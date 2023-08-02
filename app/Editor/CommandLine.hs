@@ -1,7 +1,7 @@
 module Editor.CommandLine where
 
 import Options.Applicative
-import Editor.Hint
+import Zwirn.Language.Hint
 
 data Config = Config {listenPort :: Int
                      ,dirtPort :: Int
