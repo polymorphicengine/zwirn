@@ -33,7 +33,7 @@ data InterpreterResponse = RPat ControlPattern
                          deriving (Show, Eq)
 
 exts :: [Extension]
-exts = [OverloadedStrings, BangPatterns, MonadComprehensions, LambdaCase, ExtendedDefaultRules, NoMonomorphismRestriction, NoImplicitPrelude]
+exts = [NoImplicitPrelude]
 
 modulePaths :: String -> [String]
 modulePaths path = map (path ++) ["src/Zwirn/Interactive.hs", "src/Zwirn/Interactive/Meta.hs", "src/Zwirn/Interactive/Generic.hs", "src/Zwirn/Interactive/Prelude/Control.hs", "src/Zwirn/Interactive/Prelude/Hydra.hs", "src/Zwirn/Interactive/Prelude/MiniPrelude.hs", "src/Zwirn/Interactive/Prelude/Params.hs"]

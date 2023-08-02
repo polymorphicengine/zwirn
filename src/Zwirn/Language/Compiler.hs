@@ -57,7 +57,6 @@ compilerInterpreter line editor input = do
                        blocks <- runBlocks 0 input
                        (Block start end content) <- runGetBlock line blocks
                        as <- runParserWithPos line editor content
-                       liftIO $ putStrLn $ show as
                        r <- runActions True as
                        e <- get
                        return (r, e, start, end)
