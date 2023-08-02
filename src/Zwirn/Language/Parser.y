@@ -98,9 +98,9 @@ sepBy(p, sep)
   : sepBy_rev(p, sep) { reverse $1 }
 
 atom :: { Term }
-  : identifier { % mkAtom $1 }
-  | number     { % mkAtom $1 }
-  | string     { % mkAtom $1 }
+  : identifier { % (mkAtom TVar) $1 }
+  | number     { % (mkAtom TNum) $1 }
+  | string     { % (mkAtom TText) $1 }
   | '~'        { TRest }
 
 sequence :: { Term }
@@ -215,10 +215,10 @@ unTok (L.RangedToken  (L.LoadA x) _) = x
 unTok (L.RangedToken  (L.LineT x) _) = x
 unTok _ = error "can't untok"
 
-mkAtom :: L.RangedToken -> L.Alex Term
-mkAtom tok@(L.RangedToken _ range) = do
+mkAtom :: (Position -> Text -> Term) -> L.RangedToken -> L.Alex Term
+mkAtom constr tok@(L.RangedToken _ range) = do
                           ed <- L.getEditorNum
-                          return $ TVar (toPosition ed range) (unTok tok)
+                          return $ constr (toPosition ed range) (unTok tok)
 
 toPosition :: Int -> L.Range -> Position
 toPosition ed (L.Range (L.AlexPn _ line start) (L.AlexPn _ _ end)) = Pos line start end ed

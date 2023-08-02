@@ -88,6 +88,8 @@ rotate (SApp l r) = do
           SInfix l' op r' -> return $ SInfix (SApp lRotated l') op r'
           _ -> return $ SApp lRotated rRotated
 rotate e@(SVar _ _) = return e
+rotate e@(SText _ _) = return e
+rotate e@(SNum _ _) = return e
 rotate e@(SRest) = return e
 rotate (SElong t i) = fmap (flip SElong i) $ rotate t
 rotate (SSeq ts) = fmap SSeq (sequence $ map rotate ts)

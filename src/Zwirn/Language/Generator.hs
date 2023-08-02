@@ -11,8 +11,10 @@ import Data.Text (unpack)
 import Data.List (intercalate)
 
 generate :: SimpleTerm -> String
-generate (SVar (Just p) x) = "(addContext " ++ generatePosition p ++ " (" ++ unpack x ++ "))"
-generate (SVar Nothing x) = unpack x
+generate (SVar p x) = "(addContext " ++ generatePosition p ++ " (" ++ unpack x ++ "))"
+generate (SText p x) = "(addContext " ++ generatePosition p ++ " (pat " ++ unpack x ++ "))"
+generate (SNum (Just p) x) = "(addContext " ++ generatePosition p ++ " (pat " ++ unpack x ++ "))"
+generate (SNum Nothing x) = "(pat " ++ unpack x ++ ")"
 generate (SRest) = "T.silence"
 generate (SElong t _) = "(" ++ generate t ++ ")"
 generate (SSeq ts) = "(T.timecat " ++ "[" ++ intercalate "," ss ++  "])"
@@ -44,6 +46,8 @@ generatePosition (Pos l s e editor) = "((" ++ show l ++ "," ++ show s ++ "),(" +
 
 generateWithoutContext :: SimpleTerm -> String
 generateWithoutContext (SVar _ x) = unpack x
+generateWithoutContext (SText _ x) = "(pat " ++ unpack x ++ ")"
+generateWithoutContext (SNum _ x) = "(pat " ++ unpack x ++ ")"
 generateWithoutContext x = generate x
 
 generateDefWithoutContext :: SimpleDef -> String

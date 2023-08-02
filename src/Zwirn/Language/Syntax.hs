@@ -7,10 +7,6 @@ type Var = Text
 
 type OperatorSymbol = Text
 
--- data Operator = Op OperatorSymbol Position deriving (Show, Eq)
-
--- type Position = ((Int,Int),(Int,Int))
-
 data Position = Pos { pLine :: Int
                     , pStart :: Int
                     , pEnd :: Int
@@ -20,6 +16,8 @@ data Position = Pos { pLine :: Int
 -- sugary representation of patterns
 data Term
   = TVar Position Text
+  | TText Position Text
+  | TNum Position Text
   | TRest
   | TElong Term (Maybe Int)
   | TRepeat Term (Maybe Int)

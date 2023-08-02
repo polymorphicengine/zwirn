@@ -122,15 +122,16 @@ checkInstance p = do
 infer :: SimpleTerm -> Infer (Type, [Predicate], [Constraint])
 infer expr = case expr of
   SVar _ x  -> do
-      case (readMaybe $ Text.unpack x) :: Maybe Double of
-        Nothing -> do
-            (t, ps) <- lookupEnv x
-            return (t, ps, [])
-        Just _ -> return (numberT, [], [])
+    (t, ps) <- lookupEnv x
+    return (t, ps, [])
+
+  SText _ _ -> return (textT, [], [])
+
+  SNum _ _ -> return (numberT, [], [])
 
   SRest -> do
-      tv <- fresh
-      return (tv, [], [])
+    tv <- fresh
+    return (tv, [], [])
 
   SLambda x e -> do
     tv <- fresh

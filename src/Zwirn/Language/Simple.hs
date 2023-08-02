@@ -9,11 +9,13 @@ module Zwirn.Language.Simple
 
 import Zwirn.Language.Syntax
 
-import Data.Text (pack)
+import Data.Text (Text,pack)
 
 -- simple representation of patterns
 data SimpleTerm
-  = SVar (Maybe Position) Var
+  = SVar Position Var
+  | SText Position Text
+  | SNum (Maybe Position) Text
   | SRest
   | SElong SimpleTerm Int
   | SSeq [SimpleTerm]
@@ -30,7 +32,9 @@ data SimpleDef
   deriving (Eq, Show)
 
 simplify :: Term -> SimpleTerm
-simplify (TVar p x) = SVar (Just p) x
+simplify (TVar p x) = SVar p x
+simplify (TText p x) = SText p x
+simplify (TNum p x) = SNum (Just p) x
 simplify (TRest) = SRest
 simplify x@(TElong _ _) = case getTotalElong x of
                                 TElong t (Just i) -> SElong (simplify t) i
@@ -40,11 +44,11 @@ simplify x@(TRepeat _ _) = SSeq $ map simplify $ resolveRepeat x
 simplify (TSeq ts) = SSeq (map simplify $ concatMap resolveRepeat ts)
 simplify (TStack ts) = SStack (map simplify ts)
 simplify (TChoice i ts) = SChoice i (map simplify ts)
-simplify (TAlt ts) = SInfix (SSeq ss) "/" (SVar Nothing (pack $ show $ length ss))
+simplify (TAlt ts) = SInfix (SSeq ss) "/" (SNum Nothing (pack $ show $ length ss))
                    where ss = map simplify ts
 simplify (TEuclid t1 t2 t3 (Just t4)) = SEuclid (simplify t1) (simplify t2) (simplify t3) (Just $ simplify t4)
 simplify (TEuclid t1 t2 t3 Nothing) = SEuclid (simplify t1) (simplify t2) (simplify t3) Nothing
-simplify (TPoly (TSeq ts) n) = SInfix (SInfix (SSeq ss) "/" (SVar Nothing (pack $ show $ length ss))) "*" (simplify n)
+simplify (TPoly (TSeq ts) n) = SInfix (SInfix (SSeq ss) "/" (SNum Nothing (pack $ show $ length ss))) "*" (simplify n)
                    where ss = map simplify ts
 simplify (TPoly x n) = SInfix (simplify x) "*" (simplify n)
 simplify (TLambda [] t) = simplify t
