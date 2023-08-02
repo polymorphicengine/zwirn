@@ -59,9 +59,7 @@ library
 executable zwirn-interpreter
     main-is:          Main.hs
     other-modules:    Editor.Backend
-                      Editor.Block
                       Editor.Frontend
-                      Editor.Hint
                       Editor.Setup
                       Editor.UI
                       Editor.Highlight
