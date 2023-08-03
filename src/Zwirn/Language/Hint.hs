@@ -36,7 +36,19 @@ exts :: [Extension]
 exts = [NoImplicitPrelude]
 
 modulePaths :: String -> [String]
-modulePaths path = map (path ++) ["src/Zwirn/Interactive.hs", "src/Zwirn/Interactive/Meta.hs", "src/Zwirn/Interactive/Generic.hs", "src/Zwirn/Interactive/Prelude/Control.hs", "src/Zwirn/Interactive/Prelude/Hydra.hs", "src/Zwirn/Interactive/Prelude/MiniPrelude.hs", "src/Zwirn/Interactive/Prelude/Params.hs"]
+modulePaths path = map (path ++) [ "src/Zwirn/Interactive.hs"
+                                 , "src/Zwirn/Interactive/Types.hs"
+                                 , "src/Zwirn/Interactive/Convert.hs"
+                                 , "src/Zwirn/Interactive/HydraT.hs"
+                                 , "src/Zwirn/Interactive/TidalT.hs"
+                                 , "src/Zwirn/Interactive/Transform.hs"
+                                 , "src/Zwirn/Interactive/Generic.hs"
+                                 , "src/Zwirn/Interactive/Prelude.hs"
+                                 , "src/Zwirn/Interactive/Prelude/Control.hs"
+                                 , "src/Zwirn/Interactive/Prelude/Hydra.hs"
+                                 , "src/Zwirn/Interactive/Prelude/MiniPrelude.hs"
+                                 , "src/Zwirn/Interactive/Prelude/Params.hs"
+                                 ]
 
 moduleNames :: [String]
 moduleNames =  ["Zwirn.Interactive"]

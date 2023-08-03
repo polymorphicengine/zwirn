@@ -24,7 +24,12 @@ library
                    Zwirn.Interactive.Prelude.MiniPrelude
                    Zwirn.Interactive.Prelude.Params
                    Zwirn.Interactive.Generic
-                   Zwirn.Interactive.Meta
+                   Zwirn.Interactive.Transform
+                   Zwirn.Interactive.Convert
+                   Zwirn.Interactive.Prelude
+                   Zwirn.Interactive.Types
+                   Zwirn.Interactive.HydraT
+                   Zwirn.Interactive.TidalT
                    Zwirn.Interactive
                    Zwirn.Language.TypeCheck.Types
                    Zwirn.Language.TypeCheck.Env

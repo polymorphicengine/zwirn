@@ -2,8 +2,11 @@
 module Zwirn.Interactive.Generic where
 
 import Language.Haskell.TH
-import Zwirn.Interactive.Meta (toNum, toPat)
+import Zwirn.Interactive.Types (P, Number, Text)
+import Zwirn.Interactive.Transform (toPat)
+import Zwirn.Interactive.Convert (toTarget)
 import qualified Prelude as P
+import qualified Sound.Tidal.Context as T
 
 -- template haskell stuff
 
@@ -12,9 +15,147 @@ import qualified Prelude as P
 --                   where oneDec name = ValD (VarP (mkName name)) (NormalB (AppE (AppE (VarE 'apply) (VarE 'pN)) (AppE (VarE 'P.pure) (LitE (StringL name))))) []
 
 mkStringParams :: [P.String] -> Q [Dec]
-mkStringParams names = P.return (P.map oneDec names)
-                  where oneDec name = ValD (VarP (mkName name)) (NormalB (AppE (VarE 'toPat) (VarE (mkName ("T." P.++ name))))) []
+mkStringParams names = P.return (P.map oneDec names P.++ P.map sig names)
+                  where oneDec name = ValD (VarP (mkName name)) (NormalB (AppE (VarE 'toPat) (AppE (VarE 'toTarget) (VarE (mkName ("T." P.++ name)))))) []
+                        sig name = SigD (mkName name) (AppT (ConT ''P) (AppT (AppT ArrowT (AppT (ConT ''T.Pattern) (ConT ''Text))) (ConT ''T.ControlPattern)))
 
 mkNumParams :: [P.String] -> Q [Dec]
-mkNumParams names = P.return (P.map oneDec names)
-                  where oneDec name = ValD (VarP (mkName name)) (NormalB (AppE (VarE 'toPat) (AppE (VarE 'toNum) (VarE (mkName ("T." P.++ name)))))) []
+mkNumParams names = P.return (P.map oneDec names P.++ P.map sig names)
+                  where oneDec name = ValD (VarP (mkName name)) (NormalB (AppE (VarE 'toPat) (AppE (VarE 'toTarget) (VarE (mkName ("T." P.++ name)))))) []
+                        sig name = SigD (mkName name) (AppT (ConT ''P) (AppT (AppT ArrowT (AppT (ConT ''T.Pattern) (ConT ''Number))) (ConT ''T.ControlPattern)))
+
+stringParams :: [P.String]
+stringParams = ["s","unit","vowel","sound","toArg"]
+
+numParams :: [P.String]
+numParams = ["accelerate"
+            ,"amp"
+            ,"attack"
+            ,"bandf"
+            ,"bandq"
+            ,"begin"
+            ,"binshift"
+            ,"ccn"
+            ,"ccv"
+            ,"channel"
+            ,"coarse"
+            ,"comb"
+            ,"cps"
+            ,"crush"
+            ,"cut"
+            ,"cutoff"
+            ,"decay"
+            ,"delay"
+            ,"delaytime"
+            ,"detune"
+            ,"distort"
+            ,"djf"
+            ,"dry"
+            ,"dur"
+            ,"end"
+            ,"enhance"
+            ,"expression"
+            ,"fadeInTime"
+            ,"fadeTime"
+            ,"freeze"
+            ,"freq"
+            ,"from"
+            ,"fshift"
+            ,"gain"
+            ,"gate"
+            ,"harmonic"
+            ,"hbrick"
+            ,"hcutoff"
+            ,"hold"
+            ,"hresonance"
+            ,"imag"
+            ,"krush"
+            ,"lagogo"
+            ,"lbrick"
+            ,"legato"
+            ,"leslie"
+            ,"lock"
+            ,"midibend"
+            ,"miditouch"
+            ,"modwheel"
+            ,"n"
+            ,"note"
+            ,"nudge"
+            ,"octave"
+            ,"octer"
+            ,"octersub"
+            ,"octersubsub"
+            ,"offset"
+            ,"orbit"
+            ,"overgain"
+            ,"overshape"
+            ,"pan"
+            ,"panorient"
+            ,"panspan"
+            ,"pansplay"
+            ,"panwidth"
+            ,"partials"
+            ,"phaserdepth"
+            ,"phaserrate"
+            ,"rate"
+            ,"real"
+            ,"release"
+            ,"resonance"
+            ,"ring"
+            ,"ringdf"
+            ,"ringf"
+            ,"room"
+            ,"sagogo"
+            ,"scram"
+            ,"shape"
+            ,"size"
+            ,"slide"
+            ,"smear"
+            ,"speed"
+            ,"squiz"
+            ,"stutterdepth"
+            ,"stuttertime"
+            ,"sustain"
+            ,"sustainpedal"
+            ,"timescale"
+            ,"timescalewin"
+            ,"to"
+            ,"tremolodepth"
+            ,"tremolorate"
+            ,"triode"
+            ,"tsdelay"
+            ,"velocity"
+            ,"voice"
+            ,"waveloss"
+            ,"xsdelay"
+            ,"voi"
+            ,"up"
+            ,"tremr"
+            ,"tremdp"
+            ,"sz"
+            ,"sus"
+            ,"stt"
+            ,"std"
+            ,"sld"
+            ,"scr"
+            ,"rel"
+            ,"por"
+            ,"phasr"
+            ,"phasdp"
+            ,"number"
+            ,"lpq"
+            ,"lpf"
+            ,"hpq"
+            ,"hpf"
+            ,"gat"
+            ,"fadeOutTime"
+            ,"dt"
+            ,"dfb"
+            ,"det"
+            ,"delayt"
+            ,"delayfb"
+            ,"ctf"
+            ,"bpq"
+            ,"bpf"
+            ,"att"
+            ]

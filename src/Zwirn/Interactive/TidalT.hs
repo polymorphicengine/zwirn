@@ -1,150 +1,16 @@
-{-# LANGUAGE TypeFamilies, TypeSynonymInstances, FlexibleInstances #-}
-{-# LANGUAGE ExtendedDefaultRules, GeneralizedNewtypeDeriving, TemplateHaskell #-}
-module Zwirn.Interactive.Meta where
+module Zwirn.Interactive.TidalT where
 
 import qualified Prelude as P
 import qualified Sound.Tidal.Context as T
-
-import qualified Data.Map as Map
 import qualified Control.Monad as M
 
-type Pattern = T.Pattern
-type ValueMap = T.ValueMap
-type ControlPattern = Pattern ValueMap
-type Value = T.Value
-type Note = T.Note
-type Map = Map.Map
-type Time = T.Time
-type Int = P.Int
-type Double = P.Double
-type Char = P.Char
-type String = P.String
-type Bool = P.Bool
-type Maybe = P.Maybe
-
--- this is the only number type in the system to avoid type ambiguities
-newtype Number = Num Double
-               deriving (P.Show, P.Eq, P.Num, P.Enum, P.Ord, P.Fractional)
-
-
--- this is a helper that transforms some types to types that are useful in the system
--- basically this can be thought of as a transformation given as follows
--- ToPat a == (Pattern a); for any basic type a (like Bool, String, Number etc.)
--- ToPat (a -> b) == Pattern (ToPat a) -> Pattern (ToPat a);
--- in practice this is more difficult..
-type family P x where
-  P (Pattern a -> b) = Pattern (Pattern a -> P b)
-  P ((Pattern a -> Pattern b) -> c) = Pattern (Pattern (Pattern a -> Pattern b) -> P c)
-  P (Pattern a) = Pattern a
-  P ([Pattern a]) = Pattern [Pattern a]
-  P a = Pattern a
-
-class Pat a where
-  toPat :: a -> P a
-
--- this class will help us convert anything to use our new Number type replacing
--- Double, Int, Rational etc.
-class Convertible a where
-  type ToNum a
-  toNum :: a -> ToNum a
-  fromNum :: ToNum a -> a
-
--- for allowing Number to act as Bool
-class IsBool a where
-  asBool :: a -> Bool
-
-instance Convertible Bool where
-  type ToNum Bool = Number
-  toNum P.True = Num 1
-  toNum P.False = Num 0
-  fromNum n = (n P.> 0)
-
-instance Convertible Double where
-  type ToNum Double = Number
-  toNum d = Num d
-  fromNum (Num n) = n
-
-instance Convertible Time where
-  type ToNum Time = Number
-  toNum d = Num $$ P.fromRational d
-  fromNum (Num n) = P.toRational n
-
-instance Convertible Int where
-  type ToNum Int = Number
-  toNum i = Num $$ P.fromIntegral i
-  fromNum (Num n) = P.floor n
-
-instance Convertible Note where
-  type ToNum Note = Number
-  toNum (T.Note i) = Num i
-  fromNum (Num n) = T.Note n
-
-instance Convertible String where
-  type ToNum String = String
-  toNum = P.id
-  fromNum = P.id
-
-instance Convertible ValueMap where
-  type ToNum ValueMap = ValueMap
-  toNum = P.id
-  fromNum = P.id
-
-instance Convertible a => Convertible (Pattern a) where
-  type ToNum (Pattern a) = Pattern (ToNum a)
-  toNum = fmap toNum
-  fromNum = fmap fromNum
-
-instance (Convertible a, Convertible b) => Convertible (a -> b) where
-  type ToNum (a -> b) = ToNum a -> ToNum b
-  toNum f x = toNum $$ f (fromNum x)
-  fromNum f x = fromNum $$ f (toNum x)
-
-
-instance Pat a => (Pat (Pattern a)) where
-  toPat = P.id
-
-instance Pat b => Pat (Pattern a -> b) where
-  toPat g = P.pure (\x -> toPat $$ g x)
-
-instance (Pat b, Pat c) => Pat ((Pattern a -> Pattern b) -> c) where
-  toPat g = P.pure (\x -> toPat (g $$ apply x))
-
-instance Pat ([Pattern a]) where
-  toPat = P.pure
-
-instance Pat Number where
-  toPat = P.pure
-
-instance Pat Int where
-  toPat = P.pure
-
-instance Pat Double where
-  toPat = P.pure
-
-instance Pat ValueMap where
-  toPat = P.pure
-
-instance Pat Bool where
-  toPat = P.pure
-
-instance Pat String where
-  toPat = P.pure
-
-instance IsBool Number where
-  asBool x = (x P.> 0)
-
-instance IsBool Bool where
-  asBool = P.id
-
-infixl 0 $$
-($$) :: (a -> b) -> a -> b
-($$) = (P.$)
-
-fmap :: P.Functor f => (a -> b) -> f a -> f b
-fmap = P.fmap
+import Zwirn.Interactive.Types
 
 pat :: a -> Pattern a
 pat = P.pure
+
+numPat :: Double -> Pattern Number
+numPat d = P.pure (Num d)
 
 eventLengths :: Pattern a -> Pattern T.Time
 eventLengths = T.withEvent (\e -> e {T.value = (T.wholeStop e) P.- (T.wholeStart e)})
@@ -160,10 +26,10 @@ applyBoth fp p = T.outerJoin $$ T.applyPatToPatBoth (scaleFunction fp) (fmap P.p
 
 -- meta functions to get the structure
 
-right :: Pat c => Pattern (Pattern a -> Pattern (Pattern b -> Pattern c)) -> Pattern (Pattern a -> Pattern (Pattern b -> Pattern c))
+right :: Pattern (Pattern a -> Pattern (Pattern b -> Pattern c)) -> Pattern (Pattern a -> Pattern (Pattern b -> Pattern c))
 right op = P.pure (\x -> P.pure (\y -> applyRight (apply op x) y))
 
-left :: Pat c => Pattern (Pattern a -> Pattern (Pattern b -> Pattern c)) -> Pattern (Pattern a -> Pattern (Pattern b -> Pattern c))
+left :: Pattern (Pattern a -> Pattern (Pattern b -> Pattern c)) -> Pattern (Pattern a -> Pattern (Pattern b -> Pattern c))
 left op =  P.pure (\x -> P.pure (\y -> applyLeft (applyRight op x) y))
 
 scaleFunction :: Pattern (Pattern a -> Pattern b) -> Pattern (Pattern a -> Pattern b)
@@ -248,16 +114,23 @@ collectBy f = T.withEvents (collectEventsBy f)
 collect :: Pattern a -> Pattern [a]
 collect = collectBy sameDur
 
---
 
-insert :: String -> [String] -> String
-insert code args = go code
-    where
-    at xs i = xs P.!! i
-    argument i = (args `at` i)
+geqT :: Pattern Number -> Pattern Number -> Pattern Bool
+geqT = T.tParam func
+     where func i jP = P.fmap (\j -> i P.>= j) jP
 
-    go []           = []
-    go ('%':'%':cs) = '%' : go cs
-    go ('%':c  :cs) = argument index P.++ go cs
-        where index = P.fromEnum c P.- P.fromEnum '1'
-    go (c:cs)       = c : go cs
+leqT :: Pattern Number -> Pattern Number -> Pattern Bool
+leqT = T.tParam func
+    where func i jP = P.fmap (\j -> i P.<= j) jP
+
+eqT :: Pattern Number -> Pattern Number -> Pattern Bool
+eqT = T.tParam func
+    where func i jP = P.fmap (\j -> i P.== j) jP
+
+andT :: Pattern Bool -> Pattern Bool -> Pattern Bool
+andT = T.tParam func
+    where func i jP = P.fmap (\j -> i P.&& j) jP
+
+orT :: Pattern Bool -> Pattern Bool -> Pattern Bool
+orT = T.tParam func
+    where func i jP = P.fmap (\j -> i P.|| j) jP
