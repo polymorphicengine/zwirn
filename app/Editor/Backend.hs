@@ -20,10 +20,6 @@ import Zwirn.Language.Hint
 
 import Data.Text (pack, unpack)
 
--- data ActionResponse = ASucc String
---                     | AErr String
---                     deriving (Eq,Show)
-
 interpretCommands :: JSObject -> Bool -> Env -> UI ()
 interpretCommands cm lineBool env = do
                 line <- getCursorLine cm
@@ -39,83 +35,3 @@ interpretCommandsLine cm lineBool line env = do
                 case res of
                       Left err -> void $ liftUI $ element out # set UI.text err  --TODO: get block start and end for flashing error
                       Right (resp, newEnv, st, end) -> (liftUI $ flashSuccess cm st end) >> (void $ liftUI $ element out # set UI.text resp)
-
-
--- interpretCommandsLine :: JSObject -> Bool -> Int -> Env -> UI ()
--- interpretCommandsLine cm lineBool line env = do
---     contentsControl <- liftUI $ getValue cm
---     editorNum <- liftUI $ getEditorNumber cm
---     out <- liftUI getOutputEl
---     let bs = getBlocks contentsControl
---         blockMaybe = if lineBool then getLineContent line (linesNum contentsControl) else getBlock line bs
---     case blockMaybe of
---         Nothing -> void $ liftUI $ element out # set UI.text "Failed to get Block"
---         Just (Block blockLineStart blockLineEnd block) -> case parseWithPos editorNum (blockLineStart + 1) (pack block) of
---                   Left err -> errorUI err
---                   Right actions ->  do
---                                 asr <- liftIO $ sequence $ map (processAction env) actions
---                                 case resolveActionResponse (ASucc "") asr of
---                                           AErr e -> errorUI e
---                                           ASucc e -> successUI >> outputUI e
---          where successUI = liftUI $ flashSuccess cm blockLineStart blockLineEnd
---                errorUI err = (liftUI $ flashError cm blockLineStart blockLineEnd) >> (void $ liftUI $ element out # set UI.text err)
---                outputUI o = void $ liftUI $ element out # set UI.text o
-
--- processAction :: Env -> Action -> IO ActionResponse
--- processAction env (Stream idd t) = do
---                         putMVar (hintM env) $ MMini (generate $ runRotateUnsafe $ simplify t)
---                         res <- liftIO $ takeMVar (hintR env)
---                         case res of
---                           RMini m -> T.streamReplace (streamE env) (ID $ unpack idd) m >> return (ASucc "")
---                           RError e -> return $ AErr e
---                           _ -> return $ AErr "Unkown error!"
--- processAction env (Show t) = do
---                         putMVar (hintM env) $ MMini (generate $ runRotateUnsafe $ simplify t)
---                         res <- liftIO $ takeMVar (hintR env)
---                         case res of
---                           RMini m -> return (ASucc $ show m)
---                           RError e -> return $ AErr e
---                           _ -> return $ AErr "Unkown error!"
--- processAction env (Def t) = do
---                         putMVar (hintM env) $ MDef (generateDef $ simplifyDef t) --TODO rotate
---                         res <- liftIO $ takeMVar (hintR env)
---                         case res of
---                           RSucc -> return (ASucc "")
---                           RError e -> return $ AErr e
---                           _ -> return $ AErr "Unkown error!"
--- processAction env (Type t) = case (inferTerm defaultEnv $ runRotateUnsafe $ simplify t) of
---                                 Right typ -> return (ASucc $ show typ)
---                                 Left e -> return $ AErr $ show e
--- processAction env (JS t) = do
---                         putMVar (hintM env) $ MHydra (generate $ runRotateUnsafe $ simplify t)
---                         res <- liftIO $ takeMVar (hintR env)
---                         case res of
---                           RHydra p -> modifyMVar_ (hydraE env) (const $ pure p) >> return (ASucc "")
---                           RError e -> return $ AErr e
---                           _ -> return $ AErr "Unkown error!"
--- processAction env (Load path) = do
---            mayfile <- ((try $ readFile $ unpack path) :: IO (Either SomeException String))
---            case mayfile of
---              Right file -> runManyDefs (getBlocks file)
---              Left _ -> return $ AErr "Could not find the file!"
---            --TODO what about rotation?
---            where runManyDefs [] = return $ ASucc "Successfully loaded file!"
---                  runManyDefs ((Block _ _ cont):ds) = do
---                                      case parseDefs (pack cont) of
---                                                Left err -> return $ AErr err
---                                                Right ps -> do
---                                                        res <- sequence $ map (\p -> (liftIO $ putMVar (hintM env) $ MDef (generateDefWithoutContext $ simplifyDef p)) >> (liftIO $ takeMVar (hintR env))) ps
---                                                        case checkForErrs res of
---                                                          RSucc -> runManyDefs ds
---                                                          RError e -> return $ AErr e
---                                                          _ -> return $ AErr "Unkown error!"
---                                                        where checkForErrs [] = RSucc
---                                                              checkForErrs (RSucc:xs) = checkForErrs xs
---                                                              checkForErrs ((RError e):_) = RError e
---                                                              checkForErrs _ = RError "Unknown error"
-
-
--- resolveActionResponse :: ActionResponse -> [ActionResponse] -> ActionResponse
--- resolveActionResponse curr [] = curr
--- resolveActionResponse _ ((AErr e):_) = AErr e
--- resolveActionResponse _ (a:as) = resolveActionResponse a as
