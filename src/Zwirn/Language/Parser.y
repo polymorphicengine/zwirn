@@ -104,16 +104,16 @@ atom :: { Term }
   | '~'        { TRest }
 
 sequence :: { Term }
-  : some(simple) %shift { TSeq $1 }
+  : some(simpleSeq) %shift { TSeq $1 }
 
 sequence2 :: { Term }
-  : some(simple) %shift { TSeq $1 }
+  : some(simpleSeq) %shift { TSeq $1 }
 
 stack :: { [Term] }
-  : sepBy(sequence, ',') { $1 }
+  : sepBy(sequence, ',')   { $1 }
 
 choice :: { [Term] }
-  : sepBy(sequence2, '|') { $1 }
+  : sepBy(sequence2, '|')  { $1 }
 
 lambda :: { Term }
   : '\\' some(identifier) '->' term %shift { TLambda (map unTok $2) $4 }
@@ -132,33 +132,43 @@ repeat :: { Term }
 fullSequence :: { Term }
   : '[' stack ']'            { TStack $2 }
   | '[' choice ']'           { % L.increaseChoice >>= \x -> return $ TChoice x $2 }
-  | '[' some(simple) ']'     { TSeq $2 }
+  | '[' some(simpleSeq) ']'     { TSeq $2 }
 
 alternation :: { Term }
-  : '<' some(simple) '>' { TAlt $2 }
+  : '<' some(simpleSeq) '>' { TAlt $2 }
 
 euclid :: { Term }
   : simple '{' term ',' term '}'           { TEuclid  $1 $3 $5 Nothing }
   | simple '{' term ',' term ',' term '}'  { TEuclid  $1 $3 $5 (Just $7) }
 
-infix :: { Term }
+simple :: { Term }
+  : atom                           {$1}
+  | alternation                    {$1}
+  | fullSequence                   {$1}
+  | lambda                         {$1}
+  | polyrhythm                     {$1}
+  | elongate                       {$1}
+  | repeat                         {$1}
+  | euclid                         {$1}
+  | '(' term ')'                   {$2}
+
+simpleinfix :: { Term }
   : simple operator simple  %shift { TInfix  $1 (unTok $2) $3 }
 
-simple :: { Term }
-  : atom                         {$1}
-  | infix                        {$1}
-  | alternation                  {$1}
-  | fullSequence                 {$1}
-  | lambda                       {$1}
-  | polyrhythm                   {$1}
-  | elongate                     {$1}
-  | repeat                       {$1}
-  | euclid                       {$1}
-  | '(' term ')'                 {$2}
+infix :: { Term }
+  : simple operator term    %shift { TInfix  $1 (unTok $2) $3 }
+
+simpleApp :: { Term }
+  : infix                   %shift {$1}
+  | simple                  %shift {$1}
+
+simpleSeq :: { Term }
+  : simpleinfix             %shift {$1}
+  | simple                  %shift {$1}
 
 term :: { Term }
-  : term simple     %shift { TApp $1 $2 }
-  | simple          %shift {$1}
+  : term simpleApp          %shift { TApp $1 $2 }
+  | simpleApp               %shift {$1}
 
 -- parsing definitions
 
