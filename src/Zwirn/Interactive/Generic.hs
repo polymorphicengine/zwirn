@@ -2,7 +2,7 @@
 module Zwirn.Interactive.Generic where
 
 import Language.Haskell.TH
-import Zwirn.Interactive.Types (P, Number, Text)
+import Zwirn.Interactive.Types (P, NumberPattern, TextPattern)
 import Zwirn.Interactive.Transform (toPat)
 import Zwirn.Interactive.Convert (toTarget)
 import qualified Prelude as P
@@ -17,12 +17,12 @@ import qualified Sound.Tidal.Context as T
 mkStringParams :: [P.String] -> Q [Dec]
 mkStringParams names = P.return (P.map oneDec names P.++ P.map sig names)
                   where oneDec name = ValD (VarP (mkName name)) (NormalB (AppE (VarE 'toPat) (AppE (VarE 'toTarget) (VarE (mkName ("T." P.++ name)))))) []
-                        sig name = SigD (mkName name) (AppT (ConT ''P) (AppT (AppT ArrowT (AppT (ConT ''T.Pattern) (ConT ''Text))) (ConT ''T.ControlPattern)))
+                        sig name = SigD (mkName name) (AppT (ConT ''P) (AppT (AppT ArrowT (ConT ''TextPattern)) (ConT ''T.ControlPattern)))
 
 mkNumParams :: [P.String] -> Q [Dec]
 mkNumParams names = P.return (P.map oneDec names P.++ P.map sig names)
                   where oneDec name = ValD (VarP (mkName name)) (NormalB (AppE (VarE 'toPat) (AppE (VarE 'toTarget) (VarE (mkName ("T." P.++ name)))))) []
-                        sig name = SigD (mkName name) (AppT (ConT ''P) (AppT (AppT ArrowT (AppT (ConT ''T.Pattern) (ConT ''Number))) (ConT ''T.ControlPattern)))
+                        sig name = SigD (mkName name) (AppT (ConT ''P) (AppT (AppT ArrowT (ConT ''NumberPattern)) (ConT ''T.ControlPattern)))
 
 stringParams :: [P.String]
 stringParams = ["s","unit","vowel","sound","toArg"]

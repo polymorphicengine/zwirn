@@ -31,6 +31,7 @@ newtype Text
    deriving (P.Show, P.Eq)
 
 type TextPattern = Pattern Text
+type NumberPattern = Pattern Number
 
 -- this is a helper that transforms some types to types that are useful in the system
 -- basically this can be thought of as a transformation given as follows
@@ -46,7 +47,7 @@ type family P x where
 
 
 class Show a where
-  showT :: Pattern a -> Pattern Text
+  showT :: Pattern a -> TextPattern
 
 instance Show Text where
   showT = P.id

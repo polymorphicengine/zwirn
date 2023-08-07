@@ -9,62 +9,62 @@ import Zwirn.Interactive.HydraT
 
 -- sources
 
-gradient :: P (Pattern Number -> Pattern Text)
+gradient :: P (NumberPattern -> TextPattern)
 gradient = toPat $$ toTarget gradientT
 
-noise :: P (Pattern Number -> Pattern Text)
+noise :: P (NumberPattern -> TextPattern)
 noise = toPat $$ toTarget noiseT
 
-osc :: P (Pattern Number -> Pattern Text)
+osc :: P (NumberPattern -> TextPattern)
 osc = toPat $$ toTarget oscT
 
-out :: P (Pattern Number -> Pattern Text -> Pattern Text)
+out :: P (NumberPattern -> TextPattern -> TextPattern)
 out = toPat $$ toTarget outT
 
-hshape :: P (Pattern Number -> Pattern Number -> Pattern Number -> Pattern Text)
+hshape :: P (NumberPattern -> NumberPattern -> NumberPattern -> TextPattern)
 hshape = toPat $$ toTarget shapeT
 
-solid :: P (Pattern Number -> Pattern Number -> Pattern Number -> Pattern Text)
+solid :: P (NumberPattern -> NumberPattern -> NumberPattern -> TextPattern)
 solid = toPat $$ toTarget solidT
 
-src :: P (Pattern Text -> Pattern Text)
+src :: P (TextPattern -> TextPattern)
 src = toPat $$ toTarget srcT
 
-voronoi :: P (Pattern Number -> Pattern Number -> Pattern Number -> Pattern Text)
+voronoi :: P (NumberPattern -> NumberPattern -> NumberPattern -> TextPattern)
 voronoi = toPat $$ toTarget voronoiT
 
 -- operators
 
-add :: P (Pattern Number -> Pattern Text -> Pattern Text -> Pattern Text)
+add :: P (NumberPattern -> TextPattern -> TextPattern -> TextPattern)
 add = toPat $$ toTarget addT
 
-mult :: P (Pattern Number -> Pattern Text -> Pattern Text -> Pattern Text)
+mult :: P (NumberPattern -> TextPattern -> TextPattern -> TextPattern)
 mult = toPat $$ toTarget multT
 
-blend :: P (Pattern Number -> Pattern Text -> Pattern Text -> Pattern Text)
+blend :: P (NumberPattern -> TextPattern -> TextPattern -> TextPattern)
 blend = toPat $$ toTarget blendT
 
-diff :: P (Pattern Text -> Pattern Text -> Pattern Text)
+diff :: P (TextPattern -> TextPattern -> TextPattern)
 diff = toPat $$ toTarget diffT
 
-hlayer :: P (Pattern Text -> Pattern Text -> Pattern Text)
+hlayer :: P (TextPattern -> TextPattern -> TextPattern)
 hlayer = toPat $$ toTarget hlayerT
 
-hmask :: P (Pattern Text -> Pattern Text -> Pattern Text)
+hmask :: P (TextPattern -> TextPattern -> TextPattern)
 hmask = toPat $$ toTarget hmaskT
 
 -- modulators
 
-modulate :: P (Pattern Number -> Pattern Text -> Pattern Text -> Pattern Text)
+modulate :: P (NumberPattern -> TextPattern -> TextPattern -> TextPattern)
 modulate = toPat $$ toTarget modulateT
 
-modulateHue :: P (Pattern Number -> Pattern Text -> Pattern Text -> Pattern Text)
+modulateHue :: P (NumberPattern -> TextPattern -> TextPattern -> TextPattern)
 modulateHue = toPat $$ toTarget modulateHueT
 
-modulateKaleid :: P (Pattern Number -> Pattern Text -> Pattern Text -> Pattern Text)
+modulateKaleid :: P (NumberPattern -> TextPattern -> TextPattern -> TextPattern)
 modulateKaleid = toPat $$ toTarget modulateKaleidT
 
 -- modifiers
 
-color :: P (Pattern Number -> Pattern Number -> Pattern Number -> Pattern Text -> Pattern Text)
+color :: P (NumberPattern -> NumberPattern -> NumberPattern -> TextPattern -> TextPattern)
 color = toPat $$ toTarget colorT
