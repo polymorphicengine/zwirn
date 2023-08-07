@@ -12,20 +12,23 @@ import Control.Monad.Except
 import Control.Monad.Identity
 
 ops :: [Declaration]
-ops = [ ("*", Fixity LeftA 2)
-      , ("/", Fixity LeftA 2)
+ops = [ ("*", Fixity LeftA 9)
+      , ("/", Fixity LeftA 9)
       , ("$", Fixity RightA 0)
-      , ("#", Fixity RightA 2)
-      , ("+", Fixity LeftA 1)
-      , ("|+", Fixity LeftA 1)
-      , ("+|", Fixity LeftA 1)
-      , ("|*", Fixity LeftA 2)
-      , ("*|", Fixity LeftA 2)
-      , ("//", Fixity LeftA 2)
+      , ("#", Fixity RightA 3)
+      , ("++", Fixity RightA 4)
+      , ("+", Fixity LeftA 6)
+      , ("|+", Fixity LeftA 6)
+      , ("+|", Fixity LeftA 6)
+      , ("|*", Fixity LeftA 7)
+      , ("*|", Fixity LeftA 7)
+      , ("//", Fixity LeftA 7)
+      , ("|/", Fixity LeftA 7)
+      , ("/|", Fixity LeftA 7)
       ]
 
 defaultFixity :: Fixity
-defaultFixity = Fixity LeftA 9
+defaultFixity = Fixity LeftA 8
 
 type RotationError = String
 
