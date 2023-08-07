@@ -38,3 +38,9 @@ valMapT = TypeCon "ValueMap"
 isBasicType :: Scheme -> Bool
 isBasicType (Forall [] (Qual [] (TypeCon _))) = True
 isBasicType _ = False
+
+filterPatClass :: Scheme -> Scheme
+filterPatClass (Forall xs (Qual ps t)) = Forall xs (Qual fs t)
+                                       where fs = filter isNotPatClass ps
+                                             isNotPatClass (IsIn "Pat" _) = False
+                                             isNotPatClass _ = True

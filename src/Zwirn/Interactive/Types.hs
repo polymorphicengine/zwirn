@@ -58,8 +58,6 @@ instance Show Number where
 instance Show ValueMap where
   showT = P.fmap (\x -> Text (P.show x))
 
-
-
 infixl 0 $$
 ($$) :: (a -> b) -> a -> b
 ($$) = (P.$)

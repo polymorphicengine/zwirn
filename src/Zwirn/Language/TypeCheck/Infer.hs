@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Zwirn.Language.TypeCheck.Infer
     ( inferTerm
-    , defaultEnv
+    , generalize
     ) where
 
 import Zwirn.Language.TypeCheck.Types
@@ -65,7 +65,7 @@ inferTerm env ex = case runInfer env (infer ex) of
 
 -- | Canonicalize and return the polymorphic toplevel type.
 closeOver :: [Predicate] -> Type -> Scheme
-closeOver ps t = normalize $ generalize Env.empty ps t
+closeOver ps t = normalize $ generalize ps t
 
 -- | Extend type environment
 inEnv :: (Name, Scheme) -> Infer a -> Infer a
@@ -97,9 +97,9 @@ instantiate (Forall as (Qual ps t)) = do
     let s = Subst $ Map.fromList $ zip as as'
     return $ (apply s t, apply s ps)
 
-generalize :: TypeEnv -> [Predicate] -> Type -> Scheme
-generalize env ps t  = Forall as (Qual ps t)
-    where as = Set.toList $ ftv t `Set.difference` ftv env
+generalize :: [Predicate] -> Type -> Scheme
+generalize ps t  = Forall as (Qual ps t)
+    where as = Set.toList $ ftv t
 
 filterAndCheck :: [Predicate] -> Type -> Infer [Predicate]
 filterAndCheck [] _ = return []

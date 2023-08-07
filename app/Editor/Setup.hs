@@ -20,6 +20,7 @@ import Editor.Hydra
 
 import Zwirn.Language.Hint
 import Zwirn.Language.Compiler
+import Zwirn.Language.Default
 import Zwirn.Language.TypeCheck.Infer
 
 setup :: Int -> HintMode -> Window -> UI ()
@@ -70,7 +71,7 @@ setupBackend :: Stream -> MVar (Pattern String) -> HintMode -> MVar InterpreterM
 setupBackend str hyd mode mMV rMV = do
 
        win <- askWindow
-       envMV <- liftIO $ newMVar (Environment str (Just $ hyd) defaultEnv (HintEnv mode mMV rMV))
+       envMV <- liftIO $ newMVar (Environment str (Just $ hyd) defaultTypeEnv (HintEnv mode mMV rMV))
 
        createHaskellFunction "evaluateBlock" (\cm -> (runUI win $ interpretCommands cm False envMV))
        createHaskellFunction "evaluateLine" (\cm -> (runUI win $ interpretCommands cm True envMV))

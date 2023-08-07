@@ -15,6 +15,7 @@ ops :: [Declaration]
 ops = [ ("*", Fixity LeftA 2)
       , ("/", Fixity LeftA 2)
       , ("$", Fixity RightA 0)
+      , ("#", Fixity RightA 2)
       , ("+", Fixity LeftA 1)
       , ("|+", Fixity LeftA 1)
       , ("+|", Fixity LeftA 1)

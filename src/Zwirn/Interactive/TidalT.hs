@@ -12,6 +12,9 @@ pat = P.pure
 numPat :: Double -> Pattern Number
 numPat d = P.pure (Num d)
 
+textPat :: String -> Pattern Text
+textPat s = P.pure (Text s)
+
 eventLengths :: Pattern a -> Pattern T.Time
 eventLengths = T.withEvent (\e -> e {T.value = (T.wholeStop e) P.- (T.wholeStart e)})
 

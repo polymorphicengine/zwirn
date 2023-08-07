@@ -21,10 +21,10 @@ import Zwirn.Interactive.TidalT
 ($|) :: Pat b => P ((Pattern a -> Pattern b) -> Pattern a -> Pattern b)
 ($|) = toPat applyRight
 
-t :: NumberPattern
+t :: P NumberPattern
 t = toPat $$ toTarget (1 :: P.Int)
 
-f :: NumberPattern
+f :: P NumberPattern
 f = toPat $$ toTarget (0 :: P.Int)
 
 id :: Pat a => P (Pattern a -> Pattern a)
@@ -33,7 +33,7 @@ id = toPat (P.id :: Pattern a -> Pattern a)
 const :: Pat a => P (Pattern a -> Pattern b -> Pattern a)
 const = toPat (P.const :: Pattern a -> Pattern b -> Pattern a)
 
-tick :: Pat b => P (Pattern a -> Pattern (Pattern a -> Pattern b) -> Pattern b)
+tick :: Pat b => P (Pattern a -> (Pattern a -> Pattern b) -> Pattern b)
 tick = toPat (P.flip apply)
 
 (.) :: (Pat b, Pat d) => P ((Pattern b -> Pattern d) -> (Pattern a -> Pattern b)-> Pattern a -> Pattern d)
@@ -64,8 +64,8 @@ ply = toPat (\x -> T.ply (fromTarget x))
 plyWith :: Pat a => P (NumberPattern -> (Pattern a -> Pattern a) -> Pattern a -> Pattern a)
 plyWith = toPat (\x -> (T.plyWith :: Pattern Double -> (Pattern a -> Pattern a) -> Pattern a -> Pattern a) (fromTarget x))
 
-rot :: (Pat a, P.Ord a) => P (NumberPattern -> Pattern a -> Pattern a)
-rot = toPat (\x -> T.rot $$ fromTarget x)
+-- rot :: (Pat a, P.Ord a) => P (NumberPattern -> Pattern a -> Pattern a)
+-- rot = toPat (\x -> T.rot $$ fromTarget x)
 
 run :: P (NumberPattern -> NumberPattern)
 run = toPat $$ toTarget (T.run :: Pattern Double -> Pattern Double)
@@ -158,13 +158,13 @@ loop = timeLoop
 (|*) :: (Pat a, P.Num a) => P (Pattern a -> Pattern a -> Pattern a)
 (|*) = left (|*|)
 
-(//) :: Pattern (NumberPattern -> Pattern (NumberPattern -> NumberPattern))
+(//) :: P (NumberPattern -> NumberPattern -> NumberPattern)
 (//) = toPat (lift2 (P./))
 
-(/|) :: Pattern (NumberPattern -> Pattern (NumberPattern -> NumberPattern))
+(/|) :: P (NumberPattern -> NumberPattern -> NumberPattern)
 (/|) = right (//)
 
-(|/) :: Pattern (NumberPattern -> Pattern (NumberPattern -> NumberPattern))
+(|/) :: P (NumberPattern -> NumberPattern -> NumberPattern)
 (|/) = left (//)
 
 round :: P (NumberPattern -> NumberPattern)
@@ -180,36 +180,36 @@ show = toPat showT
 
 -- samples
 
-bd :: Pattern String
-bd = P.pure "bd"
+bd :: P TextPattern
+bd = P.pure $$ Text "bd"
 
-sn :: Pattern String
-sn = P.pure "sn"
+sn :: P TextPattern
+sn = P.pure $$ Text "sn"
 
 --
 
-c :: NumberPattern
+c :: P NumberPattern
 c = 0
 
-e :: NumberPattern
+e :: P NumberPattern
 e = 4
 
 
 -- continous
 
-sine :: NumberPattern
+sine :: P NumberPattern
 sine = toTarget (T.sine :: Pattern Double)
 
-rand :: NumberPattern
+rand :: P NumberPattern
 rand = toTarget (T.rand :: Pattern Double)
 
-perlin :: NumberPattern
+perlin :: P NumberPattern
 perlin = toTarget (T.perlin :: Pattern Double)
 
-saw :: NumberPattern
+saw :: P NumberPattern
 saw = toTarget (T.saw :: Pattern Double)
 
-tri :: NumberPattern
+tri :: P NumberPattern
 tri = toTarget (T.tri :: Pattern Double)
 
 smooth :: P (NumberPattern -> NumberPattern)

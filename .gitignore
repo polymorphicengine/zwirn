@@ -4,5 +4,8 @@
 /tidal-gui-linux-x64
 /static/definitions/*
 /resources
+/src/Zwirn/Language/Parser.info
+/browse.txt
+/output.txt
 
 out/
