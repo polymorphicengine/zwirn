@@ -13,15 +13,13 @@ import Data.Map as Map  (empty)
 import Foreign.JavaScript (JSObject)
 
 import qualified Graphics.UI.Threepenny as UI
-import Graphics.UI.Threepenny.Core as C hiding (text, value)
+import Graphics.UI.Threepenny.Core as C hiding (text, value, get)
 
--- import Editor.Hint
-import Zwirn.Language.Hint
+import Zwirn.Language.Compiler (Environment (..))
 
 data Env = Env {windowE :: Window
                ,streamE :: Stream
-               ,hintM :: MVar InterpreterMessage
-               ,hintR :: MVar InterpreterResponse
+               ,compilerE :: Environment
                ,hydraE :: MVar (Pattern String)
                }
 

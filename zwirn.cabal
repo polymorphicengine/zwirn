@@ -77,7 +77,6 @@ executable zwirn-interpreter
                       tidal-link,
                       deepseq,
                       zwirn,
-                      hint,
                       threepenny-gui,
                       exceptions,
                       filepath,

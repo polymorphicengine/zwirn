@@ -18,7 +18,7 @@ import Editor.UI
 import Zwirn.Language
 import Zwirn.Language.Hint
 
-import Data.Text (pack, unpack)
+import Data.Text (pack)
 
 interpretCommands :: JSObject -> Bool -> Env -> UI ()
 interpretCommands cm lineBool env = do
@@ -30,8 +30,10 @@ interpretCommandsLine cm lineBool line env = do
                 editorContent <- liftUI $ getValue cm
                 editorNum <- liftUI $ getEditorNumber cm
                 out <- liftUI getOutputEl
-                let ciEnv = (Environment (streamE env) (Just $ hydraE env) defaultEnv (HintEnv GHC (hintM env) (hintR env)))
-                res <- liftIO $ runCI ciEnv (compilerInterpreter line editorNum (pack editorContent))
+                res <- liftIO $ runCI (compilerE env) (compilerInterpreter line editorNum (pack editorContent))
                 case res of
                       Left err -> void $ liftUI $ element out # set UI.text err  --TODO: get block start and end for flashing error
-                      Right (resp, newEnv, st, end) -> (liftUI $ flashSuccess cm st end) >> (void $ liftUI $ element out # set UI.text resp)
+                      Right (resp, newEnv, st, end) -> do
+                                          liftUI $ flashSuccess cm st end
+                                          _ <- liftUI $ element out # set UI.text resp
+                                          return ()

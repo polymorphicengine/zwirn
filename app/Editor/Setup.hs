@@ -15,6 +15,8 @@ import Editor.Backend
 import Editor.UI
 
 import Zwirn.Language.Hint
+import Zwirn.Language.Compiler
+import Zwirn.Language.TypeCheck.Infer
 -- import Editor.Hint
 
 setupBackend :: Stream -> HintMode -> UI Env
@@ -39,7 +41,8 @@ startInterpreter str mode hyd = do
            mMV <- liftIO newEmptyMVar
            rMV <- liftIO newEmptyMVar
            void $ liftIO $ forkIO $ hintJob mode mMV rMV
-           return $ Env win str mMV rMV hyd
+           let compEnv = (Environment str (Just $ hyd) defaultEnv (HintEnv mode mMV rMV))
+           return $ Env win str compEnv hyd
 
 createShortcutFunctions :: Stream -> Element -> UI ()
 createShortcutFunctions str mainEditor = do
