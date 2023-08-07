@@ -4,89 +4,41 @@ import System.FilePath  (dropFileName)
 import System.Environment (getExecutablePath)
 
 import Control.Monad  (void)
-import Control.Concurrent (forkIO)
-import Control.Concurrent.MVar  (newMVar)
-
-import Sound.Tidal.Context (Stream)
 
 import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core as C hiding (text)
 
-import Editor.Setup
-import Editor.UI
-import Editor.Highlight
 import Editor.Hydra
 
-import Zwirn.Language.Hint
---import Editor.Hint
+frontend :: Window -> UI Element
+frontend win = do
+  void $ return win # set title "zwirn"
 
+  UI.addStyleSheet win "tidal.css"
+  UI.addStyleSheet win "theme.css"
 
+  setCallBufferMode NoBuffering -- important for highlighting
 
-setup :: Stream -> HintMode -> Window -> UI ()
-setup str mode win = void $ do
-     --setup GUI
-     void $ return win # set title "zwirn"
+  mainEditor <- UI.div #. "main"
+                       #+ [UI.textarea # set UI.id_ "editor0"]
+                       # set UI.style [("flex-grow","8")]
 
-     UI.addStyleSheet win "tidal.css"
-     UI.addStyleSheet win "theme.css"
+  container  <- UI.div # set UI.id_ "container"
+                       #. "flex-container CodeMirror cm-s-tomorrow-night-eighties"
 
-     setCallBufferMode NoBuffering -- important for highlighting
+  editorContainer <- UI.div # set UI.id_ "editors"
+                            #. "flex-container"
+                            #+ [element mainEditor]
+                            # set UI.style [("display","flex"),("flex-wrap","wrap")]
 
-     editor <- UI.textarea # set (attr "id") "editor0"
+  body <- UI.getBody win # set UI.style [("background-color","black")]
 
-     winWidth <- getWindowWidth
-     winHeight <- getWindowHeight
-
-     canvas <- UI.canvas # set UI.id_ "hydraCanvas" # set style [("position", "fixed")
-                                                                ,("left","0")
-                                                                ,("top","0")
-                                                                ,("width","100%")
-                                                                ,("height","100%")
-                                                                ,("pointer-events","none")]
-                                                    # set UI.width (round $ winWidth*2)
-                                                    # set UI.height (round $ winHeight*2)
-
-     output <- UI.pre # set UI.id_ "output"
-                      #. "outputBox"
-                      # set style [("font-size","3vh")]
-
-     outputWrapper <- UI.div #+ [ element output]
-
-     fileInput <- UI.input # set UI.id_ "fileInput"
-                           # set UI.type_ "file"
-                           # set style [("display","none")]
-
-     mainEditor <- UI.div #. "main" #+ [element editor] # set UI.style [("flex-grow","8")]
-     container <- UI.div # set UI.id_ "container" #. "flex-container CodeMirror cm-s-tomorrow-night-eighties"
-     editorContainer <- UI.div # set UI.id_ "editors" #. "flex-container" #+ [element mainEditor] # set UI.style [("display","flex"),("flex-wrap","wrap")]
-
-     body <- UI.getBody win  # set UI.style [("background-color","black")]
-
-     createShortcutFunctions str mainEditor
-
-     buf <- liftIO $ newMVar []
-     high <- liftIO $ newMVar True
-     createHaskellFunction "toggleHighlight" (runUI win $ toggleHighlight high buf)
-     _ <- liftIO $ forkIO $ highlightLoop win str buf
-
-     _ <- (element body) #+
-                       [element canvas
-                       ,element container #+ [element editorContainer
-                                             , element outputWrapper]
-                       ]
-
-     env <- setupBackend str mode
-
-     _ <- (element body) #+
-                        [element fileInput
-                        ,tidalSettings
-                        ]
-     makeEditor "editor0"
-     startHydra
-     hydBuf <- liftIO $ newMVar ""
-     liftIO $ forkIO $ hydraLoop win str (hydraE env) hydBuf
-
-
+  void $ (element body) #+
+                    [canvas
+                    ,element container #+ [ element editorContainer
+                                          , outputWrapper]
+                    ]
+  return mainEditor
 
 tidalSettings :: UI Element
 tidalSettings = do
@@ -94,3 +46,27 @@ tidalSettings = do
           tidalKeys <- liftIO $ readFile $ execPath ++ "static/tidalConfig.js"
           settings <- mkElement "script" # set UI.text tidalKeys
           return settings
+
+canvas :: UI Element
+canvas = do
+  winWidth <- getWindowWidth
+  winHeight <- getWindowHeight
+  UI.canvas # set UI.id_ "hydraCanvas" # set style [("position", "fixed")
+                                                   ,("left","0")
+                                                   ,("top","0")
+                                                   ,("width","100%")
+                                                   ,("height","100%")
+                                                   ,("pointer-events","none")]
+                                       # set UI.width (round $ winWidth*2)
+                                       # set UI.height (round $ winHeight*2)
+
+outputWrapper:: UI Element
+outputWrapper =  UI.div #+ [ UI.pre # set UI.id_ "output"
+                                   #. "outputBox"
+                                   # set style [("font-size","3vh")]
+                          ]
+
+fileInput :: UI Element
+fileInput = UI.input # set UI.id_ "fileInput"
+                       # set UI.type_ "file"
+                       # set style [("display","none")]

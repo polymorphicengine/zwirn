@@ -3,37 +3,24 @@ module Main where
 import System.FilePath  (dropFileName)
 import System.Environment (getExecutablePath)
 
-
-import Sound.Tidal.Context as T hiding (mute,solo,(#),s)
-
 import Graphics.UI.Threepenny.Core as C hiding (text)
 
-import Editor.Frontend
+import Editor.Setup
 import Editor.CommandLine
 
 import Options.Applicative (execParser)
-
-import Control.Concurrent (forkIO)
-import Control.Concurrent.MVar  (MVar, newEmptyMVar, newMVar)
-
-import Zwirn.Language.Hint
-import Zwirn.Language.Compiler
-import Zwirn.Language.TypeCheck.Infer
-
-import Data.Text (pack)
 
 
 main :: IO ()
 main = do
     config <- execParser conf
     execPath <- dropFileName <$> getExecutablePath
-    str <- T.startTidal (T.superdirtTarget {oLatency = 0.1, oAddress = "127.0.0.1", oPort = dirtPort config}) (T.defaultConfig {cVerbose = True, cFrameTimespan = 1/20})
 
     startGUI C.defaultConfig {
           jsStatic = Just $ execPath ++ "static",
           jsCustomHTML     = Just "tidal.html",
           jsPort = Just (tpPort config)
-        } $ setup str (hintMode config)
+        } $ setup (dirtPort config) (hintMode config)
 
 
 -- main :: IO ()

@@ -2,38 +2,33 @@ module Editor.Backend where
 
 import Control.Monad  (void)
 
-import qualified Sound.Tidal.Context as T (streamReplace)
-import Sound.Tidal.ID (ID (..))
-
-import Control.Concurrent.MVar  (putMVar, takeMVar, modifyMVar_)
-import Control.Exception (try, SomeException)
+import Control.Concurrent.MVar  (MVar, putMVar, takeMVar)
 
 import Foreign.JavaScript (JSObject)
 
 import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core as C hiding (text)
 
--- import Editor.Block
 import Editor.UI
-import Zwirn.Language
-import Zwirn.Language.Hint
+import Zwirn.Language.Compiler
 
 import Data.Text (pack)
 
-interpretCommands :: JSObject -> Bool -> Env -> UI ()
-interpretCommands cm lineBool env = do
+interpretCommands :: JSObject -> Bool -> MVar Environment -> UI ()
+interpretCommands cm lineBool envMV = do
                 line <- getCursorLine cm
-                interpretCommandsLine cm lineBool line env
+                interpretCommandsLine cm lineBool line envMV
 
-interpretCommandsLine :: JSObject -> Bool -> Int -> Env -> UI ()
-interpretCommandsLine cm lineBool line env = do
-                editorContent <- liftUI $ getValue cm
-                editorNum <- liftUI $ getEditorNumber cm
-                out <- liftUI getOutputEl
-                res <- liftIO $ runCI (compilerE env) (compilerInterpreter line editorNum (pack editorContent))
+interpretCommandsLine :: JSObject -> Bool -> Int -> MVar Environment -> UI ()
+interpretCommandsLine cm lineBool line envMV = do
+                editorContent <- getValue cm
+                editorNum <- getEditorNumber cm
+                out <- getOutputEl
+                env <- liftIO $ takeMVar envMV
+                res <- liftIO $ runCI env (compilerInterpreter line editorNum (pack editorContent))
                 case res of
-                      Left err -> void $ liftUI $ element out # set UI.text err  --TODO: get block start and end for flashing error
+                      Left err -> void $ element out # set UI.text err  --TODO: get block start and end for flashing error
                       Right (resp, newEnv, st, end) -> do
-                                          liftUI $ flashSuccess cm st end
-                                          _ <- liftUI $ element out # set UI.text resp
-                                          return ()
+                                          flashSuccess cm st end
+                                          _ <- element out # set UI.text resp
+                                          liftIO $ putMVar envMV newEnv

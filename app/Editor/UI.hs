@@ -15,14 +15,6 @@ import Foreign.JavaScript (JSObject)
 import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core as C hiding (text, value, get)
 
-import Zwirn.Language.Compiler (Environment (..))
-
-data Env = Env {windowE :: Window
-               ,streamE :: Stream
-               ,compilerE :: Environment
-               ,hydraE :: MVar (Pattern String)
-               }
-
 hush :: Stream -> IO ()
 hush str  = modifyMVar_ (sPMapMV str) (\_ -> return Map.empty)
 
