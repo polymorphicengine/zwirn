@@ -86,6 +86,18 @@ setup str mode win = void $ do
      hydBuf <- liftIO $ newMVar ""
      liftIO $ forkIO $ hydraLoop win str (hydraE env) hydBuf
 
+     addEvent body
+
+     let keyy :: Element -> C.Event String
+         keyy x = fmap unsafeFromJSON $ domEvent "keyevent" x
+         ctrlEnter = filterE (\x -> x == "Enter") (keyy body)
+         event = ((\x -> do y <- x; callFunction $ ffi "%1 + 1" y ):: UI Int -> UI Int) <$ ctrlEnter
+
+     bCounter <- accumB (return 0) event
+     onEvent (bCounter <@ event) $ \x -> do
+       y <- x
+       liftIO $ putStrLn $ show y
+
 
 
 tidalSettings :: UI Element

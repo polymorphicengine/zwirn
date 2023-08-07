@@ -59,6 +59,11 @@ createHaskellFunction name fn = do
  handler <- ffiExport fn
  runFunction $ ffi ("window." ++ name ++ " = %1") handler
 
+addEvent :: Element -> UI ()
+addEvent e = runFunction $ ffi code e
+          where code = "(%1).addEventListener(\"keydown\",(e) => {const nevent = new CustomEvent(\"keyevent\", { detail: event.key }); if (event.ctrlKey){%1.dispatchEvent(nevent);}},false,);"
+                codewrong = "{x = document.getElementsByTagName(\"BODY\")[0]; x.on('keydown', function(instance, event) {const nevent = new CustomEvent(\"keyevent\", { detail: event.key }); editor0.dispatchEvent(nevent);});}"
+
  -- adding and removing editors
 
 makeEditor :: String -> UI ()
