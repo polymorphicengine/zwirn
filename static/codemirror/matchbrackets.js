@@ -17,7 +17,7 @@
   var matching = {"(": ")>", ")": "(<", "[": "]>", "]": "[<", "{": "}>", "}": "{<", "<": ">>", ">": "<<"};
 
   function bracketRegex(config) {
-    return config && config.bracketRegex || /[(){}[\]]/
+    return config && config.bracketRegex || /[<>(){}[\]]/
   }
 
   function findMatchingBracket(cm, where, config) {
