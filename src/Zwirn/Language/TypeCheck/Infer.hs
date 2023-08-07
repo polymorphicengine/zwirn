@@ -14,9 +14,6 @@ import Control.Monad.State
 import Control.Monad.Reader
 
 import           Data.Text (Text, pack)
-import qualified Data.Text as Text
-
-import Text.Read (readMaybe)
 
 import Data.List (nub)
 import qualified Data.Map as Map

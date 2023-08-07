@@ -17,7 +17,9 @@ import Language.Haskell.Interpreter.Unsafe as Hint
 
 import Data.List (intercalate)
 
-import Sound.Tidal.Context (Pattern, ControlPattern)
+import Zwirn.Interactive.Types (TextPattern)
+
+import Sound.Tidal.Context (ControlPattern)
 
 data HintMode = GHC | NoGHC deriving (Eq,Show)
 
@@ -27,7 +29,7 @@ data InterpreterMessage = MPat String
                         deriving (Show, Eq)
 
 data InterpreterResponse = RPat ControlPattern
-                         | RJS (Pattern String)
+                         | RJS TextPattern
                          | RError String
                          | RSucc
                          deriving (Show, Eq)
@@ -100,7 +102,7 @@ interpretPat s rMV = do
 
 interpretJS :: String -> MVar InterpreterResponse -> Interpreter ()
 interpretJS s rMV = do
-                p <- Hint.interpret s (Hint.as :: Pattern String)
+                p <- Hint.interpret s (Hint.as :: TextPattern)
                 liftIO $ putMVar rMV $ RJS p
 
 parseError :: InterpreterError -> String

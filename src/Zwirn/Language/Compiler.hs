@@ -17,6 +17,9 @@ import Zwirn.Language.TypeCheck.Types
 import Zwirn.Language.TypeCheck.Env
 import Zwirn.Language.TypeCheck.Infer
 
+import Zwirn.Interactive.Types (TextPattern)
+import Zwirn.Interactive.Convert (fromTarget)
+
 import Control.Monad.State
 import Control.Monad.Except
 import Control.Concurrent.MVar (MVar, putMVar, takeMVar, modifyMVar_)
@@ -148,7 +151,7 @@ interpretAsControlPattern input = do
               RError err -> throwError $ err
               _ -> throwError $ "Unkown Hint Error"
 
-interpretAsStringPattern :: String -> CI (Pattern String)
+interpretAsStringPattern :: String -> CI (TextPattern)
 interpretAsStringPattern input = do
             (Environment{ hintEnv = (HintEnv _ hMV hRV) }) <- get
             liftIO $ putMVar hMV $ MJS input
@@ -236,7 +239,7 @@ jsAction ctx t = do
                     p <- interpretAsStringPattern gen
                     (Environment {jsMV = maybemv}) <- get
                     case maybemv of
-                      Just mv -> liftIO $ modifyMVar_ mv (const $ pure p)
+                      Just mv -> liftIO $ modifyMVar_ mv (const $ pure $ fromTarget p)
                       Nothing -> throwError $ "No JavaScript Interpreter available"
                   _ -> throwError $ "Type Error: can only accept text"
 
