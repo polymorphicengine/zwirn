@@ -1,26 +1,77 @@
+{-# Language FlexibleInstances #-}
+{-# Language TypeSynonymInstances #-}
 module Zwirn.Language.Pretty
-    ( displayTerm
+    ( ppterm
+    , ppscheme
+    , ppTermHasType
     ) where
 
 import Zwirn.Language.Syntax
+import Zwirn.Language.TypeCheck.Types
 
-import Data.List (intercalate)
+import Prelude hiding ((<>))
 import Data.Text (unpack)
+import Text.PrettyPrint
 
-displayTerm :: Term -> String
-displayTerm (TVar _ x) = show x
-displayTerm (TRest) = "~"
-displayTerm (TElong t (Just i)) = displayTerm t  ++ "@" ++ show i
-displayTerm (TElong t Nothing) = displayTerm t  ++ "@"
-displayTerm (TRepeat t (Just i)) = displayTerm t  ++ "!" ++ show i
-displayTerm (TRepeat t Nothing) = displayTerm t  ++ "!"
-displayTerm (TSeq ts) = "[" ++ (intercalate " " $ map displayTerm ts) ++ "]"
-displayTerm (TAlt ts) = "<" ++ (intercalate " " $ map displayTerm ts) ++ ">"
-displayTerm (TChoice _ ts) = "[" ++ (intercalate "|" $ map displayTerm ts) ++ "]"
-displayTerm (TStack ts) = "(" ++ (intercalate "," $ map displayTerm ts) ++ ")"
-displayTerm (TEuclid t1 t2 t3 (Just t4)) = displayTerm t1 ++ "{" ++ displayTerm t2 ++ "," ++ displayTerm t3 ++ "," ++ displayTerm t4 ++ "}"
-displayTerm (TEuclid t1 t2 t3 Nothing) = displayTerm t1 ++ "{" ++ displayTerm t2 ++ "," ++ displayTerm t3 ++ "}"
-displayTerm (TPoly t1 t2) = displayTerm t1 ++ "%" ++ displayTerm t2
-displayTerm (TApp t1 t2) = "(" ++ displayTerm t1 ++ "$" ++ displayTerm t2 ++ ")"
-displayTerm (TInfix t1 n t2) = "(" ++ displayTerm t1 ++ " " ++ unpack n ++ " " ++ displayTerm t2 ++ ")"
-displayTerm (TLambda vs t) = "(\\" ++ (intercalate " " $ map unpack vs) ++ " -> " ++ displayTerm t ++ ")"
+parensIf ::  Bool -> Doc -> Doc
+parensIf True = parens
+parensIf False = id
+
+class Pretty p where
+  ppr :: Int -> p -> Doc
+
+instance Pretty Name where
+  ppr _ x = text $ unpack x
+
+instance Pretty Type where
+  ppr p (TypeArr a b) = (parensIf (isArrow a) (ppr p a)) <+> text "->" <+> ppr p b
+    where
+      isArrow TypeArr{} = True
+      isArrow _ = False
+  ppr p (TypeVar a) = ppr p a
+  ppr _ (TypeCon a) = text $ unpack a
+
+instance Pretty Predicate where
+  ppr p (IsIn c t) = (text $ unpack c) <+> ppr p t
+
+instance Pretty [Predicate] where
+  ppr p ps = parensIf (length ps > 1) (hcat (punctuate comma (map (ppr p) ps)))
+
+instance Pretty (Qualified Type) where
+  ppr p (Qual [] t) = ppr p t
+  ppr p (Qual ps t) = ppr p ps <+> text "=>" <+> ppr p t
+
+instance Pretty Scheme where
+  ppr p (Forall _ t) = ppr p t
+
+instance Pretty Term where
+  ppr _ (TVar _ x) = text $ unpack x
+  ppr _ (TRest) = text "~"
+  ppr _ (TText _ x) = text $ unpack x
+  ppr _ (TNum _ x) = double $ read $ unpack x
+  ppr p (TElong t (Just i))  = (ppr p t) <> text "@" <> int i
+  ppr p (TElong t Nothing)   = (ppr p t) <> text "@"
+  ppr p (TRepeat t (Just i)) = (ppr p t) <> text "!" <> int i
+  ppr p (TRepeat t Nothing)  = (ppr p t) <> text "!"
+  ppr p (TSeq ts) = brackets (hcat (punctuate space (map (ppr p) ts)))
+  ppr p (TAlt ts) = text "<" <> (hcat (punctuate space (map (ppr p) ts))) <> text ">"
+  ppr p (TChoice _ ts) = brackets (hcat $ punctuate (text "|") (map (ppr p) ts))
+  ppr p (TStack ts) = brackets (hcat $ punctuate comma (map (ppr p) ts))
+  ppr p (TEuclid t1 t2 t3 (Just t4)) = (ppr p t1) <> braces ((ppr p t2) <> comma <> (ppr p t3) <> comma <> (ppr p t4))
+  ppr p (TEuclid t1 t2 t3 Nothing) = (ppr p t1) <> braces ((ppr p t2) <> comma <> (ppr p t3))
+  ppr p (TPoly t1 t2) = (ppr p t1) <> text "%" <> (ppr p t2)
+  ppr p (TApp t1 t2) = parensIf (p > 0) (ppr (p+1) t1 <+>  ppr p t2)
+  ppr p (TInfix t1 n t2) = ppr p t1 <+> (text $ unpack n) <+> ppr p t2
+  ppr p (TLambda vs t) =( text "\\") <> (hcat $ punctuate space $ map (text . unpack) vs) <+> text "->" <+> ppr p t
+
+instance Pretty (Term, Scheme) where
+  ppr p (t,s) = ppr p t <+> text "::" <+> ppr p s
+
+ppscheme :: Scheme -> String
+ppscheme = render . ppr 0
+
+ppterm :: Term -> String
+ppterm = render . ppr 0
+
+ppTermHasType :: (Term, Scheme) -> String
+ppTermHasType = render . ppr 0

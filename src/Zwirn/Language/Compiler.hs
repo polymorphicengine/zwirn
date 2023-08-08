@@ -13,6 +13,7 @@ import Zwirn.Language.Parser
 import Zwirn.Language.Block
 import Zwirn.Language.Hint
 import Zwirn.Language.Generator
+import Zwirn.Language.Pretty
 import Zwirn.Language.TypeCheck.Types
 import Zwirn.Language.TypeCheck.Env
 import Zwirn.Language.TypeCheck.Infer
@@ -202,7 +203,7 @@ typeAction t = do
           s <- runSimplify t
           rot <- runRotate s
           ty <- runTypeCheck rot
-          return $ show ty
+          return $ ppTermHasType (t, ty)
 
 loadAction :: Text -> CI ()
 loadAction path = do
