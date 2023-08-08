@@ -21,13 +21,14 @@ import Editor.Hydra
 import Zwirn.Language.Hint
 import Zwirn.Language.Compiler
 import Zwirn.Language.Default
-import Zwirn.Language.TypeCheck.Infer
 
 setup :: Int -> HintMode -> Window -> UI ()
 setup dport mode win = void $ do
 
      editor <- frontend win
      setupEditors editor
+
+     catchJSErrors
 
      str <- setupStream dport
 

@@ -5,7 +5,7 @@ import Control.Monad  (void)
 import Sound.Tidal.Context hiding ((#))-- (Stream, sPMapMV, Pattern, queryArc, Arc(..))
 
 import Control.Concurrent (threadDelay)
-import Control.Concurrent.MVar  (modifyMVar_, MVar)
+import Control.Concurrent.MVar  (modifyMVar_)
 
 import Data.IORef (IORef, readIORef, modifyIORef)
 import Data.Map as Map  (empty)
@@ -35,7 +35,7 @@ getDisplayElV = do
          Just el -> return el
 
 getCursorLine :: ToJS a => a -> UI Int
-getCursorLine cm = callFunction $ (ffi "getCursorLine(%1)") cm
+getCursorLine cm = callFunction $ ffi "getCursorLine(%1)" cm
 
 getValue :: ToJS a => a -> UI String
 getValue cm = callFunction $ ffi "getV(%1)" cm
@@ -52,6 +52,9 @@ createHaskellFunction name fn = do
  runFunction $ ffi ("window." ++ name ++ " = %1") handler
 
  -- adding and removing editors
+
+catchJSErrors :: UI ()
+catchJSErrors = runFunction $ ffi "window.onerror = function(msg, url, linenumber) { alert(msg);return true;}"
 
 makeEditor :: String -> UI ()
 makeEditor i = runFunction $ ffi $ i ++ "cm = CodeMirror.fromTextArea(document.getElementById('" ++ i ++ "'), editorSettings);"

@@ -2,13 +2,13 @@ function hideAll() {
 
 	var elems = document.getElementsByTagName('span');
 	var ed = document.getElementById('editors');
-	
+
 	for (var i = 0; i < elems.length; i++) {
 	    if (elems[i].style.visibility === "hidden") {
 		elems[i].style.visibility = "visible";
 	    } else {
         	elems[i].style.visibility = "hidden";
-    		}	
+    		}
 	}
 
 	if (ed.style.visibility === "hidden") {
@@ -20,16 +20,16 @@ function hideAll() {
 
 
  function loadFile(cm){
- 
-   document.getElementById('fileInput').onchange = e => { 
-   
-   	var file = e.target.files[0]; 
+
+   document.getElementById('fileInput').onchange = e => {
+
+   	var file = e.target.files[0];
    	var reader = new FileReader();
    	reader.readAsText(file,'UTF-8');
    	reader.onload = function() {cm.getDoc().setValue(reader.result);};
-   	
+
    	}
-   	
+
    document.getElementById("fileInput").click();
 }
 
@@ -37,16 +37,16 @@ function hideAll() {
 function saveFile(cm){
     var editors = document.querySelectorAll('.CodeMirror');
     var textToSave = "";
-    
+
     for (i = 1; i < editors.length; i++){
-    	
+
     	textToSave = textToSave + "\n\n" + editors[i].CodeMirror.getValue();
-    	
+
     }
-    
+
     var textToSaveAsBlob = new Blob([textToSave], {type:"text/plain"});
     var textToSaveAsURL = window.URL.createObjectURL(textToSaveAsBlob);
- 
+
     var downloadLink = document.createElement("a");
     downloadLink.download = 'untitled.tidal';
     downloadLink.innerHTML = "Download File";
@@ -54,7 +54,7 @@ function saveFile(cm){
     downloadLink.onclick = destroyClickedElement;
     downloadLink.style.display = "none";
     document.body.appendChild(downloadLink);
- 
+
     downloadLink.click();
 }
 
@@ -193,10 +193,10 @@ function swapLineDown(cm) {
       cm.scrollIntoView();
     });
   };
-  
+
 // The following code is copied from haskell.js from the threepenny-gui library
-// the onl modification is a try/catch to prevent a random bug that can occur very rarely  
-  
+// the onl modification is a try/catch to prevent a random bug that can occur very rarely
+
 // Connect to the Haskell server and initialize the FFI.
 // An optional string argument can be used to specify the server URL.
 Haskell.initFFI = function () {
@@ -225,8 +225,9 @@ Haskell.initFFI = function () {
           eval(msg.contents);
           reply();
         } catch (err) {
-          connection.close();
-          throw(err);
+          //connection.close();
+          //throw(err);
+					Haskell.log("Error: %o", err.toString())
         }
         break;
 
@@ -322,4 +323,3 @@ Haskell.initFFI = function () {
     };
   };
 };
-
