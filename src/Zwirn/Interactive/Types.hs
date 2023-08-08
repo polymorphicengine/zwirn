@@ -61,6 +61,12 @@ instance Show Number where
 instance Show ValueMap where
   showT = P.fmap (\x -> Text (P.show x))
 
+instance T.Valuable Text where
+  toValue (Text t) = T.VS t
+
+instance T.Valuable Number where
+  toValue (Num n) = T.VF n
+
 infixl 0 $$
 ($$) :: (a -> b) -> a -> b
 ($$) = (P.$)

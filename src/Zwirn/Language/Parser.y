@@ -190,8 +190,9 @@ defs :: { [Def] }
   : sepBy(def, ';')        {$1}
 
 action :: { Action }
-  : identifier '<-' term   { Stream (unTok $1) $3 }
+  : string     '<-' term   { Stream (unTok $1) $3 }
   | number     '<-' term   { Stream (unTok $1) $3 }
+  | identifier '<-' term   { StreamSet (unTok $1) $3 }
   | def                    { Def $1 }
   | ':t' term              { Type $2 }
   | ':show' term           { Show $2 }

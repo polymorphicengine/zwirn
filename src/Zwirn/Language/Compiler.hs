@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, TypeApplications #-}
 module Zwirn.Language.Compiler
     ( HintEnv (..)
     , Environment (..)
@@ -18,7 +18,7 @@ import Zwirn.Language.TypeCheck.Types
 import Zwirn.Language.TypeCheck.Env
 import Zwirn.Language.TypeCheck.Infer
 
-import Zwirn.Interactive.Types (TextPattern)
+import Zwirn.Interactive.Types (TextPattern, NumberPattern, Number (..))
 import Zwirn.Interactive.Convert (fromTarget)
 
 import Control.Monad.State
@@ -26,7 +26,7 @@ import Control.Monad.Except
 import Control.Concurrent.MVar (MVar, putMVar, takeMVar, modifyMVar_)
 import Control.Exception (try, SomeException)
 
-import Sound.Tidal.Context (Pattern, ControlPattern, Stream, streamReplace)
+import Sound.Tidal.Context (Pattern, ControlPattern, Stream, streamReplace, streamSet,)
 import Sound.Tidal.ID (ID(..))
 
 import Data.Text (Text, unpack)
@@ -142,35 +142,14 @@ runGeneratorDef False s = return $ generateDefWithoutContext s
 ---------------- Haskell interpreter ----------------
 -----------------------------------------------------
 
-interpretAsControlPattern :: String -> CI ControlPattern
-interpretAsControlPattern input = do
+interpret :: FromResponse a => MessageType -> String -> CI a
+interpret typ input = do
             (Environment{ hintEnv = (HintEnv _ hMV hRV) }) <- get
-            liftIO $ putMVar hMV $ MPat input
+            liftIO $ putMVar hMV $ Message typ input
             res <- liftIO $ takeMVar hRV
-            case res of
-              RPat p -> return p
-              RError err -> throwError $ err
-              _ -> throwError $ "Unkown Hint Error"
-
-interpretAsStringPattern :: String -> CI (TextPattern)
-interpretAsStringPattern input = do
-            (Environment{ hintEnv = (HintEnv _ hMV hRV) }) <- get
-            liftIO $ putMVar hMV $ MJS input
-            res <- liftIO $ takeMVar hRV
-            case res of
-              RJS p -> return p
-              RError err -> throwError $ err
-              _ -> throwError $ "Unkown Hint Error"
-
-interpretDefinition :: String -> CI ()
-interpretDefinition input = do
-            (Environment{ hintEnv = (HintEnv _ hMV hRV) }) <- get
-            liftIO $ putMVar hMV $ MDef input
-            res <- liftIO $ takeMVar hRV
-            case res of
-              RSucc -> return ()
-              RError err -> throwError $ err
-              _ -> throwError $ "Unkown Hint Error"
+            case fromResponse res of
+              Left err -> throwError $ "GHC Error: " ++ err
+              Right a -> return $ a
 
 -----------------------------------------------------
 ----------------- Compiling Actions -----------------
@@ -183,7 +162,7 @@ defAction b d = do
            ty <- runTypeCheck rot
            modify (\env -> env{typeEnv = extend (typeEnv env) (x, ty)})
            gd <- runGeneratorDef b sd
-           interpretDefinition gd
+           interpret @() AsDef gd
            return ()
 
 showAction :: Term -> CI String
@@ -195,7 +174,7 @@ showAction t = do
               False -> throwError $ "Can't show terms of type " ++ show ty
               True -> do
                 gen <- runGenerator True rot
-                cp <- interpretAsControlPattern gen
+                cp <- interpret @ControlPattern AsVM gen
                 return $ show cp
 
 typeAction :: Term -> CI String
@@ -224,10 +203,32 @@ streamAction ctx idd t = do
               case ty of
                   (Forall [] (Qual [] (TypeCon "ValueMap"))) -> do
                         gen <- runGenerator ctx rot
-                        cp <- interpretAsControlPattern gen
+                        cp <- interpret AsVM gen
                         (Environment {tStream = str}) <- get
                         liftIO $ streamReplace str (ID (unpack idd)) cp
                   _ -> throwError $ "Type Error: can only stream value maps"
+
+streamSetAction :: Bool -> Text -> Term -> CI ()
+streamSetAction ctx idd t = do
+              s <- runSimplify t
+              rot <- runRotate s
+              ty <- runTypeCheck rot
+              case ty of
+                  (Forall [] (Qual [] (TypeCon "Number"))) -> do
+                        modify (\env -> env{typeEnv = extend (typeEnv env) (idd, ty)})
+                        gen <- runGenerator ctx rot
+                        interpret @() AsDef $ "let " ++ unpack idd ++ "= T._cX_ _valToNum " ++ ("\"" ++ unpack idd ++ "\"")
+                        np <- interpret @NumberPattern AsNum gen
+                        (Environment {tStream = str}) <- get
+                        liftIO $ streamSet str (unpack idd) np
+                  (Forall [] (Qual [] (TypeCon "Text"))) -> do
+                        modify (\env -> env{typeEnv = extend (typeEnv env) (idd, ty)})
+                        gen <- runGenerator ctx rot
+                        interpret @() AsDef $ "let " ++ unpack idd ++ "= T._cX_ _valToText " ++ ("\"" ++ unpack idd ++ "\"")
+                        tp <- interpret @TextPattern AsText gen
+                        (Environment {tStream = str}) <- get
+                        liftIO $ streamSet str (unpack idd) tp
+                  _ -> throwError $ "Type Error: can only set Number or Text patterns"
 
 jsAction :: Bool -> Term -> CI ()
 jsAction ctx t = do
@@ -237,7 +238,7 @@ jsAction ctx t = do
               case ty of
                   (Forall [] (Qual [] (TypeCon "Text"))) -> do
                     gen <- runGenerator ctx rot
-                    p <- interpretAsStringPattern gen
+                    p <- interpret AsText gen
                     (Environment {jsMV = maybemv}) <- get
                     case maybemv of
                       Just mv -> liftIO $ modifyMVar_ mv (const $ pure $ fromTarget p)
@@ -247,6 +248,7 @@ jsAction ctx t = do
 
 runAction :: Bool -> Action -> CI String
 runAction b (Stream i t) = streamAction b i t >> return ""
+runAction b (StreamSet i t) = streamSetAction b i t >> return ""
 runAction _ (Show t) = showAction t
 runAction b (Def d) = defAction b d >> return ""
 runAction _ (Type t) = typeAction t

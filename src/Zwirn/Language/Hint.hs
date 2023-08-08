@@ -1,8 +1,12 @@
+{-# LANGUAGE TypeSynonymInstances, FlexibleInstances #-}
 module Zwirn.Language.Hint
     ( HintMode (..)
     , InterpreterMessage (..)
     , InterpreterResponse (..)
+    , MessageType (..)
+    , FromResponse
     , hintJob
+    , fromResponse
     )where
 
 --import Control.Exception  (SomeException)
@@ -17,22 +21,46 @@ import Language.Haskell.Interpreter.Unsafe as Hint
 
 import Data.List (intercalate)
 
-import Zwirn.Interactive.Types (TextPattern)
+import Zwirn.Interactive.Types (TextPattern, NumberPattern)
 
 import Sound.Tidal.Context (ControlPattern)
 
 data HintMode = GHC | NoGHC deriving (Eq,Show)
 
-data InterpreterMessage = MPat String
-                        | MDef String
-                        | MJS String
+data MessageType = AsNum | AsText | AsVM | AsDef deriving (Eq, Show)
+
+data InterpreterMessage = Message MessageType String
                         deriving (Show, Eq)
 
-data InterpreterResponse = RPat ControlPattern
-                         | RJS TextPattern
+data InterpreterResponse = RVM ControlPattern
+                         | RText TextPattern
+                         | RNum NumberPattern
                          | RError String
                          | RSucc
                          deriving (Show, Eq)
+
+class FromResponse a where
+  fromResponse :: InterpreterResponse -> Either String a
+
+instance FromResponse ControlPattern where
+  fromResponse (RVM p) = return p
+  fromResponse (RError err) = Left err
+  fromResponse _ = Left "Unkown Hint Error"
+
+instance FromResponse TextPattern where
+  fromResponse (RText p) = return p
+  fromResponse (RError err) = Left err
+  fromResponse _ = Left "Unkown Hint Error"
+
+instance FromResponse NumberPattern where
+  fromResponse (RNum p) = return p
+  fromResponse (RError err) = Left err
+  fromResponse _ = Left "Unkown Hint Error"
+
+instance FromResponse () where
+  fromResponse RSucc = return ()
+  fromResponse (RError err) = Left err
+  fromResponse _ = Left "Unkown Hint Error"
 
 exts :: [Extension]
 exts = [NoImplicitPrelude, ExtendedDefaultRules, NoMonomorphismRestriction]
@@ -86,24 +114,30 @@ staticInterpreter path = do
 
 interpreterLoop :: MVar InterpreterMessage -> MVar InterpreterResponse -> Interpreter ()
 interpreterLoop mMV rMV = do
-                    cont <- liftIO $ takeMVar mMV
-                    case cont of
-                      MPat s -> catch (interpretPat s rMV) (\e -> liftIO $ putMVar rMV $ RError $ parseError e)
-                      MDef s -> catch ((Hint.runStmt s) >> (liftIO $ putMVar rMV $ RSucc)) (\e -> liftIO $ putMVar rMV $ RError $ parseError e)
-                      MJS s -> catch (interpretJS s rMV) (\e -> liftIO $ putMVar rMV $ RError $ parseError e)
+                    (Message typ s) <- liftIO $ takeMVar mMV
+                    case typ of
+                      AsVM   -> catch (interpretVM s rMV) (\e -> liftIO $ putMVar rMV $ RError $ parseError e)
+                      AsText -> catch (interpretText s rMV) (\e -> liftIO $ putMVar rMV $ RError $ parseError e)
+                      AsNum  -> catch (interpretNum s rMV) (\e -> liftIO $ putMVar rMV $ RError $ parseError e)
+                      AsDef  -> catch ((Hint.runStmt s) >> (liftIO $ putMVar rMV $ RSucc)) (\e -> liftIO $ putMVar rMV $ RError $ parseError e)
                     interpreterLoop mMV rMV
 
 
-interpretPat :: String -> MVar InterpreterResponse -> Interpreter ()
-interpretPat s rMV = do
+interpretVM :: String -> MVar InterpreterResponse -> Interpreter ()
+interpretVM s rMV = do
                 p <- Hint.interpret s (Hint.as :: ControlPattern)
-                liftIO $ putMVar rMV $ RPat p
+                liftIO $ putMVar rMV $ RVM p
 
 
-interpretJS :: String -> MVar InterpreterResponse -> Interpreter ()
-interpretJS s rMV = do
+interpretText :: String -> MVar InterpreterResponse -> Interpreter ()
+interpretText s rMV = do
                 p <- Hint.interpret s (Hint.as :: TextPattern)
-                liftIO $ putMVar rMV $ RJS p
+                liftIO $ putMVar rMV $ RText p
+
+interpretNum :: String -> MVar InterpreterResponse -> Interpreter ()
+interpretNum s rMV = do
+                p <- Hint.interpret s (Hint.as :: NumberPattern)
+                liftIO $ putMVar rMV $ RNum p
 
 parseError :: InterpreterError -> String
 parseError (UnknownError s) = "Unknown error: " ++ s

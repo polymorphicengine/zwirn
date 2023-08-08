@@ -6,6 +6,14 @@ import qualified Control.Monad as M
 
 import Zwirn.Interactive.Types
 
+_valToNum :: T.Value -> P.Maybe Number
+_valToNum (T.VF x) = P.Just (Num x)
+_valToNum _ = P.Nothing
+
+_valToText :: T.Value -> P.Maybe Text
+_valToText (T.VS x) = P.Just (Text x)
+_valToText _ = P.Nothing
+
 pat :: a -> Pattern a
 pat = P.pure
 

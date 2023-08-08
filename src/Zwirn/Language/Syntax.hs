@@ -38,6 +38,7 @@ data Def
 
 data Action
   = Stream Text Term
+  | StreamSet Text Term
   | Def Def
   | Type Term
   | Show Term
