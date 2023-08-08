@@ -198,30 +198,3 @@ normalize (Forall _ (Qual ps body)) = Forall (map snd ord) (Qual (map normpred p
         Nothing -> error "type variable not in signature"
 
     normpred (IsIn n t) = IsIn n (normtype t)
-
-
-tyv :: Text -> Type
-tyv s = TypeVar s
-
-num :: Type -> Predicate
-num t = IsIn "Num" t
-
-infixr 3 -->
-(-->) :: Type -> Type -> Type
-(-->) t1 t2 = TypeArr t1 t2
-
-defaultEnv :: TypeEnv
-defaultEnv = TypeEnv (Map.fromList [("rev", Forall ["a"] (Qual [] $ tyv "a" --> tyv "a"))
-                                   ,("fast", Forall ["a"] (Qual [] $ numberT --> tyv "a" --> tyv "a"))
-                                   ,("*", Forall ["a"] (Qual [] $ tyv "a" --> numberT --> tyv "a"))
-                                   ,("slow", Forall ["a"] (Qual [] $ numberT --> tyv "a" --> tyv "a"))
-                                   ,("/", Forall ["a"] (Qual [] $ tyv "a" --> numberT --> tyv "a"))
-                                   ,("id",Forall ["a"] (Qual [] $ tyv "a" --> tyv "a"))
-                                   ,("n",Forall [] (Qual [] $ numberT --> valMapT))
-                                   ,("s",Forall [] (Qual [] $ textT --> valMapT))
-                                   ,("bd",Forall [] (Qual [] $ textT))
-                                   ,("sn",Forall [] (Qual [] $ textT))
-                                   ,("out",Forall [] (Qual [] $ numberT --> textT --> textT))
-                                   ,("osc",Forall [] (Qual [] $ numberT --> textT))
-                                   ])
-                         [IsIn "Num" numberT]
