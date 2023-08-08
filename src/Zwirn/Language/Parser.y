@@ -174,7 +174,7 @@ simpleSeq :: { Term }
   | simple                  %shift {$1}
 
 app :: { Term }
-  : simple app              %shift { TApp $1 $2 }
+  : app simple              %shift { TApp $1 $2 }
   | simple                  %shift {$1}
 
 term :: { Term }

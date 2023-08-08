@@ -89,9 +89,6 @@ rotate (SApp l r) = do
         lRotated <- rotate l
         rRotated <- rotate r
         return $ SApp lRotated rRotated
-        -- case rRotated of
-        --   SInfix l' op r' -> return $ SInfix (SApp lRotated l') op r'
-        --   _ -> return $ SApp lRotated rRotated
 rotate e@(SVar _ _) = return e
 rotate e@(SText _ _) = return e
 rotate e@(SNum _ _) = return e
