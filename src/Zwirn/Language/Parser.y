@@ -169,20 +169,17 @@ simple :: { Term }
 simpleinfix :: { Term }
   : simple operator simple  %shift { TInfix  $1 (unTok $2) $3 }
 
-infix :: { Term }
-  : simple operator term    %shift { TInfix  $1 (unTok $2) $3 }
-
-simpleApp :: { Term }
-  : infix                   %shift {$1}
-  | simple                  %shift {$1}
-
 simpleSeq :: { Term }
   : simpleinfix             %shift {$1}
   | simple                  %shift {$1}
 
+app :: { Term }
+  : simple app              %shift { TApp $1 $2 }
+  | simple                  %shift {$1}
+
 term :: { Term }
-  : term simpleApp          %shift { TApp $1 $2 }
-  | simpleApp               %shift {$1}
+  : app operator term       %shift { TInfix  $1 (unTok $2) $3 }
+  | app                     %shift {$1}
 
 -- parsing definitions
 
