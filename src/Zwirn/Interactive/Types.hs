@@ -1,5 +1,6 @@
 {-# LANGUAGE TypeFamilies, FlexibleInstances #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE ExtendedDefaultRules #-}
 module Zwirn.Interactive.Types where
 
 import qualified Prelude as P
@@ -32,6 +33,8 @@ newtype Text
 
 type TextPattern = Pattern Text
 type NumberPattern = Pattern Number
+
+default (NumberPattern)
 
 -- this is a helper that transforms some types to types that are useful in the system
 -- basically this can be thought of as a transformation given as follows

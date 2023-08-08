@@ -35,7 +35,7 @@ data InterpreterResponse = RPat ControlPattern
                          deriving (Show, Eq)
 
 exts :: [Extension]
-exts = [NoImplicitPrelude]
+exts = [NoImplicitPrelude, ExtendedDefaultRules, NoMonomorphismRestriction]
 
 modulePaths :: String -> [String]
 modulePaths path = map (path ++) [ "src/Zwirn/Interactive.hs"
