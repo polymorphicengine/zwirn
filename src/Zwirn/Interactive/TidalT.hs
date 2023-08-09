@@ -3,6 +3,7 @@ module Zwirn.Interactive.TidalT where
 import qualified Prelude as P
 import qualified Sound.Tidal.Context as T
 import qualified Control.Monad as M
+import qualified Data.Map as Map
 
 import Zwirn.Interactive.Types
 
@@ -13,6 +14,9 @@ _valToNum _ = P.Nothing
 _valToText :: T.Value -> P.Maybe Text
 _valToText (T.VS x) = P.Just (Text x)
 _valToText _ = P.Nothing
+
+_cX' :: Pattern a -> (T.Value -> P.Maybe a) -> P.String -> Pattern a
+_cX' d f s = T.Pattern P.$ \(T.State a m) -> T.queryArc (P.maybe d (T._getP_ f P.. T.valueToPattern) P.$ Map.lookup s m) a
 
 pat :: a -> Pattern a
 pat = P.pure

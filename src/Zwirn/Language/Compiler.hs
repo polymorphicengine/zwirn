@@ -26,7 +26,7 @@ import Control.Monad.Except
 import Control.Concurrent.MVar (MVar, putMVar, takeMVar, modifyMVar_)
 import Control.Exception (try, SomeException)
 
-import Sound.Tidal.Context (Pattern, ControlPattern, Stream, streamReplace, streamSet,)
+import Sound.Tidal.Context (Pattern, ControlPattern, Stream, ArcF (Arc), queryArc, streamReplace, streamSet, context)
 import Sound.Tidal.ID (ID(..))
 
 import Data.Text (Text, unpack)
@@ -217,14 +217,15 @@ streamSetAction ctx idd t = do
                   (Forall [] (Qual [] (TypeCon "Number"))) -> do
                         modify (\env -> env{typeEnv = extend (typeEnv env) (idd, ty)})
                         gen <- runGenerator ctx rot
-                        interpret @() AsDef $ "let " ++ unpack idd ++ "= T._cX_ _valToNum " ++ ("\"" ++ unpack idd ++ "\"")
+                        interpret @() AsDef $ "let " ++ unpack idd ++ "= T._cX (Num 0) _valToNum " ++ ("\"" ++ unpack idd ++ "\"")
                         np <- interpret @NumberPattern AsNum gen
+                        -- liftIO $ putStrLn $ show $ map context $ queryArc np (Arc 0 1)
                         (Environment {tStream = str}) <- get
                         liftIO $ streamSet str (unpack idd) np
                   (Forall [] (Qual [] (TypeCon "Text"))) -> do
                         modify (\env -> env{typeEnv = extend (typeEnv env) (idd, ty)})
                         gen <- runGenerator ctx rot
-                        interpret @() AsDef $ "let " ++ unpack idd ++ "= T._cX_ _valToText " ++ ("\"" ++ unpack idd ++ "\"")
+                        interpret @() AsDef $ "let " ++ unpack idd ++ "= T._cX (Text \"\") _valToText " ++ ("\"" ++ unpack idd ++ "\"")
                         tp <- interpret @TextPattern AsText gen
                         (Environment {tStream = str}) <- get
                         liftIO $ streamSet str (unpack idd) tp
