@@ -13,7 +13,7 @@ import Data.List (intercalate)
 generate :: SimpleTerm -> String
 generate (SVar p x) = "(addContext " ++ generatePosition p ++ " (" ++ unpack x ++ "))"
 generate (SText p x) = "(addContext " ++ generatePosition p ++ " (textPat " ++ unpack x ++ "))"
-generate (SNum (Just p) x) = "(addContext " ++ generatePosition p ++ " (numPat " ++ unpack x ++ "))"
+generate (SNum (Just p) x) = "(addContext " ++ generatePosition p ++ " (numPat (" ++ unpack x ++ ")))"
 generate (SNum Nothing x) = "(numPat " ++ unpack x ++ ")"
 generate (SRest) = "T.silence"
 generate (SElong t _) = "(" ++ generate t ++ ")"
