@@ -130,6 +130,13 @@ collectBy f = T.withEvents (collectEventsBy f)
 collect :: Pattern a -> Pattern [a]
 collect = collectBy sameDur
 
+_layer :: Pattern (Pattern a -> Pattern b) -> Pattern a -> Pattern b
+_layer f x = joined
+           where pfs = collect f -- :: Pattern [Pattern a -> Pattern b]
+                 mapped = fmap (\fs -> P.map (\g -> g x) fs) pfs -- :: Pattern [Pattern a]
+                 uncol = T.uncollect mapped -- Pattern (Pattern a)
+                 joined = T.innerJoin uncol
+
 
 geqT :: Pattern Number -> Pattern Number -> Pattern Bool
 geqT = T.tParam func

@@ -239,3 +239,8 @@ range = toPat $$ toTarget (T.range ::  Pattern Double -> Pattern Double -> Patte
 
 (||) :: P (NumberPattern -> NumberPattern -> NumberPattern)
 (||) = toPat $$ toTarget orT
+
+-- list stuff
+
+layer :: Pat b => P ((Pattern a -> Pattern b) -> Pattern a -> Pattern b)
+layer = toPat _layer
