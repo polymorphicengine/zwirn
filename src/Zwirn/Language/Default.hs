@@ -15,6 +15,10 @@ defaultTypeEnv = TypeEnv (Map.fromList typeList) defaultInstances
 defaultInstances :: [Instance]
 defaultInstances = [ IsIn "Num" numberT
                    , IsIn "Num" valMapT
+                   , IsIn "Fractional" numberT
+                   , IsIn "Fractional" valMapT
+                   , IsIn "Ord" numberT
+                   , IsIn "Ord" valMapT
                    , IsIn "Show" numberT
                    , IsIn "Show" valMapT
                    , IsIn "show" textT

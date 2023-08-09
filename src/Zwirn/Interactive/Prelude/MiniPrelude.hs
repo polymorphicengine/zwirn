@@ -158,13 +158,13 @@ loop = timeLoop
 (|*) :: (Pat a, P.Num a) => P (Pattern a -> Pattern a -> Pattern a)
 (|*) = left (|*|)
 
-(//) :: P (NumberPattern -> NumberPattern -> NumberPattern)
+(//) ::(Pat a, P.Fractional a) => P (Pattern a -> Pattern a -> Pattern a)
 (//) = toPat (lift2 (P./))
 
-(/|) :: P (NumberPattern -> NumberPattern -> NumberPattern)
+(/|) :: (Pat a, P.Fractional a) => P (Pattern a -> Pattern a -> Pattern a)
 (/|) = right (//)
 
-(|/) :: P (NumberPattern -> NumberPattern -> NumberPattern)
+(|/) :: (Pat a, P.Fractional a) => P (Pattern a -> Pattern a -> Pattern a)
 (|/) = left (//)
 
 round :: P (NumberPattern -> NumberPattern)
