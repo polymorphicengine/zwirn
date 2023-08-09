@@ -254,8 +254,8 @@ typeDecls :: { [(Text,Scheme)] }
 {
 parseError :: (L.RangedToken, [String]) -> L.Alex a
 parseError (L.RangedToken t _,poss) = do
-  (L.AlexPn _ line column, _, _, _) <- L.alexGetInput
-  L.alexError $ "Parse error at line " <> show line <> ", column " <> show column
+  (L.AlexPn _ ln column, _, _, _) <- L.alexGetInput
+  L.alexError $ "Parse error at line " <> show ln <> ", column " <> show column
                 <> "\n\tunexpected " <> show t
                 <> "\n\texpecting " <> (intercalate "," poss)
 

@@ -28,9 +28,10 @@ import Control.Monad (when)
 %wrapper "monadUserState-strict-text"
 
 $digit = [0-9]
+$alphasmall = [a-z]
 $alpha = [a-zA-Z]
 
-@id = ($alpha | \_) ($alpha | $digit | \_ )*
+@id = ($alphasmall) ($alpha | $digit | \_ )*
 @op = (( "|" | "+" | "&" | "=" | "~" | "$" | "?" | "." | "-" | "#" | "^" ) ( "<" | ">" | "*" | "/" | "%" )?)+
 @specialop = ("*" | "/" | "'")
 @num = ("-")? ($digit)+ ("." ($digit)+)?
