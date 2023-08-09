@@ -62,6 +62,7 @@ instance Pretty Term where
   ppr p (TPoly t1 t2) = (ppr p t1) <> text "%" <> (ppr p t2)
   ppr p (TApp t1 t2) = parensIf (p > 0) (ppr (p+1) t1 <+>  ppr p t2)
   ppr p (TInfix t1 n t2) = ppr p t1 <+> (text $ unpack n) <+> ppr p t2
+  ppr p (TBracket t) = parens (ppr p t)
   ppr p (TLambda vs t) =( text "\\") <> (hcat $ punctuate space $ map (text . unpack) vs) <+> text "->" <+> ppr p t
 
 instance Pretty (Term, Scheme) where
