@@ -30,6 +30,7 @@ data Term
   | TLambda [Text] Term
   | TApp Term Term
   | TInfix Term Text Term
+  | TBracket Term
   deriving (Eq, Show)
 
 data Def

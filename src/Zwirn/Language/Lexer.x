@@ -31,7 +31,8 @@ $digit = [0-9]
 $alpha = [a-zA-Z]
 
 @id = ($alpha | \_) ($alpha | $digit | \_ )*
-@op = (( "|" | "+" | "*" | "/" | "&" | "=" | "~" | "$" | "%" | "?" | "." | "-" | "#" | "^" | "'") ( "<" | ">" )?)+
+@op = (( "|" | "+" | "&" | "=" | "~" | "$" | "?" | "." | "-" | "#" | "^" ) ( "<" | ">" | "*" | "/" | "%" )?)+
+@specialop = ("*" | "/" | "'")
 @num = ("-")? ($digit)+ ("." ($digit)+)?
 
 tokens :-
@@ -120,6 +121,7 @@ tokens :-
 
 -- Operators
 <0> @op             { tokText Operator }
+<0> @specialop      { tokText SpecialOp }
 
 -- Alternations
 <0> "<"     { tok LAngle }
@@ -171,6 +173,7 @@ data Token
   | Rest
   -- Operators
   | Operator Text
+  | SpecialOp Text
   -- Repeat
   | Repeat
   -- Elongation
@@ -226,6 +229,7 @@ instance Show Token where
  show (Number d) = show d
  show Rest = quoted "~"
  show (Operator o) = show o
+ show (SpecialOp o) = show o
  show Repeat = quoted "!"
  show Elongate = quoted "@"
  show LPar = quoted "("

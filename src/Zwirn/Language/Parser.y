@@ -35,6 +35,7 @@ import Zwirn.Language.Block
   identifier { L.RangedToken (L.Identifier _) _ }
   -- Operators
   operator   { L.RangedToken (L.Operator _) _ }
+  specop     { L.RangedToken (L.SpecialOp _) _ }
   -- Constants
   string     { L.RangedToken (L.String _) _ }
   number     { L.RangedToken (L.Number _) _ }
@@ -164,7 +165,11 @@ simple :: { Term }
   | elongate                       {$1}
   | repeat                         {$1}
   | euclid                         {$1}
-  | '(' term ')'                   {$2}
+  | specialinfix                   {$1}
+  | '(' term ')'                   { TBracket $2 }
+
+specialinfix :: { Term }
+  : simple specop simple    %shift { TInfix  $1 (unTok $2) $3 }
 
 simpleinfix :: { Term }
   : simple operator simple  %shift { TInfix  $1 (unTok $2) $3 }
@@ -262,6 +267,7 @@ unTok (L.RangedToken  (L.Identifier x) _) = x
 unTok (L.RangedToken  (L.Number x) _ ) = x
 unTok (L.RangedToken  (L.String x) _ )= x
 unTok (L.RangedToken  (L.Operator x) _) = x
+unTok (L.RangedToken  (L.SpecialOp x) _) = x
 unTok (L.RangedToken  (L.LoadA x) _) = x
 unTok (L.RangedToken  (L.LineT x) _) = x
 unTok (L.RangedToken  (L.VarToken x) _) = x

@@ -25,6 +25,7 @@ data SimpleTerm
   | SLambda Var SimpleTerm
   | SApp SimpleTerm SimpleTerm
   | SInfix SimpleTerm OperatorSymbol SimpleTerm
+  | SBracket SimpleTerm
   deriving (Eq, Show)
 
 data SimpleDef
@@ -44,17 +45,18 @@ simplify x@(TRepeat _ _) = SSeq $ map simplify $ resolveRepeat x
 simplify (TSeq ts) = SSeq (map simplify $ concatMap resolveRepeat ts)
 simplify (TStack ts) = SStack (map simplify ts)
 simplify (TChoice i ts) = SChoice i (map simplify ts)
-simplify (TAlt ts) = SInfix (SSeq ss) "/" (SNum Nothing (pack $ show $ length ss))
+simplify (TAlt ts) = SBracket $ SInfix (SSeq ss) "/" (SNum Nothing (pack $ show $ length ss))
                    where ss = map simplify ts
 simplify (TEuclid t1 t2 t3 (Just t4)) = SEuclid (simplify t1) (simplify t2) (simplify t3) (Just $ simplify t4)
 simplify (TEuclid t1 t2 t3 Nothing) = SEuclid (simplify t1) (simplify t2) (simplify t3) Nothing
-simplify (TPoly (TSeq ts) n) = SInfix (SInfix (SSeq ss) "/" (SNum Nothing (pack $ show $ length ss))) "*" (simplify n)
+simplify (TPoly (TSeq ts) n) = SBracket $ SInfix (SInfix (SSeq ss) "/" (SNum Nothing (pack $ show $ length ss))) "*" (simplify n)
                    where ss = map simplify ts
 simplify (TPoly x n) = SInfix (simplify x) "*" (simplify n)
 simplify (TLambda [] t) = simplify t
 simplify (TLambda (x:xs) t) = SLambda x (simplify $ TLambda xs t)
 simplify (TApp x y) = SApp (simplify x) (simplify y)
 simplify (TInfix x op y) = SInfix (simplify x) op (simplify y)
+simplify (TBracket x) = SBracket (simplify x)
 
 simplifyDef :: Def -> SimpleDef
 simplifyDef (Let x vs t) = LetS x (simplify $ TLambda vs t)

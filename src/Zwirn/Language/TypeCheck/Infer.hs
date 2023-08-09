@@ -126,6 +126,8 @@ infer expr = case expr of
 
   SNum _ _ -> return (numberT, [], [])
 
+  SBracket s -> infer s
+
   SRest -> do
     tv <- fresh
     return (tv, [], [])

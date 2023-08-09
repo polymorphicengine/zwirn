@@ -109,3 +109,4 @@ rotate (SEuclid t1 t2 t3 Nothing) = do
                         rot3 <- rotate t3
                         return $ SEuclid rot1 rot2 rot3 Nothing
 rotate (SLambda vs t) = fmap (SLambda vs) $ rotate t
+rotate (SBracket t) = fmap SBracket (rotate t)

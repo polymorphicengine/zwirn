@@ -28,6 +28,7 @@ generate (SInfix x op y) = case unpack op of
                                    "'" -> "(apply (apply tick " ++ generate x ++ ") " ++ generate y ++ ")" -- TODO: make this a bit less hacky
                                    un -> "(apply (apply (" ++ un ++ ") " ++ generate x ++ ") " ++ generate y ++ ")"
 generate (SLambda v x) = "(pat (\\" ++ unpack v ++ " -> " ++ generate x ++"))"
+generate (SBracket x) = "(" ++ generate x ++ ")"
 
 resolveSize :: [SimpleTerm] -> [(Int,SimpleTerm)]
 resolveSize = map (\m -> (elongAmount m, m))
