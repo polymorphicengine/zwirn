@@ -169,12 +169,21 @@ showAction t = do
           s <- runSimplify t
           rot <- runRotate s
           ty <- runTypeCheck rot
-          case isBasicType ty of
-              False -> throwError $ "Can't show terms of type " ++ show ty
-              True -> do
-                gen <- runGenerator True rot
-                cp <- interpret @ControlPattern AsVM gen
-                return $ show cp
+          case ty of
+            (Forall [] (Qual [] (TypeCon "Number"))) -> do
+                      gen <- runGenerator True rot
+                      cp <- interpret @NumberPattern AsNum gen
+                      return $ show cp
+            (Forall [] (Qual [] (TypeCon "Text"))) -> do
+                      gen <- runGenerator True rot
+                      cp <- interpret @TextPattern AsText gen
+                      return $ show cp
+            (Forall [] (Qual [] (TypeCon "ValueMap"))) -> do
+                      gen <- runGenerator True rot
+                      cp <- interpret @ControlPattern AsVM gen
+                      return $ show cp
+            _ -> throwError $ "Can't show terms of type " ++ ppscheme ty
+
 
 typeAction :: Term -> CI String
 typeAction t = do
