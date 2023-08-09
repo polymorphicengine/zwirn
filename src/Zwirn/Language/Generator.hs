@@ -11,23 +11,23 @@ import Data.Text (unpack)
 import Data.List (intercalate)
 
 generate :: SimpleTerm -> String
-generate (SVar p x) = "(addContext " ++ generatePosition p ++ " (" ++ unpack x ++ "))"
-generate (SText p x) = "(addContext " ++ generatePosition p ++ " (textPat " ++ unpack x ++ "))"
-generate (SNum (Just p) x) = "(addContext " ++ generatePosition p ++ " (numPat (" ++ unpack x ++ ")))"
-generate (SNum Nothing x) = "(numPat " ++ unpack x ++ ")"
-generate (SRest) = "T.silence"
+generate (SVar p x) = "(_addContext " ++ generatePosition p ++ " (" ++ unpack x ++ "))"
+generate (SText p x) = "(_addContext " ++ generatePosition p ++ " (_textPat " ++ unpack x ++ "))"
+generate (SNum (Just p) x) = "(_addContext " ++ generatePosition p ++ " (_numPat (" ++ unpack x ++ ")))"
+generate (SNum Nothing x) = "(_numPat " ++ unpack x ++ ")"
+generate (SRest) = "silence"
 generate (SElong t _) = "(" ++ generate t ++ ")"
 generate (SSeq ts) = "(T.timecat " ++ "[" ++ intercalate "," ss ++  "])"
                      where ss = map (\(n,m) -> "(" ++ show n ++ "," ++ generate m ++ ")") $ resolveSize $ ts
 generate (SStack ts) = "(T.stack [" ++ intercalate "," (map generate ts) ++ "])"
-generate (SChoice seed ts) = "(choiceBy " ++ show seed ++ " [" ++ intercalate "," (map generate ts) ++ "])"
-generate (SEuclid s n m (Just k)) = "(T.euclidOff " ++ generate n ++ " " ++ generate m ++ " " ++ generate k ++ " " ++ generate s ++ ")"
-generate (SEuclid s n m Nothing) = "(T.euclid " ++ generate n ++ " " ++ generate m ++ " " ++ generate s ++ ")"
-generate (SApp x y) = "(apply " ++ generate x ++ " " ++ generate y ++ ")"
+generate (SChoice seed ts) = "(_choiceBy " ++ show seed ++ " [" ++ intercalate "," (map generate ts) ++ "])"
+generate (SEuclid s n m (Just k)) = "(_euclidOff " ++ generate n ++ " " ++ generate m ++ " " ++ generate k ++ " " ++ generate s ++ ")"
+generate (SEuclid s n m Nothing) = "(_euclid " ++ generate n ++ " " ++ generate m ++ " " ++ generate s ++ ")"
+generate (SApp x y) = "(_apply " ++ generate x ++ " " ++ generate y ++ ")"
 generate (SInfix x op y) = case unpack op of
-                                   "'" -> "(apply (apply tick " ++ generate x ++ ") " ++ generate y ++ ")" -- TODO: make this a bit less hacky
-                                   un -> "(apply (apply (" ++ un ++ ") " ++ generate x ++ ") " ++ generate y ++ ")"
-generate (SLambda v x) = "(pat (\\" ++ unpack v ++ " -> " ++ generate x ++"))"
+                                   "'" -> "(_apply (_apply tick " ++ generate x ++ ") " ++ generate y ++ ")" -- TODO: make this a bit less hacky
+                                   un -> "(_apply (_apply (" ++ un ++ ") " ++ generate x ++ ") " ++ generate y ++ ")"
+generate (SLambda v x) = "(_pat (\\" ++ unpack v ++ " -> " ++ generate x ++"))"
 generate (SBracket x) = "(" ++ generate x ++ ")"
 
 resolveSize :: [SimpleTerm] -> [(Int,SimpleTerm)]
@@ -47,8 +47,8 @@ generatePosition (Pos l s e editor) = "((" ++ show l ++ "," ++ show s ++ "),(" +
 
 generateWithoutContext :: SimpleTerm -> String
 generateWithoutContext (SVar _ x) = unpack x
-generateWithoutContext (SText _ x) = "(textPat " ++ unpack x ++ ")"
-generateWithoutContext (SNum _ x) = "(numPat " ++ unpack x ++ ")"
+generateWithoutContext (SText _ x) = "(_textPat " ++ unpack x ++ ")"
+generateWithoutContext (SNum _ x) = "(_numPat " ++ unpack x ++ ")"
 generateWithoutContext x = generate x
 
 generateDefWithoutContext :: SimpleDef -> String

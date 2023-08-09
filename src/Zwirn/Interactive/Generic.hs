@@ -3,31 +3,25 @@ module Zwirn.Interactive.Generic where
 
 import Language.Haskell.TH
 import Zwirn.Interactive.Types (P, NumberPattern, TextPattern, ControlPattern)
-import Zwirn.Interactive.Transform (toPat)
-import Zwirn.Interactive.Convert (toTarget)
+import Zwirn.Interactive.Transform (_toPat)
+import Zwirn.Interactive.Convert (_toTarget)
 import qualified Prelude as P
 
--- template haskell stuff
-
--- mkNumParams2 :: [P.String] -> Q [Dec]
--- mkNumParams2 names = P.return (P.map oneDec names)
---                   where oneDec name = ValD (VarP (mkName name)) (NormalB (AppE (AppE (VarE 'apply) (VarE 'pN)) (AppE (VarE 'P.pure) (LitE (StringL name))))) []
-
-mkStringParams :: [P.String] -> Q [Dec]
-mkStringParams names = P.return (P.map oneDec names P.++ P.map sig names)
-                  where oneDec name = ValD (VarP (mkName name)) (NormalB (AppE (VarE 'toPat) (AppE (VarE 'toTarget) (VarE (mkName ("T." P.++ name)))))) []
+_mkStringParams :: [P.String] -> Q [Dec]
+_mkStringParams names = P.return (P.map oneDec names P.++ P.map sig names)
+                  where oneDec name = ValD (VarP (mkName name)) (NormalB (AppE (VarE '_toPat) (AppE (VarE '_toTarget) (VarE (mkName ("T." P.++ name)))))) []
                         sig name = SigD (mkName name) (AppT (ConT ''P) (AppT (AppT ArrowT (ConT ''TextPattern)) (ConT ''ControlPattern)))
 
-mkNumParams :: [P.String] -> Q [Dec]
-mkNumParams names = P.return (P.map oneDec names P.++ P.map sig names)
-                  where oneDec name = ValD (VarP (mkName name)) (NormalB (AppE (VarE 'toPat) (AppE (VarE 'toTarget) (VarE (mkName ("T." P.++ name)))))) []
+_mkNumParams :: [P.String] -> Q [Dec]
+_mkNumParams names = P.return (P.map oneDec names P.++ P.map sig names)
+                  where oneDec name = ValD (VarP (mkName name)) (NormalB (AppE (VarE '_toPat) (AppE (VarE '_toTarget) (VarE (mkName ("T." P.++ name)))))) []
                         sig name = SigD (mkName name) (AppT (ConT ''P) (AppT (AppT ArrowT (ConT ''NumberPattern)) (ConT ''ControlPattern)))
 
-stringParams :: [P.String]
-stringParams = ["s","unit","vowel","sound","toArg"]
+_stringParams :: [P.String]
+_stringParams = ["s","unit","vowel","sound","toArg"]
 
-numParams :: [P.String]
-numParams = ["accelerate"
+_numParams :: [P.String]
+_numParams = ["accelerate"
             ,"amp"
             ,"attack"
             ,"bandf"

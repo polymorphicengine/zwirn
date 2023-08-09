@@ -51,16 +51,16 @@ type family P x where
 
 
 class Show a where
-  showT :: Pattern a -> TextPattern
+  _show :: Pattern a -> TextPattern
 
 instance Show Text where
-  showT = P.id
+  _show = P.id
 
 instance Show Number where
-  showT = P.fmap (\x -> Text (Text.pack $$ P.show x))
+  _show = P.fmap (\x -> Text (Text.pack $$ P.show x))
 
 instance Show ValueMap where
-  showT = P.fmap (\x -> Text (Text.pack $$ P.show x))
+  _show = P.fmap (\x -> Text (Text.pack $$ P.show x))
 
 instance T.Valuable Text where
   toValue (Text t) = T.VS (Text.unpack t)
@@ -71,6 +71,3 @@ instance T.Valuable Number where
 infixl 0 $$
 ($$) :: (a -> b) -> a -> b
 ($$) = (P.$)
-
-fmap :: P.Functor f => (a -> b) -> f a -> f b
-fmap = P.fmap

@@ -10,61 +10,61 @@ import Zwirn.Interactive.HydraT
 -- sources
 
 gradient :: P (NumberPattern -> TextPattern)
-gradient = toPat $$ toTarget gradientT
+gradient = _toPat $$ _toTarget _gradient
 
 noise :: P (NumberPattern -> TextPattern)
-noise = toPat $$ toTarget noiseT
+noise = _toPat $$ _toTarget _noise
 
 osc :: P (NumberPattern -> TextPattern)
-osc = toPat $$ toTarget oscT
+osc = _toPat $$ _toTarget _osc
 
 out :: P (NumberPattern -> TextPattern -> TextPattern)
-out = toPat $$ toTarget outT
+out = _toPat $$ _toTarget _out
 
 hshape :: P (NumberPattern -> NumberPattern -> NumberPattern -> TextPattern)
-hshape = toPat $$ toTarget shapeT
+hshape = _toPat $$ _toTarget _shape
 
 solid :: P (NumberPattern -> NumberPattern -> NumberPattern -> TextPattern)
-solid = toPat $$ toTarget solidT
+solid = _toPat $$ _toTarget _solid
 
 src :: P (TextPattern -> TextPattern)
-src = toPat $$ toTarget srcT
+src = _toPat $$ _toTarget _src
 
 voronoi :: P (NumberPattern -> NumberPattern -> NumberPattern -> TextPattern)
-voronoi = toPat $$ toTarget voronoiT
+voronoi = _toPat $$ _toTarget _voronoi
 
 -- operators
 
 add :: P (NumberPattern -> TextPattern -> TextPattern -> TextPattern)
-add = toPat $$ toTarget addT
+add = _toPat $$ _toTarget _add
 
 mult :: P (NumberPattern -> TextPattern -> TextPattern -> TextPattern)
-mult = toPat $$ toTarget multT
+mult = _toPat $$ _toTarget _mult
 
 blend :: P (NumberPattern -> TextPattern -> TextPattern -> TextPattern)
-blend = toPat $$ toTarget blendT
+blend = _toPat $$ _toTarget _blend
 
 diff :: P (TextPattern -> TextPattern -> TextPattern)
-diff = toPat $$ toTarget diffT
+diff = _toPat $$ _toTarget _diff
 
 hlayer :: P (TextPattern -> TextPattern -> TextPattern)
-hlayer = toPat $$ toTarget hlayerT
+hlayer = _toPat $$ _toTarget _hlayer
 
 hmask :: P (TextPattern -> TextPattern -> TextPattern)
-hmask = toPat $$ toTarget hmaskT
+hmask = _toPat $$ _toTarget _hmask
 
 -- modulators
 
 modulate :: P (NumberPattern -> TextPattern -> TextPattern -> TextPattern)
-modulate = toPat $$ toTarget modulateT
+modulate = _toPat $$ _toTarget _modulate
 
 modulateHue :: P (NumberPattern -> TextPattern -> TextPattern -> TextPattern)
-modulateHue = toPat $$ toTarget modulateHueT
+modulateHue = _toPat $$ _toTarget _modulateHue
 
 modulateKaleid :: P (NumberPattern -> TextPattern -> TextPattern -> TextPattern)
-modulateKaleid = toPat $$ toTarget modulateKaleidT
+modulateKaleid = _toPat $$ _toTarget _modulateKaleid
 
 -- modifiers
 
 color :: P (NumberPattern -> NumberPattern -> NumberPattern -> TextPattern -> TextPattern)
-color = toPat $$ toTarget colorT
+color = _toPat $$ _toTarget _color

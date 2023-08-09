@@ -7,6 +7,43 @@ import qualified Data.Map as Map
 import qualified Data.Text as Text
 
 import Zwirn.Interactive.Types
+import Zwirn.Interactive.Convert
+
+-- the following functions are needed for converting the AST to a haskell expression
+
+-- SNum
+_numPat :: Double -> Pattern Number
+_numPat d = P.pure (Num d)
+
+-- SText
+_textPat :: String -> Pattern Text
+_textPat s = P.pure (Text (Text.pack s))
+
+--SLambda
+_pat :: a -> Pattern a
+_pat = P.pure
+
+-- SApp
+_apply :: Pattern (Pattern a -> Pattern b) -> Pattern a -> Pattern b
+_apply fp p = T.innerJoin $$ P.fmap (\f -> f p) (_scaleFunction fp)
+
+-- SChoice
+_choiceBy :: Int -> [Pattern a] -> Pattern a
+_choiceBy seed xs = T.innerJoin (T.segment 1 $$ T.chooseBy (T.rotL (0.0001 P.* P.fromIntegral seed) T.rand) xs)
+
+-- SEuclid
+_euclidOff :: Pattern Number -> Pattern Number -> Pattern Number -> Pattern a -> Pattern a
+_euclidOff a b c x = T.euclidOff (_fromTarget a) (_fromTarget b) (_fromTarget c) x
+
+_euclid :: Pattern Number -> Pattern Number -> Pattern a -> Pattern a
+_euclid a b x = T.euclid (_fromTarget a) (_fromTarget b) x
+
+-- for the atoms with positions
+_addContext :: ((Int,Int),(Int,Int)) -> Pattern a -> Pattern a
+_addContext i = T.withEvent (\e -> e {T.context = T.combineContexts [(T.context e),(T.Context [i])] })
+
+
+-- these are for the streamSet action
 
 _valToNum :: T.Value -> P.Maybe Number
 _valToNum (T.VF x) = P.Just (Num x)
@@ -19,141 +56,119 @@ _valToText _ = P.Nothing
 _cX' :: Pattern a -> (T.Value -> P.Maybe a) -> P.String -> Pattern a
 _cX' d f s = T.Pattern P.$ \(T.State a m) -> T.queryArc (P.maybe d (T._getP_ f P.. T.valueToPattern) P.$ Map.lookup s m) a
 
-pat :: a -> Pattern a
-pat = P.pure
 
-numPat :: Double -> Pattern Number
-numPat d = P.pure (Num d)
+-- differten kinds of function application
 
-textPat :: String -> Pattern Text
-textPat s = P.pure (Text (Text.pack s))
+_scaleFunction :: Pattern (Pattern a -> Pattern b) -> Pattern (Pattern a -> Pattern b)
+_scaleFunction fp = P.fmap (\f -> scaleWith (_collect fp) f) fp
+            where scaleWith st f = T.outside (_deleteContext $$ _eventLengths st) f
 
-eventLengths :: Pattern a -> Pattern T.Time
-eventLengths = T.withEvent (\e -> e {T.value = (T.wholeStop e) P.- (T.wholeStart e)})
+_deleteContext :: Pattern a -> Pattern a
+_deleteContext = T.withEvent (\e -> e {T.context = T.Context []})
 
-applyLeft :: Pattern (Pattern a -> Pattern b) -> Pattern a -> Pattern b
-applyLeft fp p = T.outerJoin $$ T.applyPatToPatLeft (scaleFunction fp) (fmap P.pure p)
+_eventLengths :: Pattern a -> Pattern T.Time
+_eventLengths = T.withEvent (\e -> e {T.value = (T.wholeStop e) P.- (T.wholeStart e)})
 
-applyRight :: Pattern (Pattern a -> Pattern b) -> Pattern a -> Pattern b
-applyRight fp p = T.outerJoin $$ T.applyPatToPatRight (scaleFunction fp) (fmap P.pure p)
 
-applyBoth :: Pattern (Pattern a -> Pattern b) -> Pattern a -> Pattern b
-applyBoth fp p = T.outerJoin $$ T.applyPatToPatBoth (scaleFunction fp) (fmap P.pure p)
+_squeezeApply :: Pattern (Pattern a -> Pattern b) -> Pattern a -> Pattern b
+_squeezeApply fp p = T.squeezeJoin $$ P.fmap (\f -> f p) (_scaleFunction fp)
+
+_applyLeft :: Pattern (Pattern a -> Pattern b) -> Pattern a -> Pattern b
+_applyLeft fp p = T.outerJoin $$ T.applyPatToPatLeft (_scaleFunction fp) (P.fmap P.pure p)
+
+_applyRight :: Pattern (Pattern a -> Pattern b) -> Pattern a -> Pattern b
+_applyRight fp p = T.outerJoin $$ T.applyPatToPatRight (_scaleFunction fp) (P.fmap P.pure p)
+
+_applyBoth :: Pattern (Pattern a -> Pattern b) -> Pattern a -> Pattern b
+_applyBoth fp p = T.outerJoin $$ T.applyPatToPatBoth (_scaleFunction fp) (P.fmap P.pure p)
 
 -- meta functions to get the structure
 
-right :: Pattern (Pattern a -> Pattern (Pattern b -> Pattern c)) -> Pattern (Pattern a -> Pattern (Pattern b -> Pattern c))
-right op = P.pure (\x -> P.pure (\y -> applyRight (apply op x) y))
+_right :: Pattern (Pattern a -> Pattern (Pattern b -> Pattern c)) -> Pattern (Pattern a -> Pattern (Pattern b -> Pattern c))
+_right op = P.pure (\x -> P.pure (\y -> _applyRight (_apply op x) y))
 
-left :: Pattern (Pattern a -> Pattern (Pattern b -> Pattern c)) -> Pattern (Pattern a -> Pattern (Pattern b -> Pattern c))
-left op =  P.pure (\x -> P.pure (\y -> applyLeft (applyRight op x) y))
-
-scaleFunction :: Pattern (Pattern a -> Pattern b) -> Pattern (Pattern a -> Pattern b)
-scaleFunction fp = fmap (\f -> scaleWith (collect fp) f) fp
-            where scaleWith st f = T.outside (deleteContext $$ eventLengths st) f
-
-apply :: Pattern (Pattern a -> Pattern b) -> Pattern a -> Pattern b
-apply fp p = T.innerJoin $$ fmap (\f -> f p) (scaleFunction fp)
-
-squeezeApply :: Pattern (Pattern a -> Pattern b) -> Pattern a -> Pattern b
-squeezeApply fp p = T.squeezeJoin $$ fmap (\f -> f p) (scaleFunction fp)
-
-deleteContext :: Pattern a -> Pattern a
-deleteContext = T.withEvent (\e -> e {T.context = T.Context []})
-
-addContext :: ((Int,Int),(Int,Int)) -> Pattern a -> Pattern a
-addContext i = T.withEvent (\e -> e {T.context = T.combineContexts [(T.context e),(T.Context [i])] })
-
-match :: [(P.Double,a)] -> [(P.Double,b)] -> [(a,b)]
-match [] _ = []
-match _ [] = []
-match (x@(x2,a):xs) (y@(y2,b):ys) | x2 P.> y2 = (a,b):(match (x:xs) ys)
-                                  | y2 P.> x2 = (a,b):(match xs (y:ys))
-                                  | P.otherwise = (a,b):(match xs ys)
-
-
-choiceBy :: Int -> [Pattern a] -> Pattern a
-choiceBy seed xs = T.innerJoin (T.segment 1 $$ T.chooseBy (T.rotL (0.0001 P.* P.fromIntegral seed) T.rand) xs)
-
-
--- the following will be integrated in tidal in the future
-
-groupEventsBy :: (T.Event a -> T.Event a -> Bool) -> [T.Event a] -> [[T.Event a]]
-groupEventsBy _ [] = []
-groupEventsBy f (e:es) = ins (groupEventsBy f es) e
-                       where ins [] y = [[y]]
-                             ins ([]:xss) y = ins xss y
-                             ins ((x:xs):xss) y = case f y x of
-                                                    P.True -> (y:x:xs):xss
-                                                    P.False -> (x:xs):(ins xss y)
-
-sameDur :: T.Event a -> T.Event a -> Bool
-sameDur e1 e2 = (T.whole e1 P.== T.whole e2) P.&& (T.part e1 P.== T.part e2)
+_left :: Pattern (Pattern a -> Pattern (Pattern b -> Pattern c)) -> Pattern (Pattern a -> Pattern (Pattern b -> Pattern c))
+_left op =  P.pure (\x -> P.pure (\y -> _applyLeft (_applyRight op x) y))
 
 -- lifting
 
-lift :: (a -> r) -> Pattern a -> Pattern r
-lift = M.liftM
+_lift :: (a -> r) -> Pattern a -> Pattern r
+_lift = M.liftM
 
-lift2 :: (a -> b -> r) -> Pattern a -> Pattern b -> Pattern r
-lift2 = M.liftM2
+_lift2 :: (a -> b -> r) -> Pattern a -> Pattern b -> Pattern r
+_lift2 = M.liftM2
 
-lift3 :: (a -> b -> c -> r) -> Pattern a -> Pattern b -> Pattern c -> Pattern r
-lift3 = M.liftM3
+_lift3 :: (a -> b -> c -> r) -> Pattern a -> Pattern b -> Pattern c -> Pattern r
+_lift3 = M.liftM3
 
-lift4 :: (a -> b -> c -> d -> r) -> Pattern a -> Pattern b -> Pattern c -> Pattern d -> Pattern r
-lift4 = M.liftM4
+_lift4 :: (a -> b -> c -> d -> r) -> Pattern a -> Pattern b -> Pattern c -> Pattern d -> Pattern r
+_lift4 = M.liftM4
 
-lift5 :: (a -> b -> c -> d -> e -> r) -> Pattern a -> Pattern b -> Pattern c -> Pattern d -> Pattern e -> Pattern r
-lift5 = M.liftM5
+_lift5 :: (a -> b -> c -> d -> e -> r) -> Pattern a -> Pattern b -> Pattern c -> Pattern d -> Pattern e -> Pattern r
+_lift5 = M.liftM5
 
 -- assumes that all events in the list have same whole/part
-collectEvent :: [T.Event a] -> Maybe (T.Event [a])
-collectEvent [] = P.Nothing
-collectEvent l@(e:_) = P.Just $$ e {T.context = con, T.value = vs}
+_collectEvent :: [T.Event a] -> Maybe (T.Event [a])
+_collectEvent [] = P.Nothing
+_collectEvent l@(e:_) = P.Just $$ e {T.context = con, T.value = vs}
                       where con = unionC $$ P.map T.context l
                             vs = P.map T.value l
                             unionC [] = T.Context []
                             unionC ((T.Context is):cs) = T.Context (is P.++ iss)
                                                        where T.Context iss = unionC cs
 
-collectEventsBy :: (T.Event a -> T.Event a -> Bool) -> [T.Event a] -> [T.Event [a]]
-collectEventsBy f es = remNo $$ P.map collectEvent (groupEventsBy f es)
+_collectEventsBy :: (T.Event a -> T.Event a -> Bool) -> [T.Event a] -> [T.Event [a]]
+_collectEventsBy f es = remNo $$ P.map _collectEvent (_groupEventsBy f es)
                      where
                      remNo [] = []
                      remNo (P.Nothing:cs) = remNo cs
                      remNo ((P.Just c):cs) = c : (remNo cs)
 
-collectBy :: (T.Event a -> T.Event a -> Bool) -> Pattern a -> Pattern [a]
-collectBy f = T.withEvents (collectEventsBy f)
+_collectBy :: (T.Event a -> T.Event a -> Bool) -> Pattern a -> Pattern [a]
+_collectBy f = T.withEvents (_collectEventsBy f)
 
-collect :: Pattern a -> Pattern [a]
-collect = collectBy sameDur
+_collect :: Pattern a -> Pattern [a]
+_collect = _collectBy _sameDur
+
+_groupEventsBy :: (T.Event a -> T.Event a -> Bool) -> [T.Event a] -> [[T.Event a]]
+_groupEventsBy _ [] = []
+_groupEventsBy f (e:es) = ins (_groupEventsBy f es) e
+                       where ins [] y = [[y]]
+                             ins ([]:xss) y = ins xss y
+                             ins ((x:xs):xss) y = case f y x of
+                                                    P.True -> (y:x:xs):xss
+                                                    P.False -> (x:xs):(ins xss y)
+
+_sameDur :: T.Event a -> T.Event a -> Bool
+_sameDur e1 e2 = (T.whole e1 P.== T.whole e2) P.&& (T.part e1 P.== T.part e2)
+
+-- another version of layer that uses stacks instead of lists
 
 _layer :: Pattern (Pattern a -> Pattern b) -> Pattern a -> Pattern b
 _layer f x = joined
-           where pfs = collect f -- :: Pattern [Pattern a -> Pattern b]
-                 mapped = fmap (\fs -> P.map (\g -> g x) fs) pfs -- :: Pattern [Pattern a]
+           where pfs = _collect f -- :: Pattern [Pattern a -> Pattern b]
+                 mapped = P.fmap (\fs -> P.map (\g -> g x) fs) pfs -- :: Pattern [Pattern a]
                  uncol = T.uncollect mapped -- Pattern (Pattern a)
                  joined = T.innerJoin uncol
 
+-- ord and eq pattern functions
 
-geqT :: Pattern Number -> Pattern Number -> Pattern Bool
-geqT = T.tParam func
+_geq :: Pattern Number -> Pattern Number -> Pattern Bool
+_geq = T.tParam func
      where func i jP = P.fmap (\j -> i P.>= j) jP
 
-leqT :: Pattern Number -> Pattern Number -> Pattern Bool
-leqT = T.tParam func
+_leq :: Pattern Number -> Pattern Number -> Pattern Bool
+_leq = T.tParam func
     where func i jP = P.fmap (\j -> i P.<= j) jP
 
-eqT :: Pattern Number -> Pattern Number -> Pattern Bool
-eqT = T.tParam func
+_eq :: Pattern Number -> Pattern Number -> Pattern Bool
+_eq = T.tParam func
     where func i jP = P.fmap (\j -> i P.== j) jP
 
-andT :: Pattern Bool -> Pattern Bool -> Pattern Bool
-andT = T.tParam func
+_and :: Pattern Bool -> Pattern Bool -> Pattern Bool
+_and = T.tParam func
     where func i jP = P.fmap (\j -> i P.&& j) jP
 
-orT :: Pattern Bool -> Pattern Bool -> Pattern Bool
-orT = T.tParam func
+_or :: Pattern Bool -> Pattern Bool -> Pattern Bool
+_or = T.tParam func
     where func i jP = P.fmap (\j -> i P.|| j) jP

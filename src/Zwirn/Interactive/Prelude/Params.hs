@@ -3,9 +3,9 @@
 module Zwirn.Interactive.Prelude.Params where
 
 import qualified Prelude as P ()
-import Zwirn.Interactive.Generic (mkNumParams, mkStringParams, stringParams, numParams)
+import Zwirn.Interactive.Generic (_mkNumParams, _mkStringParams, _stringParams, _numParams)
 import qualified Sound.Tidal.Context as T hiding (fromList)
 
-$(mkNumParams numParams)
+$(_mkNumParams _numParams)
 
-$(mkStringParams stringParams)
+$(_mkStringParams _stringParams)

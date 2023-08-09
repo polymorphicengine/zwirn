@@ -18,15 +18,14 @@ import Zwirn.Language.TypeCheck.Types
 import Zwirn.Language.TypeCheck.Env
 import Zwirn.Language.TypeCheck.Infer
 
-import Zwirn.Interactive.Types (TextPattern, NumberPattern, Number (..))
-import Zwirn.Interactive.Convert (fromTarget)
+import Zwirn.Interactive.Types (TextPattern, NumberPattern)
 
 import Control.Monad.State
 import Control.Monad.Except
 import Control.Concurrent.MVar (MVar, putMVar, takeMVar, modifyMVar_)
 import Control.Exception (try, SomeException)
 
-import Sound.Tidal.Context (Pattern, ControlPattern, Stream, ArcF (Arc), queryArc, streamReplace, streamSet, context)
+import Sound.Tidal.Context (ControlPattern, Stream, streamReplace, streamSet)
 import Sound.Tidal.ID (ID(..))
 
 import Data.Text (Text, unpack)

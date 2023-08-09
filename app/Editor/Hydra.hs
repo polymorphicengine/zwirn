@@ -10,7 +10,7 @@ import System.Environment (getExecutablePath)
 import Sound.Tidal.Context hiding ((#))-- (Stream, sPMapMV, Pattern, queryArc, Arc(..))
 
 import Zwirn.Interactive.Types (Text (..))
-import Zwirn.Interactive.Convert (fromTarget)
+import Zwirn.Interactive.Convert (_fromTarget)
 
 import Graphics.UI.Threepenny.Core as C hiding (text, value)
 
@@ -48,7 +48,7 @@ hydraLoop win str pM bufM = do
                                       True -> threadDelay 10000 >> hydraLoop win str pM bufM
                         (e:_) -> case value e == buf of
                                       False -> do
-                                        runUI win $ runFunction $ ffi $ wrapCatchErr $ fromTarget $ value e
+                                        runUI win $ runFunction $ ffi $ wrapCatchErr $ _fromTarget $ value e
                                         modifyMVar_ bufM (const $ pure $ value e)
                                         threadDelay 10000
                                         hydraLoop win str pM bufM

@@ -11,119 +11,122 @@ import Zwirn.Interactive.Convert
 import Zwirn.Interactive.TidalT
 
 ($) :: Pat b => P ((Pattern a -> Pattern b) -> Pattern a -> Pattern b)
-($) = toPat apply
+($) = _toPat _apply
 
 (|$|) :: Pat b => P ((Pattern a -> Pattern b) -> Pattern a -> Pattern b)
-(|$|) = toPat applyBoth
+(|$|) = _toPat _applyBoth
 
 (|$) :: Pat b => P ((Pattern a -> Pattern b) -> Pattern a -> Pattern b)
-(|$) = toPat applyLeft
+(|$) = _toPat _applyLeft
 
 ($|) :: Pat b => P ((Pattern a -> Pattern b) -> Pattern a -> Pattern b)
-($|) = toPat applyRight
+($|) = _toPat _applyRight
+
+silence :: P (Pattern a)
+silence = T.silence
 
 t :: P NumberPattern
-t = toPat $$ toTarget (1 :: P.Int)
+t = _toPat $$ _toTarget (1 :: P.Int)
 
 f :: P NumberPattern
-f = toPat $$ toTarget (0 :: P.Int)
+f = _toPat $$ _toTarget (0 :: P.Int)
 
 id :: Pat a => P (Pattern a -> Pattern a)
-id = toPat (P.id :: Pattern a -> Pattern a)
+id = _toPat (P.id :: Pattern a -> Pattern a)
 
 const :: Pat a => P (Pattern a -> Pattern b -> Pattern a)
-const = toPat (P.const :: Pattern a -> Pattern b -> Pattern a)
+const = _toPat (P.const :: Pattern a -> Pattern b -> Pattern a)
 
 tick :: Pat b => P (Pattern a -> (Pattern a -> Pattern b) -> Pattern b)
-tick = toPat (P.flip apply)
+tick = _toPat (P.flip _apply)
 
 (.) :: (Pat b, Pat d) => P ((Pattern b -> Pattern d) -> (Pattern a -> Pattern b)-> Pattern a -> Pattern d)
-(.) = toPat compose
+(.) = _toPat compose
     where compose = (P..) :: ((Pattern b -> Pattern d) -> (Pattern a -> Pattern b)-> Pattern a -> Pattern d)
 
 (++) :: P (TextPattern -> TextPattern -> TextPattern)
-(++) = toPat $$ lift2 (toTarget ((P.++) :: P.String -> P.String -> P.String))
+(++) = _toPat $$ _lift2 (_toTarget ((P.++) :: P.String -> P.String -> P.String))
 
 rev :: Pat a => P (Pattern a -> Pattern a)
-rev = toPat T.rev
+rev = _toPat T.rev
 
 fast :: Pat a => P (NumberPattern -> Pattern a -> Pattern a)
-fast = toPat (\x -> T.fast (fromTarget x))
+fast = _toPat (\x -> T.fast (_fromTarget x))
 
 (*) :: Pat a => P (Pattern a -> NumberPattern -> Pattern a)
-(*) = toPat (\x n -> T.fast (fromTarget n) x)
+(*) = _toPat (\x n -> T.fast (_fromTarget n) x)
 
 slow :: Pat a => P (NumberPattern -> Pattern a -> Pattern a)
-slow = toPat (\x -> T.slow (fromTarget x))
+slow = _toPat (\x -> T.slow (_fromTarget x))
 
 (/) ::  Pat a => P (Pattern a -> NumberPattern -> Pattern a)
-(/) = toPat (\x n -> T.slow (fromTarget n) x)
+(/) = _toPat (\x n -> T.slow (_fromTarget n) x)
 
 ply :: Pat a => P (NumberPattern -> Pattern a -> Pattern a)
-ply = toPat (\x -> T.ply (fromTarget x))
+ply = _toPat (\x -> T.ply (_fromTarget x))
 
 plyWith :: Pat a => P (NumberPattern -> (Pattern a -> Pattern a) -> Pattern a -> Pattern a)
-plyWith = toPat (\x -> (T.plyWith :: Pattern Double -> (Pattern a -> Pattern a) -> Pattern a -> Pattern a) (fromTarget x))
+plyWith = _toPat (\x -> (T.plyWith :: Pattern Double -> (Pattern a -> Pattern a) -> Pattern a -> Pattern a) (_fromTarget x))
 
 -- rot :: (Pat a, P.Ord a) => P (NumberPattern -> Pattern a -> Pattern a)
 -- rot = toPat (\x -> T.rot $$ fromTarget x)
 
 run :: P (NumberPattern -> NumberPattern)
-run = toPat $$ toTarget (T.run :: Pattern Double -> Pattern Double)
+run = _toPat $$ _toTarget (T.run :: Pattern Double -> Pattern Double)
 
 irand :: P (NumberPattern -> NumberPattern)
-irand = toPat $$ toTarget (T.irand :: Pattern Int -> Pattern Double)
+irand = _toPat $$ _toTarget (T.irand :: Pattern Int -> Pattern Double)
 
 rotL :: Pat a => P (NumberPattern -> Pattern a -> Pattern a)
-rotL = toPat (\x y -> (fromTarget x) T.<~ y)
+rotL = _toPat (\x y -> (_fromTarget x) T.<~ y)
 
 (<~) :: Pat a => P (NumberPattern -> Pattern a -> Pattern a)
 (<~) = rotL
 
 rotR :: Pat a => P (NumberPattern -> Pattern a -> Pattern a)
-rotR = toPat (\x y -> (fromTarget x) T.~> y)
+rotR = _toPat (\x y -> (_fromTarget x) T.~> y)
 
 (~>) :: Pat a => P (NumberPattern -> Pattern a -> Pattern a)
 (~>) = rotR
 
 struct :: Pat a => P (NumberPattern -> Pattern a -> Pattern a)
-struct = toPat (\n x -> T.struct (fromTarget n) x)
+struct = _toPat (\n x -> T.struct (_fromTarget n) x)
 
 mask :: Pat a => P (NumberPattern -> Pattern a -> Pattern a)
-mask = toPat (\n x -> T.mask (fromTarget n) x)
+mask = _toPat (\n x -> T.mask (_fromTarget n) x)
 
 every :: Pat a => P (NumberPattern -> (Pattern a -> Pattern a) -> Pattern a -> Pattern a)
-every = toPat (\x -> T.every $$ fromTarget x)
+every = _toPat (\x -> T.every $$ _fromTarget x)
 
 while :: Pat a => P (NumberPattern -> (Pattern a -> Pattern a) -> Pattern a -> Pattern a)
-while = toPat (\x -> T.while $$ fromTarget x)
+while = _toPat (\x -> T.while $$ _fromTarget x)
 
 superimpose :: Pat a => P ((Pattern a -> Pattern a) -> Pattern a -> Pattern a)
-superimpose = toPat T.superimpose
+superimpose = _toPat T.superimpose
 
 jux :: P ((ControlPattern -> ControlPattern) -> ControlPattern -> ControlPattern)
-jux = toPat T.jux
+jux = _toPat T.jux
 
 iter :: Pat a => P (NumberPattern -> Pattern a -> Pattern a)
-iter = toPat (\x -> T.iter $$ fromTarget x)
+iter = _toPat (\x -> T.iter $$ _fromTarget x)
 
 sometimes :: Pat a => P ((Pattern a -> Pattern a) -> Pattern a -> Pattern a)
-sometimes = toPat T.sometimes
+sometimes = _toPat T.sometimes
 
 rarely :: Pat a => P ((Pattern a -> Pattern a) -> Pattern a -> Pattern a)
-rarely = toPat T.rarely
+rarely = _toPat T.rarely
 
 degrade :: Pat a =>  P (Pattern a -> Pattern a)
-degrade = toPat T.degrade
+degrade = _toPat T.degrade
 
 degradeBy :: Pat a => P (NumberPattern -> Pattern a -> Pattern a)
-degradeBy = toPat (\x -> T.degradeBy $$ fromTarget x)
+degradeBy = _toPat (\x -> T.degradeBy $$ _fromTarget x)
 
 (?) :: Pat a => P (Pattern a -> NumberPattern -> Pattern a)
-(?) = toPat (\x d -> T.degradeBy (fromTarget d) x)
+(?) = _toPat (\x d -> T.degradeBy (_fromTarget d) x)
 
 timeLoop :: Pat a => P (NumberPattern -> Pattern a -> Pattern a)
-timeLoop = toPat (\tm -> T.timeLoop $$ fromTarget tm)
+timeLoop = _toPat (\tm -> T.timeLoop $$ _fromTarget tm)
 
 loop :: Pat a => P (NumberPattern -> Pattern a -> Pattern a)
 loop = timeLoop
@@ -131,51 +134,51 @@ loop = timeLoop
 -- arithmetic
 
 (+) :: (Pat a, P.Num a) => P (Pattern a -> Pattern a -> Pattern a)
-(+) = toPat (lift2 (P.+))
+(+) = _toPat (_lift2 (P.+))
 
 (+|) :: (Pat a, P.Num a) => P (Pattern a -> Pattern a -> Pattern a)
-(+|) = right (+)
+(+|) = _right (+)
 
 (|+) :: (Pat a, P.Num a) => P (Pattern a -> Pattern a -> Pattern a)
-(|+) = left (+)
+(|+) = _left (+)
 
 
 (-) :: (Pat a, P.Num a) => P (Pattern a -> Pattern a -> Pattern a)
-(-) = toPat (lift2 (P.-))
+(-) = _toPat (_lift2 (P.-))
 
 (-|) :: (Pat a, P.Num a) => P (Pattern a -> Pattern a -> Pattern a)
-(-|) = right (-)
+(-|) = _right (-)
 
 (|-) :: (Pat a, P.Num a) => P (Pattern a -> Pattern a -> Pattern a)
-(|-) = left (-)
+(|-) = _left (-)
 
 
 (|*|) :: (Pat a, P.Num a) => P (Pattern a -> Pattern a -> Pattern a)
-(|*|) = toPat (lift2 (P.*))
+(|*|) = _toPat (_lift2 (P.*))
 
 (*|) :: (Pat a, P.Num a) => P (Pattern a -> Pattern a -> Pattern a)
-(*|) = right (|*|)
+(*|) = _right (|*|)
 
 (|*) :: (Pat a, P.Num a) => P (Pattern a -> Pattern a -> Pattern a)
-(|*) = left (|*|)
+(|*) = _left (|*|)
 
 (//) ::(Pat a, P.Fractional a) => P (Pattern a -> Pattern a -> Pattern a)
-(//) = toPat (lift2 (P./))
+(//) = _toPat (_lift2 (P./))
 
 (/|) :: (Pat a, P.Fractional a) => P (Pattern a -> Pattern a -> Pattern a)
-(/|) = right (//)
+(/|) = _right (//)
 
 (|/) :: (Pat a, P.Fractional a) => P (Pattern a -> Pattern a -> Pattern a)
-(|/) = left (//)
+(|/) = _left (//)
 
 round :: P (NumberPattern -> NumberPattern)
-round = toPat $$ toTarget (lift (P.round :: Double -> Int))
+round = _toPat $$ _toTarget (_lift (P.round :: Double -> Int))
 
 floor :: P (NumberPattern -> NumberPattern)
-floor = toPat $$ toTarget (lift (P.floor :: Double -> Int))
+floor = _toPat $$ _toTarget (_lift (P.floor :: Double -> Int))
 
 show :: Show a => P (Pattern a -> TextPattern)
-show = toPat showT
+show = _toPat _show
 
 
 
@@ -199,48 +202,48 @@ e = 4
 -- continous
 
 sine :: P NumberPattern
-sine = toTarget (T.sine :: Pattern Double)
+sine = _toTarget (T.sine :: Pattern Double)
 
 rand :: P NumberPattern
-rand = toTarget (T.rand :: Pattern Double)
+rand = _toTarget (T.rand :: Pattern Double)
 
 perlin :: P NumberPattern
-perlin = toTarget (T.perlin :: Pattern Double)
+perlin = _toTarget (T.perlin :: Pattern Double)
 
 saw :: P NumberPattern
-saw = toTarget (T.saw :: Pattern Double)
+saw = _toTarget (T.saw :: Pattern Double)
 
 tri :: P NumberPattern
-tri = toTarget (T.tri :: Pattern Double)
+tri = _toTarget (T.tri :: Pattern Double)
 
 smooth :: P (NumberPattern -> NumberPattern)
-smooth = toPat $$ toTarget (T.smooth :: Pattern Double -> Pattern Double)
+smooth = _toPat $$ _toTarget (T.smooth :: Pattern Double -> Pattern Double)
 
 segment :: Pat a => P (NumberPattern -> Pattern a -> Pattern a)
-segment = toPat $$ (\x -> T.segment $$ fromTarget x)
+segment = _toPat $$ (\x -> T.segment $$ _fromTarget x)
 
 range :: P (NumberPattern -> NumberPattern -> NumberPattern -> NumberPattern)
-range = toPat $$ toTarget (T.range ::  Pattern Double -> Pattern Double -> Pattern Double -> Pattern Double)
+range = _toPat $$ _toTarget (T.range ::  Pattern Double -> Pattern Double -> Pattern Double -> Pattern Double)
 
 
 --- comparisons
 
 (>=) :: P (NumberPattern -> NumberPattern -> NumberPattern)
-(>=) = toPat $$ toTarget geqT
+(>=) = _toPat $$ _toTarget _geq
 
 (<=) :: P (NumberPattern -> NumberPattern -> NumberPattern)
-(<=) = toPat $$ toTarget leqT
+(<=) = _toPat $$ _toTarget _leq
 
 (==) :: P (NumberPattern -> NumberPattern -> NumberPattern)
-(==) = toPat $$ toTarget eqT
+(==) = _toPat $$ _toTarget _eq
 
 (&&) :: P (NumberPattern -> NumberPattern -> NumberPattern)
-(&&) = toPat $$ toTarget andT
+(&&) = _toPat $$ _toTarget _and
 
 (||) :: P (NumberPattern -> NumberPattern -> NumberPattern)
-(||) = toPat $$ toTarget orT
+(||) = _toPat $$ _toTarget _or
 
 -- list stuff
 
 layer :: Pat b => P ((Pattern a -> Pattern b) -> Pattern a -> Pattern b)
-layer = toPat _layer
+layer = _toPat _layer

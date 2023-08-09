@@ -10,43 +10,43 @@ import Zwirn.Interactive.Convert
 -- control pattern stuff
 
 pN :: P (TextPattern -> NumberPattern -> ControlPattern)
-pN = toPat $$ toTarget (T.tParam T.pF)
+pN = _toPat $$ _toTarget (T.tParam T.pF)
 
 pS :: P (TextPattern -> TextPattern -> ControlPattern)
-pS = toPat $$ toTarget (T.tParam T.pS)
+pS = _toPat $$ _toTarget (T.tParam T.pS)
 
 pB :: P (TextPattern -> NumberPattern -> ControlPattern)
-pB = toPat $$ toTarget (T.tParam T.pB)
+pB = _toPat $$ _toTarget (T.tParam T.pB)
 
 
 -- functions
 
 (#) :: P (ControlPattern -> ControlPattern -> ControlPattern)
-(#) = toPat (T.#)
+(#) = _toPat (T.#)
 
 spin :: P (NumberPattern -> ControlPattern -> ControlPattern)
-spin = toPat $$ toTarget T.spin
+spin = _toPat $$ _toTarget T.spin
 
 gap :: P (NumberPattern -> ControlPattern -> ControlPattern)
-gap = toPat $$ toTarget T.gap
+gap = _toPat $$ _toTarget T.gap
 
 slice :: P (NumberPattern -> NumberPattern -> ControlPattern -> ControlPattern)
-slice = toPat $$ toTarget T.slice
+slice = _toPat $$ _toTarget T.slice
 
 randslice :: P (NumberPattern -> ControlPattern -> ControlPattern)
-randslice = toPat $$ toTarget T.randslice
+randslice = _toPat $$ _toTarget T.randslice
 
 splice :: P (NumberPattern -> NumberPattern -> ControlPattern -> ControlPattern)
-splice = toPat $$ toTarget T.splice
+splice = _toPat $$ _toTarget T.splice
 
 striate :: P (NumberPattern -> ControlPattern -> ControlPattern)
-striate = toPat $$ toTarget T.striate
+striate = _toPat $$ _toTarget T.striate
 
 striateBy :: P (NumberPattern -> NumberPattern -> ControlPattern -> ControlPattern)
-striateBy = toPat $$ toTarget T.striateBy
+striateBy = _toPat $$ _toTarget T.striateBy
 
 chop :: P (NumberPattern -> ControlPattern -> ControlPattern)
-chop = toPat $$ toTarget T.chop
+chop = _toPat $$ _toTarget T.chop
 
 loopAt :: P (NumberPattern -> ControlPattern -> ControlPattern)
-loopAt = toPat $$ toTarget T.loopAt
+loopAt = _toPat $$ _toTarget T.loopAt
