@@ -4,6 +4,7 @@ import qualified Prelude as P
 import qualified Sound.Tidal.Context as T
 import qualified Control.Monad as M
 import qualified Data.Map as Map
+import qualified Data.Text as Text
 
 import Zwirn.Interactive.Types
 
@@ -12,7 +13,7 @@ _valToNum (T.VF x) = P.Just (Num x)
 _valToNum _ = P.Nothing
 
 _valToText :: T.Value -> P.Maybe Text
-_valToText (T.VS x) = P.Just (Text x)
+_valToText (T.VS x) = P.Just (Text (Text.pack x))
 _valToText _ = P.Nothing
 
 _cX' :: Pattern a -> (T.Value -> P.Maybe a) -> P.String -> Pattern a
@@ -25,7 +26,7 @@ numPat :: Double -> Pattern Number
 numPat d = P.pure (Num d)
 
 textPat :: String -> Pattern Text
-textPat s = P.pure (Text s)
+textPat s = P.pure (Text (Text.pack s))
 
 eventLengths :: Pattern a -> Pattern T.Time
 eventLengths = T.withEvent (\e -> e {T.value = (T.wholeStop e) P.- (T.wholeStart e)})

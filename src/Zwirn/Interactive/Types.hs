@@ -7,6 +7,7 @@ import qualified Prelude as P
 import qualified Sound.Tidal.Context as T
 
 import qualified Data.Map as Map
+import qualified Data.Text as Text
 
 type Pattern = T.Pattern
 type ValueMap = T.ValueMap
@@ -28,7 +29,7 @@ newtype Number
   deriving (P.Show, P.Eq, P.Num, P.Enum, P.Ord, P.Fractional)
 
 newtype Text
-   = Text String
+   = Text Text.Text
    deriving (P.Show, P.Eq)
 
 type TextPattern = Pattern Text
@@ -56,13 +57,13 @@ instance Show Text where
   showT = P.id
 
 instance Show Number where
-  showT = P.fmap (\x -> Text (P.show x))
+  showT = P.fmap (\x -> Text (Text.pack $$ P.show x))
 
 instance Show ValueMap where
-  showT = P.fmap (\x -> Text (P.show x))
+  showT = P.fmap (\x -> Text (Text.pack $$ P.show x))
 
 instance T.Valuable Text where
-  toValue (Text t) = T.VS t
+  toValue (Text t) = T.VS (Text.unpack t)
 
 instance T.Valuable Number where
   toValue (Num n) = T.VF n

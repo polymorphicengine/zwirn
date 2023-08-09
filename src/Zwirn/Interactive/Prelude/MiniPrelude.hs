@@ -1,4 +1,5 @@
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE OverloadedStrings #-}
 module Zwirn.Interactive.Prelude.MiniPrelude where
 
 import qualified Prelude as P

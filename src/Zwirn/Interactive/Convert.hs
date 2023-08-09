@@ -3,6 +3,7 @@ module Zwirn.Interactive.Convert where
 
 import qualified Prelude as P
 import qualified Sound.Tidal.Context as T
+import qualified Data.Text as Text
 
 import Zwirn.Interactive.Types
 
@@ -45,8 +46,8 @@ instance Convertible Note where
 
 instance Convertible String where
   type Target String = Text
-  toTarget s = (Text s)
-  fromTarget (Text t) = t
+  toTarget s = (Text (Text.pack s))
+  fromTarget (Text t) = (Text.unpack t)
 
 instance Convertible ValueMap where
   type Target ValueMap = ValueMap
