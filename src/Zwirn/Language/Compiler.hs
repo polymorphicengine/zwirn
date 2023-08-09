@@ -44,7 +44,7 @@ data HintEnv = HintEnv { hMode :: HintMode
 
 
 data Environment = Environment { tStream :: Stream
-                               , jsMV :: Maybe (MVar (Pattern String))
+                               , jsMV :: Maybe (MVar TextPattern)
                                , typeEnv :: TypeEnv
                                , hintEnv :: HintEnv
                                }
@@ -239,10 +239,10 @@ jsAction ctx t = do
               case ty of
                   (Forall [] (Qual [] (TypeCon "Text"))) -> do
                     gen <- runGenerator ctx rot
-                    p <- interpret AsText gen
+                    p <- interpret @TextPattern AsText gen
                     (Environment {jsMV = maybemv}) <- get
                     case maybemv of
-                      Just mv -> liftIO $ modifyMVar_ mv (const $ pure $ fromTarget p)
+                      Just mv -> liftIO $ modifyMVar_ mv (const $ pure p)
                       Nothing -> throwError $ "No JavaScript Interpreter available"
                   _ -> throwError $ "Type Error: can only accept text"
 

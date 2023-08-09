@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Editor.Setup (setup) where
 
 import Control.Monad  (void)
@@ -21,6 +22,9 @@ import Editor.Hydra
 import Zwirn.Language.Hint
 import Zwirn.Language.Compiler
 import Zwirn.Language.Default
+
+import Zwirn.Interactive.Types (Text (..))
+
 
 setup :: Int -> HintMode -> Window -> UI ()
 setup dport mode win = void $ do
@@ -52,12 +56,12 @@ setupHighlighter str = do
   createHaskellFunction "toggleHighlight" (runUI win $ toggleHighlight high buf)
   void $ liftIO $ forkIO $ highlightLoop win str buf
 
-setupHydra :: Stream -> UI (MVar (Pattern String))
+setupHydra :: Stream -> UI (MVar (Pattern Text))
 setupHydra str = do
   startHydra
   win <- askWindow
-  hydBuf <- liftIO $ newMVar ""
-  hyd <- liftIO $ newMVar (pure "solid().out()")
+  hydBuf <- liftIO $ newMVar (Text "")
+  hyd <- liftIO $ newMVar (pure $ Text "solid().out()")
   void $ liftIO $ forkIO $ hydraLoop win str hyd hydBuf
   return hyd
 
@@ -68,7 +72,7 @@ setupHint mode = do
       void $ liftIO $ forkIO $ hintJob mode mMV rMV
       return (mMV, rMV)
 
-setupBackend :: Stream -> MVar (Pattern String) -> HintMode -> MVar InterpreterMessage -> MVar InterpreterResponse -> UI ()
+setupBackend :: Stream -> MVar (Pattern Text) -> HintMode -> MVar InterpreterMessage -> MVar InterpreterResponse -> UI ()
 setupBackend str hyd mode mMV rMV = do
 
        win <- askWindow
