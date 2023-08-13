@@ -53,6 +53,21 @@ _valToText :: T.Value -> P.Maybe Text
 _valToText (T.VS x) = P.Just (Text (Text.pack x))
 _valToText _ = P.Nothing
 
+_valToString :: T.Value -> P.Maybe String
+_valToString (T.VS x) = P.Just x
+_valToString _ = P.Nothing
+
+_valToVM :: T.Value -> P.Maybe ValueMap
+_valToVM (T.VList xs) = P.Just (Map.fromList $$ P.concatMap toTuples xs)
+                      where toTuples (T.VList [k,v]) = case _valToString k of
+                                                                P.Just s -> [(s,v)]
+                                                                P.Nothing -> []
+                            toTuples _ = []
+_valToVM _ = P.Nothing
+
+_emptyVM :: ValueMap
+_emptyVM = Map.empty
+
 _cX' :: Pattern a -> (T.Value -> P.Maybe a) -> P.String -> Pattern a
 _cX' d f s = T.Pattern P.$ \(T.State a m) -> T.queryArc (P.maybe d (T._getP_ f P.. T.valueToPattern) P.$ Map.lookup s m) a
 

@@ -221,23 +221,27 @@ streamSetAction ctx idd t = do
               s <- runSimplify t
               rot <- runRotate s
               ty <- runTypeCheck rot
+              gen <- runGenerator ctx rot
               case ty of
                   (Forall [] (Qual [] (TypeCon "Number"))) -> do
                         modify (\env -> env{typeEnv = extend (typeEnv env) (idd, ty)})
-                        gen <- runGenerator ctx rot
                         interpret @() AsDef $ "let " ++ unpack idd ++ "= T._cX (Num 0) _valToNum " ++ ("\"" ++ unpack idd ++ "\"")
                         np <- interpret @NumberPattern AsNum gen
-                        -- liftIO $ putStrLn $ show $ map context $ queryArc np (Arc 0 1)
                         (Environment {tStream = str}) <- get
                         liftIO $ streamSet str (unpack idd) np
                   (Forall [] (Qual [] (TypeCon "Text"))) -> do
                         modify (\env -> env{typeEnv = extend (typeEnv env) (idd, ty)})
-                        gen <- runGenerator ctx rot
                         interpret @() AsDef $ "let " ++ unpack idd ++ "= T._cX (Text \"\") _valToText " ++ ("\"" ++ unpack idd ++ "\"")
                         tp <- interpret @TextPattern AsText gen
                         (Environment {tStream = str}) <- get
                         liftIO $ streamSet str (unpack idd) tp
-                  _ -> throwError $ "Type Error: can only set Number or Text patterns"
+                  (Forall [] (Qual [] (TypeCon "ValueMap"))) -> do
+                        modify (\env -> env{typeEnv = extend (typeEnv env) (idd, ty)})
+                        interpret @() AsDef $ "let " ++ unpack idd ++ "= T._cX _emptyVM _valToVM " ++ ("\"" ++ unpack idd ++ "\"")
+                        tp <- interpret @ControlPattern AsVM gen
+                        (Environment {tStream = str}) <- get
+                        liftIO $ streamSet str (unpack idd) tp
+                  _ -> throwError $ "Type Error: can only set basic patterns"
 
 jsAction :: Bool -> Term -> CI ()
 jsAction ctx t = do

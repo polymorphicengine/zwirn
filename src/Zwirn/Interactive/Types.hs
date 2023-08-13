@@ -68,6 +68,12 @@ instance T.Valuable Text where
 instance T.Valuable Number where
   toValue (Num n) = T.VF n
 
+instance T.Valuable (String, Value) where
+  toValue (s,v) = T.VList [T.toValue s, v]
+
+instance T.Valuable T.ValueMap where
+  toValue vm = T.VList $$ P.map T.toValue (Map.toList vm)
+
 infixl 0 $$
 ($$) :: (a -> b) -> a -> b
 ($$) = (P.$)
