@@ -36,9 +36,10 @@ getWindowHeight = callFunction $ ffi "window.innerHeight"
 hydraLoop :: Window -> Stream -> MVar (Pattern Text) -> MVar Text -> IO ()
 hydraLoop win str pM bufM = do
           now <- streamGetnow' str
+          sMap <- readMVar (sStateMV str)
           ps <- readMVar pM
           buf <- readMVar bufM
-          case queryArc (segment 32 ps) (Arc (toRational now) (toRational now)) of
+          case query (segment 32 ps) (State (Arc (toRational now) (toRational now)) sMap) of
                         [] -> case (Text "solid().out()") == buf of
                                       False -> do
                                         runUI win $ runFunction $ ffi $ "solid().out()"

@@ -41,14 +41,14 @@ unhighlightMany [] = return ()
 unhighlightMany (x:xs) = unHighlight x >> unhighlightMany xs
 
 -- queries the pattern at time t and gets the locations of active events
-locs :: Double -> ControlPattern -> [Location]
-locs t pat = concatMap evToLocs $ queryArc pat (Arc (toRational t) (toRational t) )
+locs :: ValueMap -> Double -> ControlPattern -> [Location]
+locs vm t pat = concatMap evToLocs $ query pat (State (Arc (toRational t) (toRational t)) vm)
         where evToLocs (Event {context = Context xs}) = map toLoc xs
               -- assume an event doesn't span more than one line
               toLoc ((by, bx), (editorNum, ex)) = (by,bx-1,ex-1,editorNum)
 
-locsMany :: Double -> [ControlPattern] -> [Location]
-locsMany t = concatMap (locs t)
+locsMany :: ValueMap -> Double -> [ControlPattern] -> [Location]
+locsMany vm t = concatMap (locs vm t)
 
 updateBuf :: Buffer -> [Location] -> UI Buffer
 updateBuf buf ls = do
@@ -71,8 +71,9 @@ highlightOnce :: Stream -> MVar Buffer -> UI ()
 highlightOnce stream buffMV = do
                 ps <- liftIO $ getPats stream
                 c <- liftIO $ streamGetnow' stream
+                sMap <- liftIO $ readMVar $ sStateMV stream
                 buffer <- liftIO $ takeMVar buffMV
-                newBuf <- updateBuf buffer (locsMany c ps)
+                newBuf <- updateBuf buffer (locsMany sMap c ps)
                 liftIO $ threadDelay 10000
                 liftIO $ putMVar buffMV newBuf
 
