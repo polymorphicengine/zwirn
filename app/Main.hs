@@ -1,5 +1,23 @@
 module Main where
 
+{-
+    Main.hs - entry point of the editor program
+    Copyright (C) 2023, Martin Gius
+
+    This library is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This library is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this library.  If not, see <http://www.gnu.org/licenses/>.
+-}
+
 import System.FilePath  (dropFileName)
 import System.Environment (getExecutablePath)
 
@@ -21,20 +39,3 @@ main = do
           jsCustomHTML     = Just "tidal.html",
           jsPort = Just (tpPort config)
         } $ setup (dirtPort config) (hintMode config)
-
-
--- main :: IO ()
--- main = do
---        putStrLn "Starting Hint..\n"
---        mMV <- liftIO newEmptyMVar
---        rMV <- liftIO newEmptyMVar
---        _ <- liftIO $ forkIO $ hintJob GHC mMV rMV
---        loop (Environment defaultEnv (HintEnv GHC mMV rMV))
---        return ()
---       where loop env = do
---                    putStrLn "type a term:\n"
---                    input <- getLine
---                    res <- runCI env (compilerInterpreter 1 0 $ pack input)
---                    case res of
---                          Left err -> (putStrLn $ show err ++ "\n") >> loop env
---                          Right (resp, newEnv, _, _) -> (putStrLn $ show resp ++ "\n") >> loop newEnv
