@@ -21,6 +21,25 @@ module Zwirn.Language.Lexer
   , typeLexer
   ) where
 
+{-
+    Lexer.hs - lexer for zwirn, code adapted from
+    https://serokell.io/blog/lexing-with-alex
+    Copyright (C) 2023, Martin Gius
+
+    This library is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This library is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this library.  If not, see <http://www.gnu.org/licenses/>.
+-}
+
 import           Data.Text (Text)
 import qualified Data.Text as Text
 import Control.Monad (when)

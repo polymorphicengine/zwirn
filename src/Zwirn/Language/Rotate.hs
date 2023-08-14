@@ -5,6 +5,25 @@ module Zwirn.Language.Rotate
     , RotationError
     ) where
 
+{-
+    Rotate.hs - syntax tree rotation, code adapted from
+    https://gist.github.com/heitor-lassarote/b20d6da0a9042d31e439befb8c236a4e
+    Copyright (C) 2023, Martin Gius
+
+    This library is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This library is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this library.  If not, see <http://www.gnu.org/licenses/>.
+-}
+
 import Zwirn.Language.Syntax
 import Zwirn.Language.Simple
 
