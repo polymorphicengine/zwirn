@@ -107,6 +107,8 @@ tokens :-
 -- Actions
 <0> ";"                               { tok Colon }
 <0> "<-"                              { tok StreamA }
+<0> ":cps"                            { tok TempoCps }
+<0> ":bpm"                            { tok TempoBpm }
 <0> ":t"                              { tok TypeA }
 <0> "="                               { tok Assign }
 <0> ":show"                           { tok ShowA }
@@ -204,6 +206,8 @@ data Token
   -- Actions
   | Colon
   | StreamA
+  | TempoCps
+  | TempoBpm
   | TypeA
   | ShowA
   | Assign
@@ -249,6 +253,8 @@ instance Show Token where
  show Arrow = quoted "->"
  show Colon = quoted ";"
  show StreamA = quoted "<-"
+ show TempoCps = ":cps"
+ show TempoBpm = ":bpm"
  show TypeA = quoted ":t"
  show ShowA = quoted ":show"
  show Assign = quoted "="

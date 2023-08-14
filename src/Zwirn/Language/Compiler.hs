@@ -19,13 +19,14 @@ import Zwirn.Language.TypeCheck.Env
 import Zwirn.Language.TypeCheck.Infer
 
 import Zwirn.Interactive.Types (TextPattern, NumberPattern)
+import Zwirn.Interactive.Convert (_fromTarget)
 
 import Control.Monad.State
 import Control.Monad.Except
 import Control.Concurrent.MVar (MVar, putMVar, takeMVar, modifyMVar_)
 import Control.Exception (try, SomeException)
 
-import Sound.Tidal.Context (ControlPattern, Stream, streamReplace, streamSet, streamOnce)
+import Sound.Tidal.Context (ControlPattern, Stream, streamReplace, streamSet, streamOnce, cps)
 import Sound.Tidal.ID (ID(..))
 
 import Data.Text (Text, unpack)
@@ -256,6 +257,21 @@ streamOnceAction ctx t = do
                         liftIO $ streamOnce str cp
                   _ -> throwError $ "Type Error: can only stream value maps"
 
+streamSetTempoAction :: Bool -> Tempo -> Term -> CI ()
+streamSetTempoAction ctx tempo t = do
+                      s <- runSimplify t
+                      rot <- runRotate s
+                      ty <- runTypeCheck rot
+                      case ty of
+                          (Forall [] (Qual [] (TypeCon "Number"))) -> do
+                                gen <- runGenerator ctx rot
+                                np <- interpret @NumberPattern AsNum gen
+                                (Environment {tStream = str}) <- get
+                                case tempo of
+                                  CPS -> liftIO $ streamOnce str $ cps (_fromTarget np)
+                                  BPM -> liftIO $ streamOnce str $ cps (fmap (\x -> x/60/4) $ _fromTarget np)
+                          _ -> throwError $ "Type Error: tempo must be a number"
+
 jsAction :: Bool -> Term -> CI ()
 jsAction ctx t = do
               s <- runSimplify t
@@ -276,6 +292,7 @@ runAction :: Bool -> Action -> CI String
 runAction b (Stream i t) = streamAction b i t >> return ""
 runAction b (StreamSet i t) = streamSetAction b i t >> return ""
 runAction b (StreamOnce t) = streamOnceAction b t >> return ""
+runAction b (StreamSetTempo mode t) = streamSetTempoAction b mode t >> return ""
 runAction _ (Show t) = showAction t
 runAction b (Def d) = defAction b d >> return ""
 runAction _ (Type t) = typeAction t

@@ -37,10 +37,16 @@ data Def
   = Let Text [Text] Term
   deriving (Eq, Show)
 
+data Tempo
+  = CPS
+  | BPM
+  deriving (Eq, Show)
+
 data Action
   = Stream Text Term
   | StreamSet Text Term
   | StreamOnce Term
+  | StreamSetTempo Tempo Term
   | Def Def
   | Type Term
   | Show Term

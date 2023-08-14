@@ -71,6 +71,8 @@ import Zwirn.Language.Block
   -- Actions
   ';'        { L.RangedToken L.Colon _ }
   '<-'       { L.RangedToken L.StreamA _ }
+  ':cps'     { L.RangedToken L.TempoCps _ }
+  ':bpm'     { L.RangedToken L.TempoBpm _ }
   ':t'       { L.RangedToken L.TypeA _ }
   ':show'    { L.RangedToken L.ShowA _ }
   '='        { L.RangedToken L.Assign _ }
@@ -199,6 +201,8 @@ action :: { Action }
   : string     '<-' term   { Stream (unTok $1) $3 }
   | number     '<-' term   { Stream (unTok $1) $3 }
   | identifier '<-' term   { StreamSet (unTok $1) $3 }
+  | ':cps' term            { StreamSetTempo CPS $2 }
+  | ':bpm' term            { StreamSetTempo BPM $2 }
   | '!' term               { StreamOnce $2 }
   | def                    { Def $1 }
   | ':t' term              { Type $2 }
