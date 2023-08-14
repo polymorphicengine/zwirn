@@ -45,9 +45,13 @@ interpretCommandsLine cm lineBool line envMV = do
                 env <- liftIO $ takeMVar envMV
                 res <- liftIO $ runCI env (compilerInterpreter line editorNum (pack editorContent))
                 case res of
-                      Left err -> do
-                          void $ element out # set UI.text err  --TODO: get block start and end for flashing error
-                          liftIO $ putMVar envMV env
+                      Left (CIError err (Just (CurrentBlock st end))) -> do
+                                          flashError cm st end
+                                          void $ element out # set UI.text err  --TODO: get block start and end for flashing error
+                                          liftIO $ putMVar envMV env
+                      Left (CIError err Nothing) -> do
+                                          void $ element out # set UI.text err  --TODO: get block start and end for flashing error
+                                          liftIO $ putMVar envMV env
                       Right (resp, newEnv, st, end) -> do
                                           flashSuccess cm st end
                                           _ <- element out # set UI.text resp

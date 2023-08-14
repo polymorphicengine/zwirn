@@ -94,7 +94,7 @@ setupBackend :: Stream -> MVar (Pattern Text) -> HintMode -> MVar InterpreterMes
 setupBackend str hyd mode mMV rMV = do
 
        win <- askWindow
-       envMV <- liftIO $ newMVar (Environment str (Just $ hyd) defaultTypeEnv (HintEnv mode mMV rMV))
+       envMV <- liftIO $ newMVar (Environment str (Just $ hyd) defaultTypeEnv (HintEnv mode mMV rMV) Nothing)
 
        createHaskellFunction "evaluateBlock" (\cm -> (runUI win $ interpretCommands cm False envMV))
        createHaskellFunction "evaluateLine" (\cm -> (runUI win $ interpretCommands cm True envMV))

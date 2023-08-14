@@ -2,6 +2,8 @@
 module Zwirn.Language.Compiler
     ( HintEnv (..)
     , Environment (..)
+    , CIError (..)
+    , CurrentBlock (..)
     , compilerInterpreter
     , runCI
     ) where
@@ -52,22 +54,32 @@ import Data.Text.IO (readFile)
 
 import Prelude hiding (readFile)
 
-data CIMessage = CIMessage Text deriving (Show, Eq)
+data CIMessage
+  = CIMessage Text deriving (Show, Eq)
 
-data HintEnv = HintEnv { hMode :: HintMode
-                       , hM :: MVar InterpreterMessage
-                       , hR :: MVar InterpreterResponse
-                       }
+data CurrentBlock
+  = CurrentBlock Int Int
+  deriving (Eq, Show)
+
+data HintEnv
+  = HintEnv { hMode :: HintMode
+            , hM :: MVar InterpreterMessage
+            , hR :: MVar InterpreterResponse
+            }
 
 
 
-data Environment = Environment { tStream :: Stream
-                               , jsMV :: Maybe (MVar TextPattern)
-                               , typeEnv :: TypeEnv
-                               , hintEnv :: HintEnv
-                               }
+data Environment
+  = Environment { tStream :: Stream
+                , jsMV :: Maybe (MVar TextPattern)
+                , typeEnv :: TypeEnv
+                , hintEnv :: HintEnv
+                , currBlock :: Maybe CurrentBlock
+                }
 
-type CIError = String
+data CIError
+  = CIError String (Maybe CurrentBlock)
+  deriving (Eq, Show)
 
 type CI a = StateT Environment (ExceptT CIError IO) a
 
@@ -78,11 +90,23 @@ compilerInterpreter :: Int -> Int -> Text -> CI (String, Environment, Int, Int)
 compilerInterpreter line editor input = do
                        blocks <- runBlocks 0 input
                        (Block start end content) <- runGetBlock line blocks
+                       setCurrentBlock start end
                        as <- runParserWithPos start editor content
                        r <- runActions True as
                        e <- get
                        return (r, e, start, end)
 
+-----------------------------------------------------
+----------------- Throwing Errors -------------------
+-----------------------------------------------------
+
+throw :: String -> CI a
+throw err = do
+  Environment {currBlock = b} <- get
+  throwError $ CIError err b
+
+setCurrentBlock :: Int -> Int -> CI ()
+setCurrentBlock st en = modify (\env -> env{currBlock = Just $ CurrentBlock st en})
 
 -----------------------------------------------------
 ---------------------- Parser -----------------------
@@ -90,22 +114,22 @@ compilerInterpreter line editor input = do
 
 runParserWithPos :: Int -> Int -> Text -> CI [Action]
 runParserWithPos ln ed t = case parseActionsWithPos ln ed t of
-                      Left err -> throwError err
+                      Left err -> throw err
                       Right as -> return as
 
 runParser :: Text -> CI [Action]
 runParser t = case parseActions t of
-                      Left err -> throwError err
+                      Left err -> throw err
                       Right as -> return as
 
 runBlocks :: Int -> Text -> CI [Block]
 runBlocks ln t = case parseBlocks ln t of
-                     Left err -> throwError err
+                     Left err -> throw err
                      Right bs -> return bs
 
 runGetBlock :: Int -> [Block] -> CI Block
 runGetBlock i bs = case getBlock i bs of
-                    Left err -> throwError err
+                    Left err -> throw err
                     Right b -> return b
 
 
@@ -126,7 +150,7 @@ runSimplifyDef d = return $ simplifyDef d
 
 runRotate :: SimpleTerm -> CI SimpleTerm
 runRotate s = case R.runRotate s of
-                      Left err -> throwError err
+                      Left err -> throw err
                       Right t -> return t
 
 
@@ -138,7 +162,7 @@ runTypeCheck :: SimpleTerm -> CI Scheme
 runTypeCheck s = do
               Environment {typeEnv = tenv} <- get
               case inferTerm tenv s of
-                      Left err -> throwError $ show err
+                      Left err -> throw $ show err
                       Right t -> return t
 
 
@@ -166,7 +190,7 @@ interpret typ input = do
             liftIO $ putMVar hMV $ Message typ input
             res <- liftIO $ takeMVar hRV
             case fromResponse res of
-              Left err -> throwError $ "GHC Error: " ++ err
+              Left err -> throw $ "GHC Error: " ++ err
               Right a -> return $ a
 
 -----------------------------------------------------
@@ -201,7 +225,7 @@ showAction t = do
                       gen <- runGenerator True rot
                       cp <- interpret @ControlPattern AsVM gen
                       return $ show cp
-            _ -> throwError $ "Can't show terms of type " ++ ppscheme ty
+            _ -> throw $ "Can't show terms of type " ++ ppscheme ty
 
 
 typeAction :: Term -> CI String
@@ -215,7 +239,7 @@ loadAction :: Text -> CI ()
 loadAction path = do
       mayfile <- liftIO ((try $ readFile $ unpack path) :: IO (Either SomeException Text))
       case mayfile of
-        Left _ -> throwError "file note found"
+        Left _ -> throw "file note found"
         Right input -> do
           blocks <- runBlocks 0 input
           ass <- sequence $ map (runParser . bContent) blocks
@@ -233,7 +257,7 @@ streamAction ctx idd t = do
                         cp <- interpret AsVM gen
                         (Environment {tStream = str}) <- get
                         liftIO $ streamReplace str (ID (unpack idd)) cp
-                  _ -> throwError $ "Type Error: can only stream value maps"
+                  _ -> throw $ "Type Error: can only stream value maps"
 
 streamSetAction :: Bool -> Text -> Term -> CI ()
 streamSetAction ctx idd t = do
@@ -260,7 +284,7 @@ streamSetAction ctx idd t = do
                         tp <- interpret @ControlPattern AsVM gen
                         (Environment {tStream = str}) <- get
                         liftIO $ streamSet str (unpack idd) tp
-                  _ -> throwError $ "Type Error: can only set basic patterns"
+                  _ -> throw $ "Type Error: can only set basic patterns"
 
 streamOnceAction :: Bool -> Term -> CI ()
 streamOnceAction ctx t = do
@@ -273,7 +297,7 @@ streamOnceAction ctx t = do
                         cp <- interpret AsVM gen
                         (Environment {tStream = str}) <- get
                         liftIO $ streamOnce str cp
-                  _ -> throwError $ "Type Error: can only stream value maps"
+                  _ -> throw $ "Type Error: can only stream value maps"
 
 streamSetTempoAction :: Bool -> Tempo -> Term -> CI ()
 streamSetTempoAction ctx tempo t = do
@@ -288,7 +312,7 @@ streamSetTempoAction ctx tempo t = do
                                 case tempo of
                                   CPS -> liftIO $ streamOnce str $ cps (_fromTarget np)
                                   BPM -> liftIO $ streamOnce str $ cps (fmap (\x -> x/60/4) $ _fromTarget np)
-                          _ -> throwError $ "Type Error: tempo must be a number"
+                          _ -> throw $ "Type Error: tempo must be a number"
 
 jsAction :: Bool -> Term -> CI ()
 jsAction ctx t = do
@@ -302,8 +326,8 @@ jsAction ctx t = do
                     (Environment {jsMV = maybemv}) <- get
                     case maybemv of
                       Just mv -> liftIO $ modifyMVar_ mv (const $ pure p)
-                      Nothing -> throwError $ "No JavaScript Interpreter available"
-                  _ -> throwError $ "Type Error: can only accept text"
+                      Nothing -> throw $ "No JavaScript Interpreter available"
+                  _ -> throw $ "Type Error: can only accept text"
 
 
 runAction :: Bool -> Action -> CI String
