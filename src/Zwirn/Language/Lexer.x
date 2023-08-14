@@ -1,4 +1,5 @@
 {
+{-# LANGUAGE OverloadedStrings #-}
 module Zwirn.Language.Lexer
   ( -- * Invoking Alex
     Alex
@@ -276,7 +277,15 @@ mkRange (st, _, _, str) len = Range{start = st, stop = end}
 mkLine :: AlexAction RangedToken
 mkLine inp@(_, _, _, str) len = case Text.all (\c -> elem c ("\n\t " :: String)) (Text.take len str) of
                             True -> tok BlockSep inp len
-                            False -> tokText LineT inp len
+                            False -> pure RangedToken
+                              { rtToken = LineT $ Text.map replaceTab (Text.take len str)
+                              , rtRange = mkRange inp len
+                              }
+
+-- | replace all tabs with a single space, since codemirror sees tabs as one column
+replaceTab :: Char  -> Char
+replaceTab '\t' = ' '
+replaceTab x = x
 
 tok :: Token -> AlexAction RangedToken
 tok ctor inp len =
@@ -333,12 +342,12 @@ lineLexer = alexSetStartCode line
 typeLexer :: Alex ()
 typeLexer = alexSetStartCode ty
 
-scanMany :: Text -> Either String [Token]
+scanMany :: Text -> Either String [RangedToken]
 scanMany input = runAlex input go
   where
     go = do
-      output <- alexMonadScan
+      output <- lineLexer >> alexMonadScan
       if rtToken output == EOF
-        then pure [rtToken output]
-        else ((rtToken output) :) <$> go
+        then pure [output]
+        else ((output) :) <$> go
 }
