@@ -29,6 +29,7 @@ import Zwirn.Language.Block
 %error { parseError }
 %monad { L.Alex } { >>= } { pure }
 %lexer { lexer } { L.RangedToken L.EOF _ }
+%expect 0
 
 %token
   -- Identifiers
@@ -198,6 +199,7 @@ action :: { Action }
   : string     '<-' term   { Stream (unTok $1) $3 }
   | number     '<-' term   { Stream (unTok $1) $3 }
   | identifier '<-' term   { StreamSet (unTok $1) $3 }
+  | '!' term               { StreamOnce $2 }
   | def                    { Def $1 }
   | ':t' term              { Type $2 }
   | ':show' term           { Show $2 }

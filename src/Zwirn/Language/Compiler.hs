@@ -25,7 +25,7 @@ import Control.Monad.Except
 import Control.Concurrent.MVar (MVar, putMVar, takeMVar, modifyMVar_)
 import Control.Exception (try, SomeException)
 
-import Sound.Tidal.Context (ControlPattern, Stream, streamReplace, streamSet)
+import Sound.Tidal.Context (ControlPattern, Stream, streamReplace, streamSet, streamOnce)
 import Sound.Tidal.ID (ID(..))
 
 import Data.Text (Text, unpack)
@@ -243,6 +243,19 @@ streamSetAction ctx idd t = do
                         liftIO $ streamSet str (unpack idd) tp
                   _ -> throwError $ "Type Error: can only set basic patterns"
 
+streamOnceAction :: Bool -> Term -> CI ()
+streamOnceAction ctx t = do
+              s <- runSimplify t
+              rot <- runRotate s
+              ty <- runTypeCheck rot
+              case ty of
+                  (Forall [] (Qual [] (TypeCon "ValueMap"))) -> do
+                        gen <- runGenerator ctx rot
+                        cp <- interpret AsVM gen
+                        (Environment {tStream = str}) <- get
+                        liftIO $ streamOnce str cp
+                  _ -> throwError $ "Type Error: can only stream value maps"
+
 jsAction :: Bool -> Term -> CI ()
 jsAction ctx t = do
               s <- runSimplify t
@@ -262,6 +275,7 @@ jsAction ctx t = do
 runAction :: Bool -> Action -> CI String
 runAction b (Stream i t) = streamAction b i t >> return ""
 runAction b (StreamSet i t) = streamSetAction b i t >> return ""
+runAction b (StreamOnce t) = streamOnceAction b t >> return ""
 runAction _ (Show t) = showAction t
 runAction b (Def d) = defAction b d >> return ""
 runAction _ (Type t) = typeAction t
