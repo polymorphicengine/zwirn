@@ -2,6 +2,7 @@ module Zwirn.Language.Block
     ( Block (..)
     , BlockError
     , getBlock
+    , getLn
     ) where
 
 {-
@@ -22,7 +23,7 @@ module Zwirn.Language.Block
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 -}
 
-import Data.Text (Text)
+import Data.Text as Text (Text, lines)
 
 data Block = Block {bStart :: Int
                    ,bEnd :: Int
@@ -36,3 +37,8 @@ getBlock _ [] = Left "no block of code at current line"
 getBlock num (block@(Block n1 n2 _):bs) = if n1 <= num && num <= n2
                                           then Right block
                                           else getBlock num bs
+
+getLn :: Int -> [Block] -> Either BlockError Text
+getLn i bs = do
+         (Block _ _ cont) <- getBlock i bs
+         return $ (Text.lines cont)!!i

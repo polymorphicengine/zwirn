@@ -2,8 +2,9 @@ const keyMap = "default" // possible options: "default", "emacs", "vim", "sublim
 
 const extraKeys = {
 	     "Ctrl-.": hush,
-		   "Ctrl-Enter": evalB,
-		   "Shift-Enter": evaluateLine,
+		   "Ctrl-Enter": evalBlockAtCursor,
+		   "Shift-Enter": evalLineAtCursor,
+		   "Shift-Ctrl-Enter": evalWhole,
 		   "Ctrl-S": saveFile,
 		   "Ctrl-O": loadFile,
 		   "Ctrl-A": addEditor,

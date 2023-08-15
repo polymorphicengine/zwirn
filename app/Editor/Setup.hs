@@ -96,11 +96,12 @@ setupBackend str hyd mode mMV rMV = do
        win <- askWindow
        envMV <- liftIO $ newMVar (Environment str (Just $ hyd) defaultTypeEnv (HintEnv mode mMV rMV) Nothing)
 
-       createHaskellFunction "evaluateBlock" (\cm -> (runUI win $ interpretCommands cm False envMV))
-       createHaskellFunction "evaluateLine" (\cm -> (runUI win $ interpretCommands cm True envMV))
+       createHaskellFunction "evalBlockAtCursor" (\cm -> (runUI win $ evalContentAtCursor EvalBlock cm envMV))
+       createHaskellFunction "evalLineAtCursor" (\cm -> (runUI win $ evalContentAtCursor EvalLine cm envMV))
+       createHaskellFunction "evalWhole" (\cm -> (runUI win $ evalContentAtCursor EvalWhole cm envMV))
 
-       createHaskellFunction "evaluateBlockLine" (\cm l ->  (runUI win $ interpretCommandsLine cm False l envMV))
-       createHaskellFunction "evaluateLineLine" (\cm l -> (runUI win $ interpretCommandsLine cm True l envMV))
+       createHaskellFunction "evalBlockAtLine" (\cm l ->  (runUI win $ evalContentAtLine EvalBlock cm l envMV))
+       createHaskellFunction "evalLineAtLine" (\cm l -> (runUI win $ evalContentAtLine EvalLine cm l envMV))
 
 
 setupEditors :: Element -> UI ()

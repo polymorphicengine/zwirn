@@ -4,7 +4,9 @@ module Zwirn.Language.Compiler
     , Environment (..)
     , CIError (..)
     , CurrentBlock (..)
-    , compilerInterpreter
+    , compilerInterpreterBlock
+    , compilerInterpreterLine
+    , compilerInterpreterWhole
     , runCI
     ) where
 
@@ -52,6 +54,8 @@ import Sound.Tidal.ID (ID(..))
 import Data.Text (Text, unpack)
 import Data.Text.IO (readFile)
 
+import Data.List (sortOn)
+
 import Prelude hiding (readFile)
 
 data CIMessage
@@ -86,8 +90,8 @@ type CI a = StateT Environment (ExceptT CIError IO) a
 runCI :: Environment -> CI a -> IO (Either CIError a)
 runCI env m = runExceptT $ evalStateT m env
 
-compilerInterpreter :: Int -> Int -> Text -> CI (String, Environment, Int, Int)
-compilerInterpreter line editor input = do
+compilerInterpreterBlock :: Int -> Int -> Text -> CI (String, Environment, Int, Int)
+compilerInterpreterBlock line editor input = do
                        blocks <- runBlocks 0 input
                        (Block start end content) <- runGetBlock line blocks
                        setCurrentBlock start end
@@ -95,6 +99,29 @@ compilerInterpreter line editor input = do
                        r <- runActions True as
                        e <- get
                        return (r, e, start, end)
+
+compilerInterpreterLine :: Int -> Int -> Text -> CI (String, Environment, Int, Int)
+compilerInterpreterLine line editor input = do
+                      setCurrentBlock line line
+                      blocks <- runBlocks 0 input
+                      content <- runGetLine line blocks
+                      as <- runParserWithPos line editor content
+                      r <- runActions True as
+                      e <- get
+                      return (r, e, line, line)
+
+compilerInterpreterWhole :: Int -> Text -> CI (String, Environment, Int, Int)
+compilerInterpreterWhole editor input = do
+                      blocks <- runBlocks 0 input
+                      let sorted = sortOn (\(Block x _ _ ) -> x) blocks
+                          (Block start _ _) = head sorted
+                          (Block _ end _) = last sorted
+                      liftIO $ putStrLn $ show sorted
+                      setCurrentBlock start end
+                      ass <- sequence $ map ((runParserWithPos start editor) . bContent) sorted
+                      rs <- sequence $ map (runActions True) ass
+                      e <- get
+                      return (last rs, e, start, end)
 
 -----------------------------------------------------
 ----------------- Throwing Errors -------------------
@@ -132,6 +159,10 @@ runGetBlock i bs = case getBlock i bs of
                     Left err -> throw err
                     Right b -> return b
 
+runGetLine :: Int -> [Block] -> CI Text
+runGetLine i bs = case getLn i bs of
+                    Left err -> throw err
+                    Right b -> return b
 
 -----------------------------------------------------
 ---------------------- Desugar ----------------------

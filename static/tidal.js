@@ -64,7 +64,7 @@ function evalB(cm){
 	} else {
 		//console.log(cm);
 		try {
-			return evaluateBlock(cm);
+			return evalBlockAtCursor(cm);
 		} catch (err) {console.log("oh dear")}
 	};
 }

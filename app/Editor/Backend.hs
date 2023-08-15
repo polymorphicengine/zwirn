@@ -32,18 +32,28 @@ import Zwirn.Language.Compiler
 
 import Data.Text (pack)
 
-interpretCommands :: JSObject -> Bool -> MVar Environment -> UI ()
-interpretCommands cm lineBool envMV = do
-                line <- getCursorLine cm
-                interpretCommandsLine cm lineBool line envMV
+data EvalMode
+  = EvalBlock
+  | EvalLine
+  | EvalWhole
+  deriving (Eq, Show)
 
-interpretCommandsLine :: JSObject -> Bool -> Int -> MVar Environment -> UI ()
-interpretCommandsLine cm lineBool line envMV = do
+evalContentAtCursor :: EvalMode -> JSObject -> MVar Environment -> UI ()
+evalContentAtCursor mode cm envMV = do
+                line <- getCursorLine cm
+                evalContentAtLine mode cm line envMV
+
+evalContentAtLine :: EvalMode -> JSObject -> Int -> MVar Environment -> UI ()
+evalContentAtLine mode cm line envMV = do
                 editorContent <- getValue cm
                 editorNum <- getEditorNumber cm
                 out <- getOutputEl
                 env <- liftIO $ takeMVar envMV
-                res <- liftIO $ runCI env (compilerInterpreter line editorNum (pack editorContent))
+                let ci = case mode of
+                            EvalBlock -> compilerInterpreterBlock line editorNum (pack editorContent)
+                            EvalLine -> compilerInterpreterLine line editorNum (pack editorContent)
+                            EvalWhole -> compilerInterpreterWhole editorNum (pack editorContent)
+                res <- liftIO $ runCI env ci
                 case res of
                       Left (CIError err (Just (CurrentBlock st end))) -> do
                                           flashError cm st end
