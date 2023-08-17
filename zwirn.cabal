@@ -97,6 +97,7 @@ executable generate-default
    main-is:          Main.hs
    build-depends:    base,
                      zwirn,
-                     text
+                     text,
+                     process
    hs-source-dirs:   gen
    default-language: Haskell2010
