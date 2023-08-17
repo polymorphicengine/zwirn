@@ -80,7 +80,7 @@ freeport((err, port) => {
 
       enable(win.webContents);
 
-      //win.removeMenu();
+      win.removeMenu();
       console.log(`Loading URL: ${url}`);
       win.loadURL(url)
 
