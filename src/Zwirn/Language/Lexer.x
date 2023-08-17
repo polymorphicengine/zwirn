@@ -55,7 +55,7 @@ $alpha = [a-zA-Z]
 @singles = ("+" | "&" | "$" | "?" | "-" | "#" | "." | "^")
 @otherops = ("|" | "=" | "~" | "<" | ">" | "%")
 @specialop = ("*" | "/" | "'")
-@op = ((@singles (@singles | @otherops | @specialop)*) | ((@otherops | @specialop) (@singles | @otherops | @specialop)*))
+@op = ((@singles (@singles | @otherops | @specialop)*) | ((@otherops | @specialop) (@singles | @otherops | @specialop)+))
 @num = ("-")? ($digit)+ ("." ($digit)+)?
 
 tokens :-
