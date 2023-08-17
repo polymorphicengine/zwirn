@@ -19,7 +19,8 @@ extra-doc-files:    CHANGELOG.md, README.md
 
 library
   hs-source-dirs: src
-  exposed-modules: Zwirn.Interactive.Prelude.Control
+  exposed-modules: Zwirn.Interactive.Prelude.Core
+                   Zwirn.Interactive.Prelude.Control
                    Zwirn.Interactive.Prelude.Hydra
                    Zwirn.Interactive.Prelude.MiniPrelude
                    Zwirn.Interactive.Prelude.Params

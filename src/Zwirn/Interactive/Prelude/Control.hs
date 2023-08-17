@@ -26,6 +26,9 @@ import Zwirn.Interactive.Types
 import Zwirn.Interactive.Transform
 import Zwirn.Interactive.Convert
 
+--TODO
+-- weave, weaveWith, smash, smash'
+
 -- control pattern stuff
 
 pN :: P (TextPattern -> NumberPattern -> ControlPattern)
@@ -61,6 +64,9 @@ splice = _toPat $$ _toTarget T.splice
 striate :: P (NumberPattern -> ControlPattern -> ControlPattern)
 striate = _toPat $$ _toTarget T.striate
 
+chew :: P (NumberPattern -> NumberPattern -> ControlPattern -> ControlPattern)
+chew = _toPat $$ _toTarget T.chew
+
 striateBy :: P (NumberPattern -> NumberPattern -> ControlPattern -> ControlPattern)
 striateBy = _toPat $$ _toTarget T.striateBy
 
@@ -69,3 +75,39 @@ chop = _toPat $$ _toTarget T.chop
 
 loopAt :: P (NumberPattern -> ControlPattern -> ControlPattern)
 loopAt = _toPat $$ _toTarget T.loopAt
+
+interlace :: P (ControlPattern -> ControlPattern -> ControlPattern)
+interlace = _toPat T.interlace
+
+hurry :: P (NumberPattern -> ControlPattern -> ControlPattern)
+hurry = _toPat $$ _toTarget T.hurry
+
+echo :: P (NumberPattern -> NumberPattern -> NumberPattern -> ControlPattern -> ControlPattern)
+echo = _toPat $$ _toTarget T.echo
+
+echoWith :: Pat a => P (NumberPattern -> NumberPattern -> (Pattern a -> Pattern a) -> Pattern a -> Pattern a)
+echoWith = _toPat $$ (\x y -> T.echoWith (_fromTarget x) (_fromTarget y))
+
+splat :: P (NumberPattern -> ControlPattern -> ControlPattern -> ControlPattern)
+splat = _toPat $$ _toTarget T.splat
+
+jux :: P ((ControlPattern -> ControlPattern) -> ControlPattern -> ControlPattern)
+jux = _toPat T.jux
+
+juxcut :: P ((ControlPattern -> ControlPattern) -> ControlPattern -> ControlPattern)
+juxcut = _toPat T.juxcut
+
+juxBy :: P (NumberPattern -> (ControlPattern -> ControlPattern) -> ControlPattern -> ControlPattern)
+juxBy = _toPat (\x -> T.juxBy (_fromTarget x))
+
+contrast :: P ((ControlPattern -> ControlPattern) -> (ControlPattern -> ControlPattern) -> ControlPattern -> ControlPattern -> ControlPattern)
+contrast = _toPat T.contrast
+
+fix :: P ((ControlPattern -> ControlPattern) -> ControlPattern -> ControlPattern -> ControlPattern)
+fix = _toPat T.fix
+
+unfix :: P ((ControlPattern -> ControlPattern) -> ControlPattern -> ControlPattern -> ControlPattern)
+unfix = _toPat T.unfix
+
+grain :: P (NumberPattern -> NumberPattern -> ControlPattern)
+grain = _toPat $$ _toTarget T.grain

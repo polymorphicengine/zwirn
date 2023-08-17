@@ -69,86 +69,12 @@ tick = _toPat (P.flip _apply)
 rev :: Pat a => P (Pattern a -> Pattern a)
 rev = _toPat T.rev
 
-fast :: Pat a => P (NumberPattern -> Pattern a -> Pattern a)
-fast = _toPat (\x -> T.fast (_fromTarget x))
-
-(*) :: Pat a => P (Pattern a -> NumberPattern -> Pattern a)
-(*) = _toPat (\x n -> T.fast (_fromTarget n) x)
-
-slow :: Pat a => P (NumberPattern -> Pattern a -> Pattern a)
-slow = _toPat (\x -> T.slow (_fromTarget x))
-
-(/) ::  Pat a => P (Pattern a -> NumberPattern -> Pattern a)
-(/) = _toPat (\x n -> T.slow (_fromTarget n) x)
-
-ply :: Pat a => P (NumberPattern -> Pattern a -> Pattern a)
-ply = _toPat (\x -> T.ply (_fromTarget x))
-
-plyWith :: Pat a => P (NumberPattern -> (Pattern a -> Pattern a) -> Pattern a -> Pattern a)
-plyWith = _toPat (\x -> (T.plyWith :: Pattern Double -> (Pattern a -> Pattern a) -> Pattern a -> Pattern a) (_fromTarget x))
-
 -- rot :: (Pat a, P.Ord a) => P (NumberPattern -> Pattern a -> Pattern a)
--- rot = toPat (\x -> T.rot $$ fromTarget x)
+-- rot = _toPat (\x -> T.rot $$ _fromTarget x)
 
-run :: P (NumberPattern -> NumberPattern)
-run = _toPat $$ _toTarget (T.run :: Pattern Double -> Pattern Double)
 
-irand :: P (NumberPattern -> NumberPattern)
-irand = _toPat $$ _toTarget (T.irand :: Pattern Int -> Pattern Double)
-
-rotL :: Pat a => P (NumberPattern -> Pattern a -> Pattern a)
-rotL = _toPat (\x y -> (_fromTarget x) T.<~ y)
-
-(<~) :: Pat a => P (NumberPattern -> Pattern a -> Pattern a)
-(<~) = rotL
-
-rotR :: Pat a => P (NumberPattern -> Pattern a -> Pattern a)
-rotR = _toPat (\x y -> (_fromTarget x) T.~> y)
-
-(~>) :: Pat a => P (NumberPattern -> Pattern a -> Pattern a)
-(~>) = rotR
-
-struct :: Pat a => P (NumberPattern -> Pattern a -> Pattern a)
-struct = _toPat (\n x -> T.struct (_fromTarget n) x)
-
-mask :: Pat a => P (NumberPattern -> Pattern a -> Pattern a)
-mask = _toPat (\n x -> T.mask (_fromTarget n) x)
-
-every :: Pat a => P (NumberPattern -> (Pattern a -> Pattern a) -> Pattern a -> Pattern a)
-every = _toPat (\x -> T.every $$ _fromTarget x)
-
-while :: Pat a => P (NumberPattern -> (Pattern a -> Pattern a) -> Pattern a -> Pattern a)
-while = _toPat (\x -> T.while $$ _fromTarget x)
-
-superimpose :: Pat a => P ((Pattern a -> Pattern a) -> Pattern a -> Pattern a)
-superimpose = _toPat T.superimpose
-
-jux :: P ((ControlPattern -> ControlPattern) -> ControlPattern -> ControlPattern)
-jux = _toPat T.jux
-
-iter :: Pat a => P (NumberPattern -> Pattern a -> Pattern a)
-iter = _toPat (\x -> T.iter $$ _fromTarget x)
-
-sometimes :: Pat a => P ((Pattern a -> Pattern a) -> Pattern a -> Pattern a)
-sometimes = _toPat T.sometimes
-
-rarely :: Pat a => P ((Pattern a -> Pattern a) -> Pattern a -> Pattern a)
-rarely = _toPat T.rarely
-
-degrade :: Pat a =>  P (Pattern a -> Pattern a)
-degrade = _toPat T.degrade
-
-degradeBy :: Pat a => P (NumberPattern -> Pattern a -> Pattern a)
-degradeBy = _toPat (\x -> T.degradeBy $$ _fromTarget x)
-
-(?) :: Pat a => P (Pattern a -> NumberPattern -> Pattern a)
-(?) = _toPat (\x d -> T.degradeBy (_fromTarget d) x)
-
-timeLoop :: Pat a => P (NumberPattern -> Pattern a -> Pattern a)
-timeLoop = _toPat (\tm -> T.timeLoop $$ _fromTarget tm)
-
-loop :: Pat a => P (NumberPattern -> Pattern a -> Pattern a)
-loop = timeLoop
+scale :: P (TextPattern -> NumberPattern -> NumberPattern)
+scale = _toPat (\x n -> T.scale (_fromTarget x) (_fromTarget n))
 
 -- arithmetic
 
@@ -216,33 +142,6 @@ c = 0
 
 e :: P NumberPattern
 e = 4
-
-
--- continous
-
-sine :: P NumberPattern
-sine = _toTarget (T.sine :: Pattern Double)
-
-rand :: P NumberPattern
-rand = _toTarget (T.rand :: Pattern Double)
-
-perlin :: P NumberPattern
-perlin = _toTarget (T.perlin :: Pattern Double)
-
-saw :: P NumberPattern
-saw = _toTarget (T.saw :: Pattern Double)
-
-tri :: P NumberPattern
-tri = _toTarget (T.tri :: Pattern Double)
-
-smooth :: P (NumberPattern -> NumberPattern)
-smooth = _toPat $$ _toTarget (T.smooth :: Pattern Double -> Pattern Double)
-
-segment :: Pat a => P (NumberPattern -> Pattern a -> Pattern a)
-segment = _toPat $$ (\x -> T.segment $$ _fromTarget x)
-
-range :: P (NumberPattern -> NumberPattern -> NumberPattern -> NumberPattern)
-range = _toPat $$ _toTarget (T.range ::  Pattern Double -> Pattern Double -> Pattern Double -> Pattern Double)
 
 
 --- comparisons

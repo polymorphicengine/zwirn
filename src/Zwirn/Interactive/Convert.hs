@@ -58,6 +58,11 @@ instance Convertible Int where
   _toTarget i = Num $$ P.fromIntegral i
   _fromTarget (Num n) = P.floor n
 
+instance Convertible P.Integer where
+  type Target P.Integer = Number
+  _toTarget i = Num $$ P.fromIntegral i
+  _fromTarget (Num n) = P.floor n
+
 instance Convertible Note where
   type Target Note = Number
   _toTarget (T.Note i) = Num i
