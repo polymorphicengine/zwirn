@@ -100,7 +100,8 @@ exports.schema = {
 			},
 			keyMap: {
 				type: 'string',
-				default: "default"
+				default: "default",
+				enum: ["default", "vim", "emacs", "sublime"]
 			},
 			extraKeys: {
 				type: 'object',

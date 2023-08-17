@@ -66,6 +66,8 @@ data Action
   | StreamSet Text Term
   | StreamOnce Term
   | StreamSetTempo Tempo Term
+  | Config Text Text
+  | ResetConfig
   | Def Def
   | Type Term
   | Show Term

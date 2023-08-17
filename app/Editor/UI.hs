@@ -21,20 +21,26 @@ module Editor.UI where
 import Control.Monad  (void)
 
 import Sound.Tidal.Context hiding ((#))-- (Stream, sPMapMV, Pattern, queryArc, Arc(..))
+import Sound.Tidal.Config as Conf
 
 import Control.Concurrent (threadDelay)
-import Control.Concurrent.MVar  (modifyMVar_)
+import Control.Concurrent.MVar  (MVar, modifyMVar_)
 
 import Data.IORef (IORef, readIORef, modifyIORef)
 import Data.Map as Map  (empty)
+import Data.Text (Text, unpack, pack)
 
 import Foreign.JavaScript (JSObject)
 
 import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core as C hiding (text, value, get)
 
-hush :: Stream -> IO ()
-hush str  = modifyMVar_ (sPMapMV str) (\_ -> return Map.empty)
+import qualified Zwirn.Interactive.Types as Z (Text (..))
+
+hush :: Stream -> (MVar (Pattern Z.Text)) -> IO ()
+hush str hyd = do
+  modifyMVar_ (sPMapMV str) (\_ -> return Map.empty)
+  modifyMVar_ hyd (const $ pure $ pure $ Z.Text $ pack "solid().out()")
 
 getOutputEl :: UI Element
 getOutputEl = do
@@ -134,3 +140,39 @@ flashError cm lineStart lineEnd = do
                            liftIO $ threadDelay 100000
                            unHighlight mark
                            flushCallBuffer
+
+-- setting, getting and clearing the config
+
+setConfig :: Window -> Text -> Text -> IO ()
+setConfig win key v = runUI win $ runFunction $ ffi ("window.electronAPI.putInStore(%1," ++ (unpack v) ++ ")") (unpack key)
+
+clearConfig :: Window -> IO ()
+clearConfig win = runUI win $ runFunction $ ffi "window.electronAPI.clearStore()"
+
+--setupStream dport = liftIO $ startTidal (superdirtTarget {oLatency = 0.1, oAddress = "127.0.0.1", oPort = dport}) (defaultConfig {cVerbose = True, cFrameTimespan = 1/20})
+
+configureTarget :: UI Target
+configureTarget = do
+              dirtport <- callFunction $ ffi "fullSettings.tidal.dirtport"
+              latency <- callFunction $ ffi "fullSettings.tidal.latency"
+              return $ superdirtTarget {oLatency = latency, oAddress = "127.0.0.1", oPort = dirtport}
+
+configureStream :: UI Conf.Config
+configureStream = do
+  frameTimespan <- callFunction $ ffi "fullSettings.tidal.frameTimespan"
+  processAhead <- callFunction $ ffi "fullSettings.tidal.processAhead"
+  link  <- callFunction $ ffi "fullSettings.tidal.link"
+  let linkB = case link of
+                  "false" -> False
+                  _ -> True
+  skipTicks  <- callFunction $ ffi "fullSettings.tidal.skipTicks"
+  quantum <- callFunction $ ffi "fullSettings.tidal.quantum"
+  beatsPerCycle <- callFunction $ ffi "fullSettings.tidal.beatsPerCycle"
+  return $ Conf.defaultConfig { cVerbose = False
+                         , cFrameTimespan = frameTimespan
+                         , cEnableLink = linkB
+                         , cProcessAhead = processAhead
+                         , cSkipTicks = read skipTicks
+                         , cQuantum = read quantum
+                         , cBeatsPerCycle = read beatsPerCycle
+                         }

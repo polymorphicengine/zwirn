@@ -54,51 +54,53 @@ import Zwirn.Language.Block
 
 %token
   -- Identifiers
-  identifier { L.RangedToken (L.Identifier _) _ }
+  identifier      { L.RangedToken (L.Identifier _) _ }
   -- Operators
-  operator   { L.RangedToken (L.Operator _) _ }
-  specop     { L.RangedToken (L.SpecialOp _) _ }
+  operator        { L.RangedToken (L.Operator _) _ }
+  specop          { L.RangedToken (L.SpecialOp _) _ }
   -- Constants
-  string     { L.RangedToken (L.String _) _ }
-  number     { L.RangedToken (L.Number _) _ }
-  line       { L.RangedToken (L.LineT _) _ }
-  bsep       { L.RangedToken (L.BlockSep) _ }
-  '~'        { L.RangedToken L.Rest _ }
+  string          { L.RangedToken (L.String _) _ }
+  number          { L.RangedToken (L.Number _) _ }
+  line            { L.RangedToken (L.LineT _) _ }
+  bsep            { L.RangedToken (L.BlockSep) _ }
+  '~'             { L.RangedToken L.Rest _ }
   -- Repeat
-  '!'        { L.RangedToken L.Repeat _ }
+  '!'             { L.RangedToken L.Repeat _ }
   -- Elongation
-  '@'        { L.RangedToken L.Elongate _ }
+  '@'             { L.RangedToken L.Elongate _ }
   -- Parenthesis
-  '('        { L.RangedToken L.LPar _ }
-  ')'        { L.RangedToken L.RPar _ }
+  '('             { L.RangedToken L.LPar _ }
+  ')'             { L.RangedToken L.RPar _ }
   -- Sequences
-  '['        { L.RangedToken L.LBrack _ }
-  ']'        { L.RangedToken L.RBrack _ }
+  '['             { L.RangedToken L.LBrack _ }
+  ']'             { L.RangedToken L.RBrack _ }
   -- Stacks
-  ','        { L.RangedToken L.Comma _ }
+  ','             { L.RangedToken L.Comma _ }
   -- Alternations
-  '<'        { L.RangedToken L.LAngle _ }
-  '>'        { L.RangedToken L.RAngle _ }
+  '<'             { L.RangedToken L.LAngle _ }
+  '>'             { L.RangedToken L.RAngle _ }
   -- Choice
-  '|'        { L.RangedToken L.Pipe _ }
+  '|'             { L.RangedToken L.Pipe _ }
   -- Polyrhythm
-  '%'        { L.RangedToken L.Poly _ }
+  '%'             { L.RangedToken L.Poly _ }
   -- Euclid
-  '{'        { L.RangedToken L.LBraces _ }
-  '}'        { L.RangedToken L.RBraces _ }
+  '{'             { L.RangedToken L.LBraces _ }
+  '}'             { L.RangedToken L.RBraces _ }
   -- Lambda
-  '\\'       { L.RangedToken L.Lambda _ }
-  '->'       { L.RangedToken L.Arrow _ }
+  '\\'            { L.RangedToken L.Lambda _ }
+  '->'            { L.RangedToken L.Arrow _ }
   -- Actions
-  ';'        { L.RangedToken L.Colon _ }
-  '<-'       { L.RangedToken L.StreamA _ }
-  ':cps'     { L.RangedToken L.TempoCps _ }
-  ':bpm'     { L.RangedToken L.TempoBpm _ }
-  ':t'       { L.RangedToken L.TypeA _ }
-  ':show'    { L.RangedToken L.ShowA _ }
-  '='        { L.RangedToken L.Assign _ }
-  ':load'    { L.RangedToken (L.LoadA _ ) _}
-  ':js'      { L.RangedToken L.JSA _ }
+  ';'             { L.RangedToken L.Colon _ }
+  '<-'            { L.RangedToken L.StreamA _ }
+  ':cps'          { L.RangedToken L.TempoCps _ }
+  ':bpm'          { L.RangedToken L.TempoBpm _ }
+  ':t'            { L.RangedToken L.TypeA _ }
+  ':show'         { L.RangedToken L.ShowA _ }
+  ':config'       { L.RangedToken L.ConfigA _ }
+  ':resetconfig'  { L.RangedToken L.ResetConfigA _ }
+  '='             { L.RangedToken L.Assign _ }
+  ':load'         { L.RangedToken (L.LoadA _ ) _}
+  ':js'           { L.RangedToken L.JSA _ }
   -- Type Tokens
   '::'       { L.RangedToken L.DoubleColon _ }
   typefam    { L.RangedToken L.PTypeFam _ }
@@ -219,20 +221,24 @@ defs :: { [Def] }
   : sepBy(def, ';')        {$1}
 
 action :: { Action }
-  : string     '<-' term   { Stream (unTok $1) $3 }
-  | number     '<-' term   { Stream (unTok $1) $3 }
-  | identifier '<-' term   { StreamSet (unTok $1) $3 }
-  | ':cps' term            { StreamSetTempo CPS $2 }
-  | ':bpm' term            { StreamSetTempo BPM $2 }
-  | '!' term               { StreamOnce $2 }
-  | def                    { Def $1 }
-  | ':t' term              { Type $2 }
-  | ':show' term           { Show $2 }
-  | ':load'                { Load $ unTok $1 }
-  | ':js' term             { JS $2 }
+  : string     '<-' term              { Stream (unTok $1) $3 }
+  | number     '<-' term              { Stream (unTok $1) $3 }
+  | identifier '<-' term              { StreamSet (unTok $1) $3 }
+  | ':cps' term                       { StreamSetTempo CPS $2 }
+  | ':bpm' term                       { StreamSetTempo BPM $2 }
+  | '!' term                          { StreamOnce $2 }
+  | ':config' identifier string       { Config (unTok $2) (unTok $3) }
+  | ':config' identifier identifier   { Config (unTok $2) (unTok $3) }
+  | ':config' identifier number       { Config (unTok $2) (unTok $3) }
+  | ':resetconfig'                    { ResetConfig }
+  | def                               { Def $1 }
+  | ':t' term                         { Type $2 }
+  | ':show' term                      { Show $2 }
+  | ':load'                           { Load $ unTok $1 }
+  | ':js' term                        { JS $2 }
 
 actions :: { [Action] }
-  : sepBy(action, ';')           {$1}
+  : sepBy(action, ';')                {$1}
 
 -- parsing blocks of text
 

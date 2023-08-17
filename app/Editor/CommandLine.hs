@@ -21,9 +21,7 @@ module Editor.CommandLine where
 import Options.Applicative
 import Zwirn.Language.Hint
 
-data Config = Config {listenPort :: Int
-                     ,dirtPort :: Int
-                     ,tpPort :: Int
+data Config = Config {tpPort :: Int
                      ,hintMode :: HintMode
                      } deriving (Eq,Show)
 
@@ -35,28 +33,8 @@ conf = info (configParser <**> helper)
   <> header "zwirn" )
 
 configParser :: Parser Config
-configParser = Config <$> listenPortParser
-                      <*> dirtPortParser
-                      <*> tpPortParser
+configParser = Config <$> tpPortParser
                       <*> noGhcParser
-
-listenPortParser :: Parser Int
-listenPortParser = option auto
-                      ( long "listenport"
-                     <> short 'l'
-                     <> help "Specify the listening port"
-                     <> showDefault
-                     <> value 6011
-                     <> metavar "INT" )
-
-dirtPortParser :: Parser Int
-dirtPortParser = option auto
-                     ( long "dirtport"
-                    <> short 'd'
-                    <> help "Specify the dirt port"
-                    <> showDefault
-                    <> value 57120
-                    <> metavar "INT")
 
 tpPortParser :: Parser Int
 tpPortParser = option auto

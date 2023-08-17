@@ -44,27 +44,30 @@ import Zwirn.Language.Default
 import Zwirn.Interactive.Types (Text (..))
 
 
-setup :: Int -> HintMode -> Window -> UI ()
-setup dport mode win = void $ do
+setup :: HintMode -> Window -> UI ()
+setup mode win = void $ do
 
      editor <- frontend win
      setupEditors editor
 
      catchJSErrors
 
-     str <- setupStream dport
+     str <- setupStream
 
      setupHighlighter str
      hyd <- setupHydra str
      (mMV, rMV) <- setupHint mode
 
-     createHaskellFunction "hush" (hush str)
+     createHaskellFunction "hush" (hush str hyd)
      setupBackend str hyd mode mMV rMV
      addFileInputAndSettings
      makeEditor "editor0"
 
-setupStream :: Int -> UI Stream
-setupStream dport = liftIO $ startTidal (superdirtTarget {oLatency = 0.1, oAddress = "127.0.0.1", oPort = dport}) (defaultConfig {cVerbose = True, cFrameTimespan = 1/20})
+setupStream :: UI Stream
+setupStream  = do
+  target <- configureTarget
+  conf <- configureStream
+  liftIO $ startTidal target conf
 
 setupHighlighter :: Stream -> UI ()
 setupHighlighter str = do
@@ -94,7 +97,7 @@ setupBackend :: Stream -> MVar (Pattern Text) -> HintMode -> MVar InterpreterMes
 setupBackend str hyd mode mMV rMV = do
 
        win <- askWindow
-       envMV <- liftIO $ newMVar (Environment str (Just $ hyd) defaultTypeEnv (HintEnv mode mMV rMV) Nothing)
+       envMV <- liftIO $ newMVar (Environment str (Just $ hyd) defaultTypeEnv (HintEnv mode mMV rMV) (Just $ ConfigEnv (setConfig win) (clearConfig win)) Nothing)
 
        createHaskellFunction "evalBlockAtCursor" (\cm -> (runUI win $ evalContentAtCursor EvalBlock cm envMV))
        createHaskellFunction "evalLineAtCursor" (\cm -> (runUI win $ evalContentAtCursor EvalLine cm envMV))

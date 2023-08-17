@@ -38,4 +38,4 @@ main = do
           jsStatic = Just $ execPath ++ "static",
           jsCustomHTML     = Just "tidal.html",
           jsPort = Just (tpPort config)
-        } $ setup (dirtPort config) (hintMode config)
+        } $ setup (hintMode config)

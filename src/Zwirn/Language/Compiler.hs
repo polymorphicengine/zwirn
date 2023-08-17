@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings, TypeApplications #-}
 module Zwirn.Language.Compiler
     ( HintEnv (..)
+    , ConfigEnv (..)
     , Environment (..)
     , CIError (..)
     , CurrentBlock (..)
@@ -51,7 +52,7 @@ import Control.Exception (try, SomeException)
 import Sound.Tidal.Context (ControlPattern, Stream, streamReplace, streamSet, streamOnce, cps)
 import Sound.Tidal.ID (ID(..))
 
-import Data.Text (Text, unpack)
+import Data.Text (Text, unpack, uncons, unsnoc)
 import Data.Text.IO (readFile)
 
 import Data.List (sortOn)
@@ -71,6 +72,10 @@ data HintEnv
             , hR :: MVar InterpreterResponse
             }
 
+data ConfigEnv
+  = ConfigEnv { cSetConfig :: Text -> Text -> IO ()
+              , cResetConfig :: IO ()
+              }
 
 
 data Environment
@@ -78,6 +83,7 @@ data Environment
                 , jsMV :: Maybe (MVar TextPattern)
                 , typeEnv :: TypeEnv
                 , hintEnv :: HintEnv
+                , confEnv :: Maybe ConfigEnv
                 , currBlock :: Maybe CurrentBlock
                 }
 
@@ -360,6 +366,32 @@ jsAction ctx t = do
                       Nothing -> throw $ "No JavaScript Interpreter available"
                   _ -> throw $ "Type Error: can only accept text"
 
+resetConfigAction :: CI String
+resetConfigAction = do
+  (Environment {confEnv = mayEnv}) <- get
+  case mayEnv of
+    Nothing -> throw $ "reset config not available"
+    Just (ConfigEnv _ reset) -> liftIO $ reset >> return "configuration reset to default! please restart for it to have an effect!"
+
+setConfigAction :: Text -> Text -> CI String
+setConfigAction key v = do
+  (Environment {confEnv = mayEnv}) <- get
+  case mayEnv of
+    Nothing -> throw $ "set config not available"
+    Just (ConfigEnv setC _) -> case elem key tidalKeys of
+                                     False -> case elem key editorKeys of
+                                                   False -> throw $ "unknown configuration key!"
+                                                   True -> liftIO $ setC ("editor." <> key) v >> return "configuration set! please restart for it to have an effect!"
+                                     True -> liftIO $ setC ("tidal." <> key) v >> return "configuration set! please restart for it to have an effect!"
+  where tidalKeys = ["dirtport", "latency", "frameTimespan", "processAhead", "link", "skipTicks", "quantum", "beatsPerCycle"]
+        editorKeys = ["lineNumbers", "keyMap", "matchBrackets", "autoCloseBrackets"]
+        unquote t =  case uncons t of
+                       Just (_, x) -> case unsnoc x of
+                                         Just (y, _) -> y
+                                         Nothing -> " "
+                       Nothing -> " "
+        newKey = unquote key
+        newV = unquote v
 
 runAction :: Bool -> Action -> CI String
 runAction b (Stream i t) = streamAction b i t >> return ""
@@ -371,6 +403,8 @@ runAction b (Def d) = defAction b d >> return ""
 runAction _ (Type t) = typeAction t
 runAction _ (Load p) = loadAction p >> return ""
 runAction b (JS t) = jsAction b t >> return ""
+runAction _ (Config k v) = setConfigAction k v
+runAction _ ResetConfig = resetConfigAction
 
 runActions :: Bool -> [Action] -> CI String
 runActions b as = fmap last $ sequence $ map (runAction b) as
