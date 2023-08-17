@@ -8,6 +8,7 @@ module Zwirn.Language.Compiler
     , compilerInterpreterBlock
     , compilerInterpreterLine
     , compilerInterpreterWhole
+    , compilerInterpreterBoot
     , runCI
     ) where
 
@@ -52,7 +53,7 @@ import Control.Exception (try, SomeException)
 import Sound.Tidal.Context (ControlPattern, Stream, streamReplace, streamSet, streamOnce, cps)
 import Sound.Tidal.ID (ID(..))
 
-import Data.Text (Text, unpack, uncons, unsnoc)
+import Data.Text (Text, unpack)
 import Data.Text.IO (readFile)
 
 import Data.List (sortOn)
@@ -128,6 +129,13 @@ compilerInterpreterWhole editor input = do
                       rs <- sequence $ map (runActions True) ass
                       e <- get
                       return (last rs, e, start, end)
+
+compilerInterpreterBoot :: [Text] -> CI Environment
+compilerInterpreterBoot ps = do
+                        _ <- runActions False (map Load ps)
+                        e <- get
+                        return e
+
 
 -----------------------------------------------------
 ----------------- Throwing Errors -------------------
@@ -380,18 +388,14 @@ setConfigAction key v = do
     Nothing -> throw $ "set config not available"
     Just (ConfigEnv setC _) -> case elem key tidalKeys of
                                      False -> case elem key editorKeys of
-                                                   False -> throw $ "unknown configuration key!"
+                                                   False -> case elem key otherKeys of
+                                                     False -> throw $ "unknown configuration key!"
+                                                     True -> liftIO $ setC key v >> return "configuration set! please restart for it to have an effect!"
                                                    True -> liftIO $ setC ("editor." <> key) v >> return "configuration set! please restart for it to have an effect!"
                                      True -> liftIO $ setC ("tidal." <> key) v >> return "configuration set! please restart for it to have an effect!"
   where tidalKeys = ["dirtport", "latency", "frameTimespan", "processAhead", "link", "skipTicks", "quantum", "beatsPerCycle"]
         editorKeys = ["lineNumbers", "keyMap", "matchBrackets", "autoCloseBrackets"]
-        unquote t =  case uncons t of
-                       Just (_, x) -> case unsnoc x of
-                                         Just (y, _) -> y
-                                         Nothing -> " "
-                       Nothing -> " "
-        newKey = unquote key
-        newV = unquote v
+        otherKeys = ["bootPath"]
 
 runAction :: Bool -> Action -> CI String
 runAction b (Stream i t) = streamAction b i t >> return ""

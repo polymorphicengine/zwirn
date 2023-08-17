@@ -30,6 +30,8 @@ import Data.IORef (IORef, readIORef, modifyIORef)
 import Data.Map as Map  (empty)
 import Data.Text (Text, unpack, pack)
 
+import System.Directory (listDirectory, doesDirectoryExist, doesFileExist)
+
 import Foreign.JavaScript (JSObject)
 
 import qualified Graphics.UI.Threepenny as UI
@@ -149,8 +151,6 @@ setConfig win key v = runUI win $ runFunction $ ffi ("window.electronAPI.putInSt
 clearConfig :: Window -> IO ()
 clearConfig win = runUI win $ runFunction $ ffi "window.electronAPI.clearStore()"
 
---setupStream dport = liftIO $ startTidal (superdirtTarget {oLatency = 0.1, oAddress = "127.0.0.1", oPort = dport}) (defaultConfig {cVerbose = True, cFrameTimespan = 1/20})
-
 configureTarget :: UI Target
 configureTarget = do
               dirtport <- callFunction $ ffi "fullSettings.tidal.dirtport"
@@ -176,3 +176,15 @@ configureStream = do
                          , cQuantum = read quantum
                          , cBeatsPerCycle = read beatsPerCycle
                          }
+
+getBootPaths :: UI (Maybe [Text])
+getBootPaths = do
+        p <- callFunction $ ffi "fullSettings.bootPath"
+        b <- liftIO $ doesDirectoryExist p
+        case b of
+          False -> do
+            bb <- liftIO $ doesFileExist p
+            case bb of
+               False -> (getOutputEl # set UI.text (show p)) >> return Nothing
+               True -> return $ Just [pack p]
+          True -> fmap (\xs -> Just $ map (\x -> pack $ p ++ "/" ++ x) xs) $ liftIO $ listDirectory $ p

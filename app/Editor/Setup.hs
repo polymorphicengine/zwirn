@@ -29,6 +29,7 @@ import Control.Concurrent.MVar  (MVar, newEmptyMVar, newMVar)
 import Data.IORef (newIORef)
 
 import Graphics.UI.Threepenny.Core as C hiding (text, defaultConfig)
+import qualified Graphics.UI.Threepenny.Core as C
 
 
 import Editor.Backend
@@ -97,7 +98,11 @@ setupBackend :: Stream -> MVar (Pattern Text) -> HintMode -> MVar InterpreterMes
 setupBackend str hyd mode mMV rMV = do
 
        win <- askWindow
-       envMV <- liftIO $ newMVar (Environment str (Just $ hyd) defaultTypeEnv (HintEnv mode mMV rMV) (Just $ ConfigEnv (setConfig win) (clearConfig win)) Nothing)
+       let env = Environment str (Just $ hyd) defaultTypeEnv (HintEnv mode mMV rMV) (Just $ ConfigEnv (setConfig win) (clearConfig win)) Nothing
+
+       env' <- loadBootDefs env
+
+       envMV <- liftIO $ newMVar env'
 
        createHaskellFunction "evalBlockAtCursor" (\cm -> (runUI win $ evalContentAtCursor EvalBlock cm envMV))
        createHaskellFunction "evalLineAtCursor" (\cm -> (runUI win $ evalContentAtCursor EvalLine cm envMV))
@@ -106,6 +111,16 @@ setupBackend str hyd mode mMV rMV = do
        createHaskellFunction "evalBlockAtLine" (\cm l ->  (runUI win $ evalContentAtLine EvalBlock cm l envMV))
        createHaskellFunction "evalLineAtLine" (\cm l -> (runUI win $ evalContentAtLine EvalLine cm l envMV))
 
+loadBootDefs :: Environment -> UI Environment
+loadBootDefs env = do
+  mps <- getBootPaths
+  case mps of
+    Just ps -> do
+      x <- liftIO $ runCI env $ compilerInterpreterBoot ps
+      case x of
+        Left (CIError err _ ) -> (getOutputEl # set C.text err) >> return env
+        Right env' -> return env'
+    Nothing -> return env
 
 setupEditors :: Element -> UI ()
 setupEditors mainEditor = do

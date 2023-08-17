@@ -34,7 +34,8 @@ exports.defaults = {
 			"Shift-Ctrl-D" : "duplicateLine",
 			"Shift-Ctrl-H" : "hideAll"
 		}
-	}
+	},
+	bootPath: ""
 };
 
 exports.schema = {
@@ -173,5 +174,8 @@ exports.schema = {
 				}
 			}
 		}
+	},
+	bootPath: {
+		type: 'string'
 	}
 };
