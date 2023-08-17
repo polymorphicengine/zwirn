@@ -52,8 +52,10 @@ $alphasmall = [a-z]
 $alpha = [a-zA-Z]
 
 @id = ($alphasmall) ($alpha | $digit | \_ )*
-@op = (( "|" | "+" | "&" | "=" | "~" | "$" | "?" | "." | "-" | "#" | "^" ) ( "<" | ">" | "*" | "/" | "%" )?)+
+@singles = ("+" | "&" | "$" | "?" | "-" | "#" | "." | "^")
+@otherops = ("|" | "=" | "~" | "<" | ">" | "%")
 @specialop = ("*" | "/" | "'")
+@op = ((@singles (@singles | @otherops | @specialop)*) | ((@otherops | @specialop) (@singles | @otherops | @specialop)*))
 @num = ("-")? ($digit)+ ("." ($digit)+)?
 
 tokens :-
@@ -78,6 +80,7 @@ tokens :-
 <ty> $alpha+ " " [a-z]             { tokText (\t -> TypeClass (Text.take (Text.length t - 2) t) (Text.pack [Text.last t])) }
 <ty> @id                           { tokText Identifier }
 <ty> @op                           { tokText Operator }
+<ty> @specialop                    { tokText SpecialOp }
 
 -- Multi Line Comments
 

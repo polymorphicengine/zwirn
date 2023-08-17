@@ -280,6 +280,7 @@ scheme :: { Scheme }
 typeDecl :: { (Text,Scheme) }
   : identifier '::' scheme                          {(unTok $1, $3)}
   | '(' operator ')' '::' scheme                    {(unTok $2, $5)}
+  | '(' specop ')' '::' scheme                      {(unTok $2, $5)}
 
 typeDecls :: { [(Text,Scheme)] }
   : some(typeDecl)                                  {map (\(x,y) -> (x, filterPatClass y)) $1}
