@@ -37,6 +37,7 @@
     "@electron/remote": "^2.0.8",
     "electron": "^21.1.1",
     "electron-squirrel-startup": "^1.0.0",
+    "electron-store": "^8.1.0",
     "freeport": "^1.0.5",
     "rpmbuild": "^0.0.23",
     "wait-on": "^3.3.0"

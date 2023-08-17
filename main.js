@@ -1,9 +1,14 @@
-const {app, BrowserWindow, globalShortcut} = require('electron');
+const {app, BrowserWindow, globalShortcut, ipcMain} = require('electron');
 const freeport = require('freeport');
 const spawn    = require('child_process').spawn;
 const path     = require('path');
 const waitOn   = require('wait-on');
 const { initialize, enable } = require("@electron/remote/main");
+const Store = require('electron-store');
+const { defaults, schema } = require('./config.js')
+
+const store = new Store({defaults,schema});
+
 
 initialize();
 
@@ -11,6 +16,14 @@ initialize();
 const timeout = 10000;
 // Relative path to the Threepenny binary.
 const relBin = './dist-newstyle/build/x86_64-linux/ghc-9.4.2/zwirn-0.1.0.0/x/zwirn-interpreter/build/zwirn-interpreter/zwirn-interpreter'; //binary/zwirn
+
+function handleStoreSet (event, key, value) {
+  store.set(key,value)
+}
+
+function handleClearStore (event) {
+  store.clear()
+}
 
 // Assign a random port to run on.
 freeport((err, port) => {
@@ -35,6 +48,9 @@ freeport((err, port) => {
     child.on('close', code =>
       console.log(`Threepenny app exited with code ${code}`));
 
+    ipcMain.on('store', handleStoreSet);
+    ipcMain.on('clear-store', handleClearStore);
+
     // Wait until the Threepenny server is ready for connections.
     waitOn({ resources: [url], timeout }, (err_) => {
       if (err_) throw err_;
@@ -54,15 +70,23 @@ freeport((err, port) => {
           maximizable: true,
           resizable: true,
           title: 'zwirn',
-          webPreferences: {nodeIntegration: true, contextIsolation: false,
-  nativeWindowOpen: true, enableRemoteModule: true}
+          webPreferences: { nodeIntegration: true
+                          , contextIsolation: false
+                          , nativeWindowOpen: true
+                          , enableRemoteModule: true
+                          , preload: path.join(__dirname, 'preload.js')
+                          }
       });
 
       enable(win.webContents);
 
-      win.removeMenu();
+      //win.removeMenu();
       console.log(`Loading URL: ${url}`);
-      win.loadURL(url);
+      win.loadURL(url)
+
+			win.webContents.on('did-finish-load', () => {
+         win.webContents.executeJavaScript("fullSettings = " + JSON.stringify(store.store));
+      });
 
       //Emitted when the window is closed.
       win.on('closed', () => {

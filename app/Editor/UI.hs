@@ -75,7 +75,7 @@ catchJSErrors :: UI ()
 catchJSErrors = runFunction $ ffi "window.onerror = function(msg, url, linenumber) { alert(msg);return true;}"
 
 makeEditor :: String -> UI ()
-makeEditor i = runFunction $ ffi $ i ++ "cm = CodeMirror.fromTextArea(document.getElementById('" ++ i ++ "'), editorSettings);"
+makeEditor i = runFunction $ ffi $ i ++ "cm = CodeMirror.fromTextArea(document.getElementById('" ++ i ++ "'), fullSettings.editor);"
 
 addEditor :: IORef [Element]  -> UI ()
 addEditor ref = do
