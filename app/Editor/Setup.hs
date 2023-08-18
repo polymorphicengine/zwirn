@@ -24,7 +24,7 @@ import Control.Monad  (void)
 import Sound.Tidal.Context hiding (mute,solo,(#),s)
 
 import Control.Concurrent (forkIO)
-import Control.Concurrent.MVar  (MVar, newEmptyMVar, newMVar)
+import Control.Concurrent.MVar  (MVar, newEmptyMVar, newMVar, takeMVar, putMVar)
 
 import Data.IORef (newIORef)
 
@@ -60,9 +60,10 @@ setup mode win = void $ do
      (mMV, rMV) <- setupHint mode
 
      createHaskellFunction "hush" (hush str hyd)
-     setupBackend str hyd mode mMV rMV
+     envMV <- setupBackend str hyd mode mMV rMV
      addFileInputAndSettings
      makeEditor "editor0"
+     loadBootDefs envMV
 
 setupStream :: UI Stream
 setupStream  = do
@@ -94,15 +95,13 @@ setupHint mode = do
       void $ liftIO $ forkIO $ hintJob mode mMV rMV
       return (mMV, rMV)
 
-setupBackend :: Stream -> MVar (Pattern Text) -> HintMode -> MVar InterpreterMessage -> MVar InterpreterResponse -> UI ()
+setupBackend :: Stream -> MVar (Pattern Text) -> HintMode -> MVar InterpreterMessage -> MVar InterpreterResponse -> UI (MVar Environment)
 setupBackend str hyd mode mMV rMV = do
 
        win <- askWindow
        let env = Environment str (Just $ hyd) defaultTypeEnv (HintEnv mode mMV rMV) (Just $ ConfigEnv (setConfig win) (clearConfig win)) Nothing
 
-       env' <- loadBootDefs env
-
-       envMV <- liftIO $ newMVar env'
+       envMV <- liftIO $ newMVar env
 
        createHaskellFunction "evalBlockAtCursor" (\cm -> (runUI win $ evalContentAtCursor EvalBlock cm envMV))
        createHaskellFunction "evalLineAtCursor" (\cm -> (runUI win $ evalContentAtCursor EvalLine cm envMV))
@@ -110,17 +109,23 @@ setupBackend str hyd mode mMV rMV = do
 
        createHaskellFunction "evalBlockAtLine" (\cm l ->  (runUI win $ evalContentAtLine EvalBlock cm l envMV))
        createHaskellFunction "evalLineAtLine" (\cm l -> (runUI win $ evalContentAtLine EvalLine cm l envMV))
+       return envMV
 
-loadBootDefs :: Environment -> UI Environment
-loadBootDefs env = do
+loadBootDefs :: MVar Environment -> UI ()
+loadBootDefs envMV = do
+  env <- liftIO $ takeMVar envMV
   mps <- getBootPaths
   case mps of
     Just ps -> do
       x <- liftIO $ runCI env $ compilerInterpreterBoot ps
       case x of
-        Left (CIError err _ ) -> (getOutputEl # set C.text err) >> return env
-        Right env' -> return env'
-    Nothing -> return env
+        Left (CIError err _ ) -> do
+          _ <- (getOutputEl # set C.text err)
+          liftIO $ putMVar envMV env
+        Right env' -> do
+          _ <- (getOutputEl # set C.text "successfully loaded boot file(s)!")
+          liftIO $ putMVar envMV env'
+    Nothing -> liftIO $ putMVar envMV env
 
 setupEditors :: Element -> UI ()
 setupEditors mainEditor = do
