@@ -160,7 +160,7 @@ lambda :: { Term }
   : '\\' some(identifier) '->' term %shift { TLambda (map unTok $2) $4 }
 
 polyrhythm :: { Term }
-  : simple '%' term     %shift  { TPoly $1 $3 }
+  : simple '%' simple   %shift  { TPoly $1 $3 }
 
 elongate :: { Term }
   : simple '@' number           { TElong $1 (Just $ read $ Text.unpack $ unTok $3) }
