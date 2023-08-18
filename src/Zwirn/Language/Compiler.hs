@@ -50,13 +50,14 @@ import Control.Monad.Except
 import Control.Concurrent.MVar (MVar, putMVar, takeMVar, modifyMVar_)
 import Control.Exception (try, SomeException)
 
-import Sound.Tidal.Context (ControlPattern, Stream, streamReplace, streamSet, streamOnce, cps)
+import Sound.Tidal.Context (ControlPattern, Stream, streamReplace, streamSet, streamOnce, cps, (#), orbit)
 import Sound.Tidal.ID (ID(..))
 
 import Data.Text (Text, unpack)
 import Data.Text.IO (readFile)
 
 import Data.List (sortOn)
+import Text.Read (readMaybe)
 
 import Prelude hiding (readFile)
 
@@ -296,18 +297,14 @@ streamAction ctx idd t = do
               s <- runSimplify t
               rot <- runRotate s
               ty <- runTypeCheck rot
-              case ty of
-                  (Forall [] (Qual [] (TypeCon "ValueMap"))) -> do
-                        gen <- runGenerator ctx rot
-                        cp <- interpret AsVM gen
-                        (Environment {tStream = str}) <- get
-                        liftIO $ streamReplace str (ID (unpack idd)) cp
-                  (Forall _ (Qual [] (TypeVar _))) -> do
-                        gen <- runGenerator ctx rot
-                        cp <- interpret AsVM gen
-                        (Environment {tStream = str}) <- get
-                        liftIO $ streamReplace str (ID (unpack idd)) cp
-                  _ -> throw $ "Type Error: can only stream value maps"
+              case isVM ty of
+                  True -> do
+                      gen <- runGenerator ctx rot
+                      cp <- interpret AsVM gen
+                      (Environment {tStream = str}) <- get
+                      cp' <- resolveOrbits (unpack idd) cp
+                      liftIO $ streamReplace str (ID (unpack idd)) cp'
+                  False -> throw $ "Type Error: can only stream value maps"
 
 streamSetAction :: Bool -> Text -> Term -> CI ()
 streamSetAction ctx idd t = do
@@ -426,3 +423,19 @@ runAction _ ResetConfig = resetConfigAction
 
 runActions :: Bool -> [Action] -> CI String
 runActions b as = fmap last $ sequence $ map (runAction b) as
+
+-----------------------------------------------------
+-------------------- Utilities ----------------------
+-----------------------------------------------------
+
+
+
+resolveOrbits :: String -> ControlPattern -> CI ControlPattern
+resolveOrbits t cp = case ((readMaybe t) :: Maybe Int) of
+                              Just o -> return $ cp # orbit (pure $ o-1)
+                              Nothing -> return cp
+
+isVM :: Scheme -> Bool
+isVM (Forall _ (Qual _ (TypeCon "ValueMap"))) = True
+isVM (Forall _ (Qual [] (TypeVar _))) = True
+isVM _ = False
