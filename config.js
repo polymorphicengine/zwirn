@@ -19,7 +19,7 @@ exports.defaults = {
 		extraKeys: {
 	  	"Ctrl-." : "hush",
 			"Ctrl-Enter" : "evalBlockAtCursor",
-			"Shift-Enter" : "evalBlockAtLine",
+			"Shift-Enter" : "evalLineAtCursor",
       "Shift-Ctrl-Enter" : "evalWhole",
 			"Ctrl-S" : "saveFile",
 			"Ctrl-O" : "loadFile",
@@ -117,7 +117,7 @@ exports.schema = {
 					},
 					"Shift-Enter" : {
             type: 'string',
-						default: "evalBlockAtLine"
+						default: "evalLineAtCursor"
 					},
 					"Shift-Ctrl-Enter" : {
             type: 'string',
