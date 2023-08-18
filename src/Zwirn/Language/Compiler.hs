@@ -126,7 +126,8 @@ compilerInterpreterWhole editor input = do
                           (Block _ end _) = last sorted
                       liftIO $ putStrLn $ show sorted
                       setCurrentBlock start end
-                      ass <- sequence $ map ((runParserWithPos start editor) . bContent) sorted
+                      let parseBlock (Block s _ c) = runParserWithPos s editor c
+                      ass <- sequence $ map parseBlock sorted
                       rs <- sequence $ map (runActions True) ass
                       e <- get
                       return (last rs, e, start, end)
