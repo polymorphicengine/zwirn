@@ -302,6 +302,11 @@ streamAction ctx idd t = do
                         cp <- interpret AsVM gen
                         (Environment {tStream = str}) <- get
                         liftIO $ streamReplace str (ID (unpack idd)) cp
+                  (Forall _ (Qual [] (TypeVar _))) -> do
+                        gen <- runGenerator ctx rot
+                        cp <- interpret AsVM gen
+                        (Environment {tStream = str}) <- get
+                        liftIO $ streamReplace str (ID (unpack idd)) cp
                   _ -> throw $ "Type Error: can only stream value maps"
 
 streamSetAction :: Bool -> Text -> Term -> CI ()
@@ -323,6 +328,11 @@ streamSetAction ctx idd t = do
                         tp <- interpret @TextPattern AsText gen
                         liftIO $ streamSet str (unpack idd) tp
                   (Forall [] (Qual [] (TypeCon "ValueMap"))) -> do
+                        modify (\env -> env{typeEnv = extend (typeEnv env) (idd, ty)})
+                        interpret @() AsDef $ "let " ++ unpack idd ++ "= _cX' _emptyVM _valToVM " ++ ("\"" ++ unpack idd ++ "\"")
+                        tp <- interpret @ControlPattern AsVM gen
+                        liftIO $ streamSet str (unpack idd) tp
+                  (Forall _ (Qual [] (TypeVar _))) -> do
                         modify (\env -> env{typeEnv = extend (typeEnv env) (idd, ty)})
                         interpret @() AsDef $ "let " ++ unpack idd ++ "= _cX' _emptyVM _valToVM " ++ ("\"" ++ unpack idd ++ "\"")
                         tp <- interpret @ControlPattern AsVM gen
@@ -362,9 +372,15 @@ jsAction ctx t = do
               s <- runSimplify t
               rot <- runRotate s
               ty <- runTypeCheck rot
+              gen <- runGenerator ctx rot
               case ty of
                   (Forall [] (Qual [] (TypeCon "Text"))) -> do
-                    gen <- runGenerator ctx rot
+                    p <- interpret @TextPattern AsText gen
+                    (Environment {jsMV = maybemv}) <- get
+                    case maybemv of
+                      Just mv -> liftIO $ modifyMVar_ mv (const $ pure p)
+                      Nothing -> throw $ "No JavaScript Interpreter available"
+                  (Forall _ (Qual [] (TypeVar _))) -> do
                     p <- interpret @TextPattern AsText gen
                     (Environment {jsMV = maybemv}) <- get
                     case maybemv of
