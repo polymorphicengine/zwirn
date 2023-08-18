@@ -237,8 +237,13 @@ action :: { Action }
   | ':load'                           { Load $ unTok $1 }
   | ':js' term                        { JS $2 }
 
+actionsrecrev :: { [Action] }
+  : actionsrecrev ';' action           {$3:$1}
+  | action                             {[$1]}
+
 actions :: { [Action] }
-  : sepBy(action, ';')                {$1}
+  : actionsrecrev ';'                     {reverse $1}
+  | actionsrecrev                         {reverse $1}
 
 -- parsing blocks of text
 
