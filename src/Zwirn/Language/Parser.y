@@ -244,6 +244,7 @@ actionsrecrev :: { [Action] }
 actions :: { [Action] }
   : actionsrecrev ';'                     {reverse $1}
   | actionsrecrev                         {reverse $1}
+  |                                       {[]}
 
 -- parsing blocks of text
 
