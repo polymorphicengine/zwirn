@@ -310,24 +310,22 @@ streamSetAction ctx idd t = do
               rot <- runRotate s
               ty <- runTypeCheck rot
               gen <- runGenerator ctx rot
+              (Environment {tStream = str}) <- get
               case ty of
                   (Forall [] (Qual [] (TypeCon "Number"))) -> do
                         modify (\env -> env{typeEnv = extend (typeEnv env) (idd, ty)})
-                        interpret @() AsDef $ "let " ++ unpack idd ++ "= T._cX (Num 0) _valToNum " ++ ("\"" ++ unpack idd ++ "\"")
+                        interpret @() AsDef $ "let " ++ unpack idd ++ "= _cX' (Num 0) _valToNum " ++ ("\"" ++ unpack idd ++ "\"")
                         np <- interpret @NumberPattern AsNum gen
-                        (Environment {tStream = str}) <- get
                         liftIO $ streamSet str (unpack idd) np
                   (Forall [] (Qual [] (TypeCon "Text"))) -> do
                         modify (\env -> env{typeEnv = extend (typeEnv env) (idd, ty)})
-                        interpret @() AsDef $ "let " ++ unpack idd ++ "= T._cX (Text \"\") _valToText " ++ ("\"" ++ unpack idd ++ "\"")
+                        interpret @() AsDef $ "let " ++ unpack idd ++ "= _cX' (Text \"\") _valToText " ++ ("\"" ++ unpack idd ++ "\"")
                         tp <- interpret @TextPattern AsText gen
-                        (Environment {tStream = str}) <- get
                         liftIO $ streamSet str (unpack idd) tp
                   (Forall [] (Qual [] (TypeCon "ValueMap"))) -> do
                         modify (\env -> env{typeEnv = extend (typeEnv env) (idd, ty)})
-                        interpret @() AsDef $ "let " ++ unpack idd ++ "= T._cX _emptyVM _valToVM " ++ ("\"" ++ unpack idd ++ "\"")
+                        interpret @() AsDef $ "let " ++ unpack idd ++ "= _cX' _emptyVM _valToVM " ++ ("\"" ++ unpack idd ++ "\"")
                         tp <- interpret @ControlPattern AsVM gen
-                        (Environment {tStream = str}) <- get
                         liftIO $ streamSet str (unpack idd) tp
                   _ -> throw $ "Type Error: can only set basic patterns"
 
