@@ -47,8 +47,7 @@ data TypeError
   | Ambigious [Constraint]
   | UnificationMismatch [Type] [Type]
   | NoInstance Predicate
-  deriving (Show, Eq)
-
+  deriving Eq
 
 type Constraint = (Type, Type)
 

@@ -1,5 +1,6 @@
 {-# Language FlexibleInstances #-}
 {-# Language TypeSynonymInstances #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
 module Zwirn.Language.Pretty
     ( ppterm
     , ppscheme
@@ -26,9 +27,11 @@ module Zwirn.Language.Pretty
 
 import Zwirn.Language.Syntax
 import Zwirn.Language.TypeCheck.Types
+import Zwirn.Language.TypeCheck.Constraint
 
 import Prelude hiding ((<>))
 import Data.Text (unpack)
+import Data.List (intercalate)
 import Text.PrettyPrint
 
 parensIf ::  Bool -> Doc -> Doc
@@ -86,6 +89,9 @@ instance Pretty Term where
 instance Pretty (Term, Scheme) where
   ppr p (t,s) = ppr p t <+> text "::" <+> ppr p s
 
+pptype :: Type -> String
+pptype = render . ppr 0
+
 ppscheme :: Scheme -> String
 ppscheme = render . ppr 0
 
@@ -94,3 +100,15 @@ ppterm = render . ppr 0
 
 ppTermHasType :: (Term, Scheme) -> String
 ppTermHasType = render . ppr 0
+
+instance Show TypeError where
+  show (UnificationFail a b) =
+    concat ["Cannot unify types: \n\t", pptype a, " ~ ", pptype b]
+  show (UnificationMismatch as bs) =
+    concat ["Cannot unify types: \n\t", intercalate "," $ map pptype as, " ~ ", intercalate "," $ map pptype bs]
+  show (InfiniteType a b) =
+    concat ["Cannot construct the infinite type: ", unpack a, " = ", pptype b]
+  show (Ambigious cs) =
+    concat ["Cannot not match expected type: '" ++ pptype a ++ "' with actual type: '" ++ pptype b ++ "'\n" | (a,b) <- cs]
+  show (UnboundVariable a) = "Not in scope: " ++ unpack a
+  show (NoInstance (IsIn c x)) = "No instance for " ++ unpack c ++ " " ++ pptype x
