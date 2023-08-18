@@ -1,6 +1,7 @@
 {-# LANGUAGE TypeFamilies, FlexibleInstances #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ExtendedDefaultRules #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
 module Zwirn.Interactive.Types where
 
 {-

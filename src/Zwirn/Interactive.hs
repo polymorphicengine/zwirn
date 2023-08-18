@@ -24,8 +24,8 @@ import Zwirn.Interactive.Convert
 import Zwirn.Interactive.HydraT
 import Zwirn.Interactive.TidalT
 
-import qualified Prelude as P
-import qualified Sound.Tidal.Context as T
+import qualified Prelude as P ()
+import qualified Sound.Tidal.Context as T ()
 
 {-
     Interactive.hs - re-exports of all modules that have to be
