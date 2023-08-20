@@ -145,10 +145,10 @@ atom :: { Term }
   | '~'        { TRest }
 
 sequence :: { Term }
-  : some(simpleSeq) %shift { TSeq $1 }
+  : some(simpleinfix) %shift { TSeq $1 }
 
 sequence2 :: { Term }
-  : some(simpleSeq) %shift { TSeq $1 }
+  : some(simpleinfix) %shift { TSeq $1 }
 
 stack :: { [Term] }
   : sepBy(sequence, ',')   { $1 }
@@ -173,10 +173,10 @@ repeat :: { Term }
 fullSequence :: { Term }
   : '[' stack ']'            { TStack $2 }
   | '[' choice ']'           { % L.increaseChoice >>= \x -> return $ TChoice x $2 }
-  | '[' some(simpleSeq) ']'     { TSeq $2 }
+  | '[' some(simpleinfix) ']'     { TSeq $2 }
 
 alternation :: { Term }
-  : '<' some(simpleSeq) '>' { TAlt $2 }
+  : '<' some(simpleinfix) '>' { TAlt $2 }
 
 euclid :: { Term }
   : simple '{' term ',' term '}'           { TEuclid  $1 $3 $5 Nothing }
@@ -191,23 +191,26 @@ simple :: { Term }
   | elongate                       {$1}
   | repeat                         {$1}
   | euclid                         {$1}
-  | specialinfix                   {$1}
   | '(' term ')'                   { TBracket $2 }
 
+-- special operators are left-associative
 specialinfix :: { Term }
-  : simple specop simple    %shift { TInfix  $1 (unTok $2) $3 }
+  : specialinfix specop simple    %shift { TInfix  $1 (unTok $2) $3 }
+  | simple                        %shift {$1}
 
+-- all other operators are assumed to be right-associative, AST rotation will fix it
+-- this definition is for use inside of sequences
 simpleinfix :: { Term }
-  : simple operator simple  %shift { TInfix  $1 (unTok $2) $3 }
+  : specialinfix operator simpleinfix  %shift { TInfix  $1 (unTok $2) $3 }
+  | specialinfix                       %shift {$1}
 
-simpleSeq :: { Term }
-  : simpleinfix             %shift {$1}
-  | simple                  %shift {$1}
-
+-- application is left-associative, binds stronger than operators
+-- outside of sequences
 app :: { Term }
-  : app simple              %shift { TApp $1 $2 }
-  | simple                  %shift {$1}
+  : app specialinfix              %shift { TApp $1 $2 }
+  | specialinfix                  %shift {$1}
 
+-- operators outside of sequences have the weakest binding 
 term :: { Term }
   : app operator term       %shift { TInfix  $1 (unTok $2) $3 }
   | app                     %shift {$1}
