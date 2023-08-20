@@ -289,7 +289,8 @@ loadAction path = do
         Left _ -> throw "file note found"
         Right input -> do
           blocks <- runBlocks 0 input
-          ass <- sequence $ map (runParser . bContent) blocks
+          let sorted = sortOn (\(Block x _ _ ) -> x) blocks
+          ass <- sequence $ map (runParser . bContent) sorted
           _ <- sequence $ map (runActions False) ass
           return ()
 

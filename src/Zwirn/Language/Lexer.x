@@ -1,5 +1,6 @@
 {
 {-# LANGUAGE OverloadedStrings #-}
+{-# OPTIONS_GHC -Wno-name-shadowing #-}
 module Zwirn.Language.Lexer
   ( -- * Invoking Alex
     Alex
@@ -57,6 +58,7 @@ $alpha = [a-zA-Z]
 @specialop = ("*" | "/" | "'")
 @op = ((@singles (@singles | @otherops | @specialop)*) | ((@otherops | @specialop) (@singles | @otherops | @specialop)+))
 @num = ("-")? ($digit)+ ("." ($digit)+)?
+@path = $white ($alpha | "/" | ".")+
 
 tokens :-
 
@@ -136,7 +138,7 @@ tokens :-
 <0> ":show"                           { tok ShowA }
 <0> ":config"                         { tok ConfigA }
 <0> ":resetconfig"                    { tok ResetConfigA }
-<0> (":load") $white+ ($alpha | "/")+ { tokText (\t -> LoadA $ Text.drop 5 t) }
+<0> (":load") @path                   { tokText (\t -> LoadA $ Text.drop 6 t) }
 <0> ":js"                             { tok JSA }
 
 -- Identifiers
