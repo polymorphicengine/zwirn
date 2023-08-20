@@ -61,7 +61,7 @@ getDisplayElV = do
          Just el -> return el
 
 getCursorLine :: ToJS a => a -> UI Int
-getCursorLine cm = callFunction $ ffi "getCursorLine(%1)" cm
+getCursorLine cm = callFunction $ ffi (wrapCatchErr "getCursorLine(%1)") cm
 
 getValue :: ToJS a => a -> UI String
 getValue cm = callFunction $ ffi "getV(%1)" cm
@@ -188,3 +188,6 @@ getBootPaths = do
                False -> (getOutputEl # set UI.text (show p)) >> return Nothing
                True -> return $ Just [pack p]
           True -> fmap (\xs -> Just $ map (\x -> pack $ p ++ "/" ++ x) xs) $ liftIO $ listDirectory $ p
+
+wrapCatchErr :: String -> String
+wrapCatchErr st = "try {" ++ st ++ "} catch (err) {}"
