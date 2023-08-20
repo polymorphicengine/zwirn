@@ -1,5 +1,7 @@
+{-# OPTIONS_GHC -Wno-unused-imports #-}
 module Zwirn.Interactive
-    ( module Zwirn.Interactive.Prelude.Core
+    ( module Zwirn.Interactive.Prelude.Chords
+    , module Zwirn.Interactive.Prelude.Core
     , module Zwirn.Interactive.Prelude.Control
     , module Zwirn.Interactive.Prelude.Hydra
     , module Zwirn.Interactive.Prelude.MiniPrelude
@@ -12,6 +14,7 @@ module Zwirn.Interactive
     , module Zwirn.Interactive.TidalT
     ) where
 
+import Zwirn.Interactive.Prelude.Chords
 import Zwirn.Interactive.Prelude.Core
 import Zwirn.Interactive.Prelude.Control
 import Zwirn.Interactive.Prelude.Hydra
@@ -24,8 +27,8 @@ import Zwirn.Interactive.Convert
 import Zwirn.Interactive.HydraT
 import Zwirn.Interactive.TidalT
 
-import qualified Prelude as P ()
-import qualified Sound.Tidal.Context as T ()
+import qualified Prelude as P
+import qualified Sound.Tidal.Context as T
 
 {-
     Interactive.hs - re-exports of all modules that have to be

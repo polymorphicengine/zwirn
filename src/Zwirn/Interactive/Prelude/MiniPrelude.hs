@@ -44,11 +44,11 @@ import Zwirn.Interactive.TidalT
 silence :: P (Pattern a)
 silence = T.silence
 
-t :: P NumberPattern
-t = _toPat $$ _toTarget (1 :: P.Int)
+true :: P NumberPattern
+true = _toPat $$ _toTarget (1 :: P.Int)
 
-f :: P NumberPattern
-f = _toPat $$ _toTarget (0 :: P.Int)
+false :: P NumberPattern
+false = _toPat $$ _toTarget (0 :: P.Int)
 
 id :: Pat a => P (Pattern a -> Pattern a)
 id = _toPat (P.id :: Pattern a -> Pattern a)
@@ -71,10 +71,6 @@ rev = _toPat T.rev
 
 -- rot :: (Pat a, P.Ord a) => P (NumberPattern -> Pattern a -> Pattern a)
 -- rot = _toPat (\x -> T.rot $$ _fromTarget x)
-
-
-scale :: P (TextPattern -> NumberPattern -> NumberPattern)
-scale = _toPat (\x n -> T.scale (_fromTarget x) (_fromTarget n))
 
 -- arithmetic
 
@@ -134,14 +130,6 @@ bd = P.pure $$ Text "bd"
 
 sn :: P TextPattern
 sn = P.pure $$ Text "sn"
-
---
-
-c :: P NumberPattern
-c = 0
-
-e :: P NumberPattern
-e = 4
 
 
 --- comparisons

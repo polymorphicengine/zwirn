@@ -20,6 +20,7 @@ module Zwirn.Interactive.TidalT where
 
 import qualified Prelude as P
 import qualified Sound.Tidal.Context as T
+import qualified Sound.Tidal.Chords as C
 import qualified Control.Monad as M
 import qualified Data.Map as Map
 import qualified Data.Text as Text
@@ -205,3 +206,46 @@ _and = T.tParam func
 _or :: Pattern Bool -> Pattern Bool -> Pattern Bool
 _or = T.tParam func
     where func i jP = P.fmap (\j -> i P.|| j) jP
+
+-- chords
+
+_toChord :: [Double] -> Pattern (Pattern Number -> Pattern Number)
+_toChord ds = P.pure $$ _toTarget (\pd -> T.stack $$ P.map (\d -> P.fmap (P.+ d) pd) ds)
+
+_lookupChord :: P.String -> [P.Double]
+_lookupChord s = case P.lookup s C.chordTable of
+                           P.Just x -> x
+                           P.Nothing -> []
+
+_chordMaker :: P.String -> Pattern (Pattern Number -> Pattern Number)
+_chordMaker s = _toChord (_lookupChord s)
+
+
+_withChordFunc :: ([a] -> [a]) -> Pattern a -> Pattern a
+_withChordFunc f p = uncol
+           where pns = _collect p            -- Pattern [a]
+                 pf = P.fmap f pns           -- Pattern [a]
+                 uncol = T.uncollect pf      -- Pattern a
+
+_invertChord :: Pattern Number -> Pattern Number
+_invertChord = _withChordFunc inv
+           where inv [] = []
+                 inv (x:xs) = xs P.++ [x P.+ 12]
+
+_expandChord :: Pattern Number -> Pattern (Pattern Number -> Pattern Number)
+_expandChord p = P.fmap (\l -> _withChordFunc (expand P.$ _fromTarget l)) p
+          where expand i ds = P.take i P.$ P.concatMap (\x -> P.map (P.+ x) ds) [0,12..]
+
+_dropChord :: Pattern Number -> Pattern (Pattern Number -> Pattern Number)
+_dropChord p = P.fmap (\l -> _withChordFunc (drop P.$ _fromTarget l)) p
+          where drop i ds = case P.length ds P.< i of
+                              P.True -> ds
+                              P.False -> (ds P.!! s P.- 12):(xs P.++ P.drop 1 ys)
+                          where (xs,ys) = P.splitAt s ds
+                                s = P.length ds P.- i
+
+_openChord :: Pattern Number -> Pattern Number
+_openChord = _withChordFunc open
+           where open ds = case P.length ds P.> 2 of
+                              P.True -> [ (ds P.!! 0 P.- 12), (ds P.!! 2 P.- 12), (ds P.!! 1) ] P.++ P.reverse (P.take (P.length ds P.- 3) (P.reverse ds))
+                              P.False -> ds
