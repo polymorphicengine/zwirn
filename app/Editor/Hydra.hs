@@ -67,7 +67,7 @@ hydraLoop win str pM bufM = do
                                       True -> threadDelay 10000 >> hydraLoop win str pM bufM
                         (e:_) -> case value e == buf of
                                       False -> do
-                                        runUI win $ runFunction $ ffi $ wrapCatchErr $ _fromTarget $ value e
+                                        runUI win $ runFunction $ ffi $ wrapAsync $ _fromTarget $ value e
                                         modifyMVar_ bufM (const $ pure $ value e)
                                         threadDelay 10000
                                         hydraLoop win str pM bufM
@@ -75,3 +75,6 @@ hydraLoop win str pM bufM = do
 
 wrapCatchErr :: String -> String
 wrapCatchErr st = "try {" ++ st ++ "} catch (err) {}"
+
+wrapAsync :: String -> String
+wrapAsync st = "(async() => {" ++ st ++ "})().catch(err=>log(err.message,\"log-error\"))"
