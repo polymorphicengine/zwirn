@@ -410,7 +410,7 @@ setConfigAction key v = do
                                      True -> liftIO $ setC ("tidal." <> key) v >> return "configuration set! please restart for it to have an effect!"
   where tidalKeys = ["dirtport", "latency", "frameTimespan", "processAhead", "link", "skipTicks", "quantum", "beatsPerCycle"]
         editorKeys = ["lineNumbers", "keyMap", "matchBrackets", "autoCloseBrackets"]
-        otherKeys = ["bootPath"]
+        otherKeys = ["bootPath", "highlight"]
 
 runAction :: Bool -> Action -> CI String
 runAction b (Stream i t) = streamAction b i t >> return ""

@@ -35,7 +35,8 @@ exports.defaults = {
 			"Shift-Ctrl-H" : "hideAll"
 		}
 	},
-	bootPath: ""
+	bootPath: "",
+	highlight: true
 };
 
 exports.schema = {
@@ -177,5 +178,8 @@ exports.schema = {
 	},
 	bootPath: {
 		type: 'string'
+	},
+	highlight: {
+		type: 'boolean'
 	}
 };

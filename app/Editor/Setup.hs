@@ -78,6 +78,10 @@ setupHighlighter str = do
   high <- liftIO $ newMVar True
   createHaskellFunction "toggleHighlight" (runUI win $ toggleHighlight high buf)
   void $ liftIO $ forkIO $ highlightLoop win str buf
+  bool <- getHighlight
+  case bool of
+    True -> return ()
+    False -> toggleHighlight high buf
 
 setupHydra :: Stream -> UI (MVar (Pattern Text))
 setupHydra str = do

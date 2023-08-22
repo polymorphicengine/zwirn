@@ -190,5 +190,12 @@ getBootPaths = do
                True -> return $ Just [pack p]
           True -> fmap (\xs -> Just $ map (\x -> pack $ p ++ "/" ++ x) xs) $ liftIO $ listDirectory $ p
 
+getHighlight :: UI Bool
+getHighlight = do
+      h <- callFunction $ ffi "fullSettings.highlight"
+      case h of
+        "true" -> return True
+        _ -> return False
+
 wrapCatchErr :: String -> String
 wrapCatchErr st = "try {" ++ st ++ "} catch (err) {}"
