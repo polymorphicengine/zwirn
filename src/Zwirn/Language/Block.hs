@@ -40,5 +40,5 @@ getBlock num (block@(Block n1 n2 _):bs) = if n1 <= num && num <= n2
 
 getLn :: Int -> [Block] -> Either BlockError Text
 getLn i bs = do
-         (Block _ _ cont) <- getBlock i bs
-         return $ (Text.lines cont)!!i
+         (Block start _ cont) <- getBlock i bs
+         return $ (Text.lines cont)!!(i-start)
