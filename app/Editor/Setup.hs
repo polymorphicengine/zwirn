@@ -56,7 +56,7 @@ setup mode win = void $ do
      str <- setupStream
 
      setupHighlighter str
-     hyd <- setupHydra str
+     (hyd, hydBuf) <- setupHydra str
      (mMV, rMV) <- setupHint mode
 
      createHaskellFunction "hush" (hush str hyd)
@@ -64,6 +64,7 @@ setup mode win = void $ do
      addFileInputAndSettings
      makeEditor "editor0"
      loadBootDefs envMV
+     setupToggleHydra hydBuf hyd envMV
 
 setupStream :: UI Stream
 setupStream  = do
@@ -83,14 +84,22 @@ setupHighlighter str = do
     True -> return ()
     False -> toggleHighlight high buf
 
-setupHydra :: Stream -> UI (MVar (Pattern Text))
+setupHydra :: Stream -> UI ((MVar (Pattern Text)), MVar Text)
 setupHydra str = do
   startHydra
   win <- askWindow
   hydBuf <- liftIO $ newMVar (Text "")
   hyd <- liftIO $ newMVar (pure $ Text "solid().out()")
   void $ liftIO $ forkIO $ hydraLoop win str hyd hydBuf
-  return hyd
+  return (hyd, hydBuf)
+
+setupToggleHydra :: MVar Text -> MVar (Pattern Text) -> MVar Environment -> UI ()
+setupToggleHydra hydBuf hydMV envMV = do
+  toggle <- liftIO $ newMVar True
+  bool <- getHydra
+  case bool of
+    True -> return ()
+    False -> toggleHydra toggle envMV hydBuf hydMV
 
 setupHint :: HintMode -> UI (MVar InterpreterMessage, MVar InterpreterResponse)
 setupHint mode = do

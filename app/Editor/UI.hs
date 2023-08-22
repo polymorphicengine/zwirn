@@ -197,5 +197,12 @@ getHighlight = do
         "true" -> return True
         _ -> return False
 
+getHydra :: UI Bool
+getHydra = do
+      h <- callFunction $ ffi "fullSettings.hydra"
+      case h of
+        "true" -> return True
+        _ -> return False
+
 wrapCatchErr :: String -> String
 wrapCatchErr st = "try {" ++ st ++ "} catch (err) {}"

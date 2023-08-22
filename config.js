@@ -36,7 +36,8 @@ exports.defaults = {
 		}
 	},
 	bootPath: "",
-	highlight: true
+	highlight: true,
+	hydra: true
 };
 
 exports.schema = {
@@ -180,6 +181,9 @@ exports.schema = {
 		type: 'string'
 	},
 	highlight: {
+		type: 'boolean'
+	},
+	hydra: {
 		type: 'boolean'
 	}
 };

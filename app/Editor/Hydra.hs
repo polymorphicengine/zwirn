@@ -19,18 +19,22 @@ module Editor.Hydra where
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 -}
 
-import Control.Concurrent.MVar  (modifyMVar_, MVar, readMVar)
+import Control.Concurrent.MVar  (modifyMVar_, MVar, readMVar, takeMVar, putMVar)
 import Control.Concurrent (threadDelay)
 
 import System.FilePath  (dropFileName)
 import System.Environment (getExecutablePath)
 
-import Sound.Tidal.Context hiding ((#))-- (Stream, sPMapMV, Pattern, queryArc, Arc(..))
+import Sound.Tidal.Context hiding ((#), empty)-- (Stream, sPMapMV, Pattern, queryArc, Arc(..))
 
 import Zwirn.Interactive.Types (Text (..))
 import Zwirn.Interactive.Convert (_fromTarget)
 
-import Graphics.UI.Threepenny.Core as C hiding (text, value)
+import Zwirn.Language.Compiler (Environment (..))
+
+import Data.Text (empty)
+
+import Graphics.UI.Threepenny.Core as C hiding (text, value, empty)
 
 import Editor.Highlight (streamGetnow')
 
@@ -78,3 +82,25 @@ wrapCatchErr st = "try {" ++ st ++ "} catch (err) {}"
 
 wrapAsync :: String -> String
 wrapAsync st = "(async() => {" ++ st ++ "})().catch(err=>log(err.message,\"log-error\"))"
+
+-- toggle hydra
+
+hydraOff :: MVar Text -> UI ()
+hydraOff buffMV = do
+              _ <- liftIO $ takeMVar buffMV
+              runFunction $ ffi $ "solid().out()"
+
+hydraOn :: MVar Text -> IO ()
+hydraOn buffMV = putMVar buffMV (Text empty)
+
+toggleHydra :: MVar Bool -> MVar Environment -> MVar Text -> MVar (Pattern Text) -> UI ()
+toggleHydra boolMV envMV buffMV hydMV = do
+                    bool <- liftIO $ takeMVar boolMV
+                    case bool of
+                      True -> do
+                        hydraOff buffMV
+                        liftIO $ modifyMVar_ envMV (\e -> return $ e {jsMV = Nothing})
+                      False -> do
+                        liftIO $ hydraOn buffMV
+                        liftIO $ modifyMVar_ envMV (\e -> return $ e {jsMV = Just hydMV})
+                    liftIO $ putMVar boolMV (not bool)
