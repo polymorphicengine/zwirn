@@ -48,7 +48,7 @@ function saveFile(cm){
     var textToSaveAsURL = window.URL.createObjectURL(textToSaveAsBlob);
 
     var downloadLink = document.createElement("a");
-    downloadLink.download = 'untitled.tidal';
+    downloadLink.download = 'untitled.zwirn';
     downloadLink.innerHTML = "Download File";
     downloadLink.href = textToSaveAsURL;
     downloadLink.onclick = destroyClickedElement;
