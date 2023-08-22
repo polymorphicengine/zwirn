@@ -66,51 +66,46 @@ tick = _toPat (P.flip _apply)
 (++) :: P (TextPattern -> TextPattern -> TextPattern)
 (++) = _toPat $$ _lift2 (_toTarget ((P.++) :: P.String -> P.String -> P.String))
 
-rev :: Pat a => P (Pattern a -> Pattern a)
-rev = _toPat T.rev
-
--- rot :: (Pat a, P.Ord a) => P (NumberPattern -> Pattern a -> Pattern a)
--- rot = _toPat (\x -> T.rot $$ _fromTarget x)
 
 -- arithmetic
 
 (+) :: (Pat a, P.Num a) => P (Pattern a -> Pattern a -> Pattern a)
-(+) = _toPat (_lift2 (P.+))
+(+) = _toPat ((P.+) :: P.Num a => Pattern a -> Pattern a -> Pattern a)
 
 (+|) :: (Pat a, P.Num a) => P (Pattern a -> Pattern a -> Pattern a)
-(+|) = _right (+)
+(+|) = _toPat ((T.+|) :: P.Num a => Pattern a -> Pattern a -> Pattern a)
 
 (|+) :: (Pat a, P.Num a) => P (Pattern a -> Pattern a -> Pattern a)
-(|+) = _left (+)
+(|+) = _toPat ((T.|+) :: P.Num a => Pattern a -> Pattern a -> Pattern a)
 
 
 (-) :: (Pat a, P.Num a) => P (Pattern a -> Pattern a -> Pattern a)
-(-) = _toPat (_lift2 (P.-))
+(-) = _toPat ((P.-) :: P.Num a => Pattern a -> Pattern a -> Pattern a)
 
 (-|) :: (Pat a, P.Num a) => P (Pattern a -> Pattern a -> Pattern a)
-(-|) = _right (-)
+(-|) = _toPat ((T.-|) :: P.Num a => Pattern a -> Pattern a -> Pattern a)
 
 (|-) :: (Pat a, P.Num a) => P (Pattern a -> Pattern a -> Pattern a)
-(|-) = _left (-)
+(|-) = _toPat ((T.|-) :: P.Num a => Pattern a -> Pattern a -> Pattern a)
 
 
 (|*|) :: (Pat a, P.Num a) => P (Pattern a -> Pattern a -> Pattern a)
-(|*|) = _toPat (_lift2 (P.*))
+(|*|) = _toPat ((T.|*|) :: P.Num a => Pattern a -> Pattern a -> Pattern a)
 
 (*|) :: (Pat a, P.Num a) => P (Pattern a -> Pattern a -> Pattern a)
-(*|) = _right (|*|)
+(*|) = _toPat ((T.*|) :: P.Num a => Pattern a -> Pattern a -> Pattern a)
 
 (|*) :: (Pat a, P.Num a) => P (Pattern a -> Pattern a -> Pattern a)
-(|*) = _left (|*|)
+(|*) = _toPat ((T.|*) :: P.Num a => Pattern a -> Pattern a -> Pattern a)
 
 (//) ::(Pat a, P.Fractional a) => P (Pattern a -> Pattern a -> Pattern a)
-(//) = _toPat (_lift2 (P./))
+(//) = _toPat ((P./) :: P.Fractional a => Pattern a -> Pattern a -> Pattern a)
 
 (/|) :: (Pat a, P.Fractional a) => P (Pattern a -> Pattern a -> Pattern a)
-(/|) = _right (//)
+(/|) = _toPat ((T./|) :: P.Fractional a => Pattern a -> Pattern a -> Pattern a)
 
 (|/) :: (Pat a, P.Fractional a) => P (Pattern a -> Pattern a -> Pattern a)
-(|/) = _left (//)
+(|/) = _toPat ((T.|/) :: P.Fractional a => Pattern a -> Pattern a -> Pattern a)
 
 round :: P (NumberPattern -> NumberPattern)
 round = _toPat $$ _toTarget (_lift (P.round :: Double -> Int))
@@ -150,6 +145,15 @@ sn = P.pure $$ Text "sn"
 (||) = _toPat $$ _toTarget _or
 
 -- list stuff
+
+head :: Pat a => P (Pattern a -> Pattern a)
+head = _toPat $$ _transformStackSafe P.head
+
+at :: Pat a => P (NumberPattern -> Pattern a -> Pattern a)
+at = _toPat $$ (\x -> _at (_fromTarget x))
+
+over :: Pat a => P (NumberPattern -> (Pattern a -> Pattern a) -> Pattern a -> Pattern a)
+over = _toPat $$ (\x -> _at (_fromTarget x))
 
 layer :: Pat b => P ((Pattern a -> Pattern b) -> Pattern a -> Pattern b)
 layer = _toPat _layer

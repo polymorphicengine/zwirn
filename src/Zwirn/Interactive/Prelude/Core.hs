@@ -355,3 +355,9 @@ binary = _toPat $$ _toTarget T.binary
 
 ascii :: P (TextPattern -> NumberPattern)
 ascii = _toPat $$ _toTarget T.ascii
+
+rev :: Pat a => P (Pattern a -> Pattern a)
+rev = _toPat T.rev
+
+-- rot :: (Pat a, P.Ord a) => P (NumberPattern -> Pattern a -> Pattern a)
+-- rot = _toPat (\x -> T.rot $$ _fromTarget x)

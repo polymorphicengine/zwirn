@@ -220,6 +220,19 @@ _lookupChord s = case P.lookup s C.chordTable of
 _chordMaker :: P.String -> Pattern (Pattern Number -> Pattern Number)
 _chordMaker s = _toChord (_lookupChord s)
 
+_transformStack :: ([a] -> b) -> Pattern a -> Pattern b
+_transformStack f p = pf
+           where pns = _collect p
+                 pf = P.fmap f pns
+
+_transformStackSafe :: ([a] -> a) -> Pattern a -> Pattern a
+_transformStackSafe f p = T.outerJoin (P.fmap f' pns)
+          where pns = _collect p
+                f' xs = case empty xs of
+                            P.False -> P.pure (f xs)
+                            P.True -> p
+                empty [] = P.True
+                empty _ = P.False
 
 _withChordFunc :: ([a] -> [a]) -> Pattern a -> Pattern a
 _withChordFunc f p = uncol
@@ -249,3 +262,33 @@ _openChord = _withChordFunc open
            where open ds = case P.length ds P.> 2 of
                               P.True -> [ (ds P.!! 0 P.- 12), (ds P.!! 2 P.- 12), (ds P.!! 1) ] P.++ P.reverse (P.take (P.length ds P.- 3) (P.reverse ds))
                               P.False -> ds
+
+-- other list stuff
+
+_at :: Pattern Int -> Pattern a -> Pattern a
+_at = T.tParam func
+    where func i p = T.uncollect P.$ do
+                    xs <- _collect p
+                    case P.length xs P.- 1 P.< i  P.|| i P.< 0 of
+                                P.True -> P.return []
+                                P.False -> P.return [xs P.!! i]
+
+_filterAt :: Pattern Int -> Pattern a -> Pattern a
+_filterAt = T.tParam func
+    where func i p = T.uncollect P.$ do
+                    xs <- _collect p
+                    case P.length xs P.- 1 P.< i  P.|| i P.< 0 of
+                                P.True -> P.return []
+                                P.False -> P.return (fs P.++ P.drop 1 ls)
+                                        where (fs,ls) = P.splitAt i xs
+
+_over :: Pattern Int -> (Pattern a -> Pattern a) -> Pattern a -> Pattern a
+_over i f p = T.overlay (f (_at i p)) (_filterAt i p)
+
+-- control busses
+
+_recv :: (NumberPattern -> ControlPattern) -> NumberPattern -> ControlPattern
+_recv cpf busid = (T.tParam T.pI) (P.fmap (\v -> '^':((Map.keys v) P.!! 0)) P.$ cpf 0) (_fromTarget busid)
+
+_send :: NumberPattern -> NumberPattern -> ControlPattern
+_send busid pat = T.pF "" (_fromTarget pat) T.# T.pI "^" (_fromTarget busid)

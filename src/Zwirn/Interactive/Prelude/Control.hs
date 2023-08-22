@@ -25,6 +25,7 @@ import qualified Sound.Tidal.Context as T hiding (fromList)
 import Zwirn.Interactive.Types
 import Zwirn.Interactive.Transform
 import Zwirn.Interactive.Convert
+import Zwirn.Interactive.TidalT
 
 --TODO
 -- weave, weaveWith, smash, smash'
@@ -111,3 +112,9 @@ unfix = _toPat T.unfix
 
 grain :: P (NumberPattern -> NumberPattern -> ControlPattern)
 grain = _toPat $$ _toTarget T.grain
+
+recv :: P ((NumberPattern -> ControlPattern) -> NumberPattern -> ControlPattern)
+recv = _toPat _recv
+
+send :: P (NumberPattern -> NumberPattern -> ControlPattern)
+send = _toPat _send
