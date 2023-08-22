@@ -225,8 +225,8 @@ Haskell.initFFI = function () {
           eval(msg.contents);
           reply();
         } catch (err) {
-          //connection.close();
-          //throw(err);
+          connection.close();
+          throw(err);
 					Haskell.log("Error: %o", err.toString())
         }
         break;
