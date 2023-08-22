@@ -46,11 +46,11 @@ type Maybe = P.Maybe
 -- this is the only number type in the system to avoid type ambiguities
 newtype Number
    = Num Double
-  deriving (P.Show, P.Eq, P.Num, P.Enum, P.Ord, P.Fractional)
+  deriving (P.Eq, P.Num, P.Enum, P.Ord, P.Fractional)
 
 newtype Text
    = Text Text.Text
-   deriving (P.Show, P.Eq)
+   deriving (P.Eq)
 
 type TextPattern = Pattern Text
 type NumberPattern = Pattern Number
@@ -69,6 +69,11 @@ type family P x where
  P ([Pattern a]) = Pattern [Pattern a]
  P a = Pattern a
 
+instance P.Show Text where
+  show (Text x) = Text.unpack x
+
+instance P.Show Number where
+  show (Num x) = P.show x
 
 class Show a where
   _show :: Pattern a -> TextPattern

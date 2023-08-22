@@ -47,16 +47,16 @@ import Zwirn.Interactive.Convert (_fromTarget)
 
 import Control.Monad.State
 import Control.Monad.Except
-import Control.Concurrent.MVar (MVar, putMVar, takeMVar, modifyMVar_)
+import Control.Concurrent.MVar (MVar, putMVar, takeMVar, modifyMVar_, readMVar)
 import Control.Exception (try, SomeException)
 
-import Sound.Tidal.Context (ControlPattern, Stream, streamReplace, streamSet, streamOnce, cps, (#), orbit)
+import Sound.Tidal.Context (ControlPattern, Stream, State (..), ArcF (..), streamReplace, streamSet, streamOnce, cps, (#), orbit, query, sStateMV)
 import Sound.Tidal.ID (ID(..))
 
 import Data.Text (Text, unpack)
 import Data.Text.IO (readFile)
 
-import Data.List (sortOn)
+import Data.List (sortOn, intercalate)
 import Text.Read (readMaybe)
 
 import Prelude hiding (readFile)
@@ -101,12 +101,12 @@ runCI env m = runExceptT $ evalStateT m env
 compilerInterpreterBlock :: Int -> Int -> Text -> CI (String, Environment, Int, Int)
 compilerInterpreterBlock line editor input = do
                        blocks <- runBlocks 0 input
-                       (Block start end content) <- runGetBlock line blocks
-                       setCurrentBlock start end
-                       as <- runParserWithPos start editor content
+                       (Block strt end content) <- runGetBlock line blocks
+                       setCurrentBlock strt end
+                       as <- runParserWithPos strt editor content
                        r <- runActions True as
                        e <- get
-                       return (r, e, start, end)
+                       return (r, e, strt, end)
 
 compilerInterpreterLine :: Int -> Int -> Text -> CI (String, Environment, Int, Int)
 compilerInterpreterLine line editor input = do
@@ -122,15 +122,15 @@ compilerInterpreterWhole :: Int -> Text -> CI (String, Environment, Int, Int)
 compilerInterpreterWhole editor input = do
                       blocks <- runBlocks 0 input
                       let sorted = sortOn (\(Block x _ _ ) -> x) blocks
-                          (Block start _ _) = head sorted
+                          (Block strt _ _) = head sorted
                           (Block _ end _) = last sorted
                       liftIO $ putStrLn $ show sorted
-                      setCurrentBlock start end
+                      setCurrentBlock strt end
                       let parseBlock (Block s _ c) = runParserWithPos s editor c
                       ass <- sequence $ map parseBlock sorted
                       rs <- sequence $ map (runActions True) ass
                       e <- get
-                      return (last rs, e, start, end)
+                      return (last rs, e, strt, end)
 
 compilerInterpreterBoot :: [Text] -> CI Environment
 compilerInterpreterBoot ps = do
@@ -259,19 +259,21 @@ showAction t = do
           s <- runSimplify t
           rot <- runRotate s
           ty <- runTypeCheck rot
+          (Environment {tStream = str}) <- get
+          sMap <- liftIO $ readMVar (sStateMV str)
           case ty of
             (Forall [] (Qual [] (TypeCon "Number"))) -> do
                       gen <- runGenerator True rot
                       cp <- interpret @NumberPattern AsNum gen
-                      return $ show cp
+                      return $ intercalate "\n" $ map show $ query cp (State (Arc 0 1) sMap)
             (Forall [] (Qual [] (TypeCon "Text"))) -> do
                       gen <- runGenerator True rot
                       cp <- interpret @TextPattern AsText gen
-                      return $ show cp
+                      return $ intercalate "\n" $ map show $ query cp (State (Arc 0 1) sMap)
             (Forall [] (Qual [] (TypeCon "ValueMap"))) -> do
                       gen <- runGenerator True rot
                       cp <- interpret @ControlPattern AsVM gen
-                      return $ show cp
+                      return $ intercalate "\n" $ map show $ query cp (State (Arc 0 1) sMap)
             _ -> throw $ "Can't show terms of type " ++ ppscheme ty
 
 
