@@ -66,6 +66,7 @@ import Zwirn.Language.Block
   '~'             { L.RangedToken L.Rest _ }
   -- Repeat
   '!'             { L.RangedToken L.Repeat _ }
+  repnum          { L.RangedToken (L.RepeatNum _) _}
   -- Elongation
   '@'             { L.RangedToken L.Elongate _ }
   -- Parenthesis
@@ -167,8 +168,8 @@ elongate :: { Term }
   | simple '@'          %shift  { TElong $1 Nothing }
 
 repeat :: { Term }
-  : simple '!' number           { TRepeat $1 (Just $ read $ Text.unpack $ unTok $3) }
-  | simple '!'          %shift  { TRepeat $1 Nothing }
+  : simple repnum               { TRepeat $1 (Just $ read $ Text.unpack $ unTok $2) }
+  | simple '!'                  { TRepeat $1 Nothing }
 
 fullSequence :: { Term }
   : '[' stack ']'            { TStack $2 }
@@ -210,7 +211,7 @@ app :: { Term }
   : app specialinfix              %shift { TApp $1 $2 }
   | specialinfix                  %shift {$1}
 
--- operators outside of sequences have the weakest binding 
+-- operators outside of sequences have the weakest binding
 term :: { Term }
   : app operator term       %shift { TInfix  $1 (unTok $2) $3 }
   | app                     %shift {$1}
@@ -314,6 +315,7 @@ unTok (L.RangedToken  (L.SpecialOp x) _) = x
 unTok (L.RangedToken  (L.LoadA x) _) = x
 unTok (L.RangedToken  (L.LineT x) _) = x
 unTok (L.RangedToken  (L.VarToken x) _) = x
+unTok (L.RangedToken  (L.RepeatNum x) _) = x
 unTok _ = error "can't untok"
 
 mkPred :: L.RangedToken -> Predicate

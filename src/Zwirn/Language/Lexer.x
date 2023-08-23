@@ -98,7 +98,8 @@ tokens :-
 <0> "--" .* ;
 
 -- Repeat
-<0> "!"     { tok Repeat }
+<0> "!"               { tok Repeat }
+<0> "!"($digit+)      { tokText (\t -> RepeatNum $ Text.drop 1 t) }
 
 -- Elongate
 <0> "@"     { tok Elongate }
@@ -206,6 +207,7 @@ data Token
   | SpecialOp Text
   -- Repeat
   | Repeat
+  | RepeatNum Text
   -- Elongation
   | Elongate
   -- Parenthesis
@@ -265,6 +267,7 @@ instance Show Token where
  show (Operator o) = show o
  show (SpecialOp o) = show o
  show Repeat = quoted "!"
+ show (RepeatNum x) = quoted "!" ++ show x
  show Elongate = quoted "@"
  show LPar = quoted "("
  show RPar = quoted ")"
