@@ -27,7 +27,7 @@ exports.defaults = {
       "Shift-Ctrl-A" : "removeEditor",
       "Ctrl-M" : "toggleHighlight",
 			"Ctrl-/" : "toggleComment",
-			"Ctrl-+" : "increaseFontSize",
+			"Shift-Ctrl--" : "increaseFontSize",
 			"Ctrl--" : "decreaseFontSize",
 			"Ctrl-Up" : "swapLineUp",
 			"Ctrl-Down" : "swapLineDown",
