@@ -1,7 +1,10 @@
-module Main where
+{-# LANGUAGE TemplateHaskell #-}
+{-# OPTIONS_GHC -Wno-missing-signatures #-}
+module Zwirn.Interactive.Prelude.Params where
 
 {-
-    Main.hs - entry point of the editor program
+    Params.hs - automatically generate all of tidals
+    parameter functions
     Copyright (C) 2023, Martin Gius
 
     This library is free software: you can redistribute it and/or modify
@@ -18,24 +21,10 @@ module Main where
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 -}
 
-import System.FilePath  (dropFileName)
-import System.Environment (getExecutablePath)
+import qualified Prelude as P ()
+import Zwirn.Interactive.Generic (_mkNumParams, _mkStringParams, _stringParams, _numParams)
+import qualified Sound.Tidal.Context as T hiding (fromList)
 
-import Graphics.UI.Threepenny.Core as C hiding (text)
+$(_mkNumParams _numParams)
 
-import Editor.Setup
-import Editor.CommandLine
-
-import Options.Applicative (execParser)
-
-
-main :: IO ()
-main = do
-    config <- execParser conf
-    execPath <- dropFileName <$> getExecutablePath
-
-    startGUI C.defaultConfig {
-          jsStatic = Just $ execPath ++ "static",
-          jsCustomHTML     = Just "tidal.html",
-          jsPort = Just (tpPort config)
-        } $ setup (hintMode config)
+$(_mkStringParams _stringParams)

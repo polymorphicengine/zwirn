@@ -24,7 +24,7 @@ CodeMirror.defineMode("haskell", function(_config, modeConfig) {
   var digitRE = /\d/;
   var hexitRE = /[0-9A-Fa-f]/;
   var octitRE = /[0-7]/;
-  var idRE = /[a-z_A-Z0-9'\xa1-\uffff]/;
+  var idRE = /[a-z_A-Z0-9\xa1-\uffff]/;
   var symbolRE = /[-!#$%&*+.\/<=>?@\\^|~:]/;
   var specialRE = /[(),;[\]`{}]/;
   var whiteCharRE = /[ \t\v\f]/; // newlines are handled in tokenizer
@@ -44,19 +44,6 @@ CodeMirror.defineMode("haskell", function(_config, modeConfig) {
         return switchState(source, setState, ncomment(t, 1));
       }
       return null;
-    }
-
-    if (ch == '\'') {
-      if (source.eat('\\')) {
-        source.next();  // should handle other escapes here
-      }
-      else {
-        source.next();
-      }
-      if (source.eat('\'')) {
-        return "string";
-      }
-      return "string error";
     }
 
     if (ch == '"') {
@@ -194,7 +181,7 @@ CodeMirror.defineMode("haskell", function(_config, modeConfig) {
       "module", "newtype", "of", "then", "type", "where", "_");
 
     setType("keyword")(
-      "\.\.", ":", "::", "=", "\\", "<-", "->", "@", "~", "=>");
+      "\.\.", ":", "::", "=", "\\", "<-", "->", "@", "~", "=>", "\'");
 
     setType("builtin")(
       "!!", "$!", "$", "&&", "+", "++", "-", ".", "/", "/=", "<", "<*", "<=",

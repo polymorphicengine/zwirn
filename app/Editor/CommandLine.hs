@@ -1,11 +1,27 @@
 module Editor.CommandLine where
 
-import Options.Applicative
-import Editor.Hint
+{-
+    CommandLine.hs - command line interface for the editor
+    Copyright (C) 2023, Martin Gius
 
-data Config = Config {listenPort :: Int
-                     ,dirtPort :: Int
-                     ,tpPort :: Int
+    This library is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This library is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this library.  If not, see <http://www.gnu.org/licenses/>.
+-}
+
+import Options.Applicative
+import Zwirn.Language.Hint
+
+data Config = Config {tpPort :: Int
                      ,hintMode :: HintMode
                      } deriving (Eq,Show)
 
@@ -17,28 +33,8 @@ conf = info (configParser <**> helper)
   <> header "zwirn" )
 
 configParser :: Parser Config
-configParser = Config <$> listenPortParser
-                      <*> dirtPortParser
-                      <*> tpPortParser
+configParser = Config <$> tpPortParser
                       <*> noGhcParser
-
-listenPortParser :: Parser Int
-listenPortParser = option auto
-                      ( long "listenport"
-                     <> short 'l'
-                     <> help "Specify the listening port"
-                     <> showDefault
-                     <> value 6011
-                     <> metavar "INT" )
-
-dirtPortParser :: Parser Int
-dirtPortParser = option auto
-                     ( long "dirtport"
-                    <> short 'd'
-                    <> help "Specify the dirt port"
-                    <> showDefault
-                    <> value 5720
-                    <> metavar "INT")
 
 tpPortParser :: Parser Int
 tpPortParser = option auto

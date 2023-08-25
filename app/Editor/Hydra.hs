@@ -1,15 +1,40 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Editor.Hydra where
 
-import Control.Concurrent.MVar  (modifyMVar_, MVar, readMVar)
+{-
+    Hydra.hs - query patterns for javascript (hydra) code and execute it
+    Copyright (C) 2023, Martin Gius
+
+    This library is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This library is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this library.  If not, see <http://www.gnu.org/licenses/>.
+-}
+
+import Control.Concurrent.MVar  (modifyMVar_, MVar, readMVar, takeMVar, putMVar)
 import Control.Concurrent (threadDelay)
 
 import System.FilePath  (dropFileName)
 import System.Environment (getExecutablePath)
 
-import Sound.Tidal.Context hiding ((#))-- (Stream, sPMapMV, Pattern, queryArc, Arc(..))
-import Sound.Tidal.Link as Link
+import Sound.Tidal.Context hiding ((#), empty)-- (Stream, sPMapMV, Pattern, queryArc, Arc(..))
 
-import Graphics.UI.Threepenny.Core as C hiding (text, value)
+import Zwirn.Interactive.Types (Text (..))
+import Zwirn.Interactive.Convert (_fromTarget)
+
+import Zwirn.Language.Compiler (Environment (..))
+
+import Data.Text (empty)
+
+import Graphics.UI.Threepenny.Core as C hiding (text, value, empty)
 
 import Editor.Highlight (streamGetnow')
 
@@ -30,31 +55,52 @@ getWindowWidth = callFunction $ ffi "window.innerWidth"
 getWindowHeight :: UI Double
 getWindowHeight = callFunction $ ffi "window.innerHeight"
 
-hydraLoopInit :: Window -> Stream -> MVar (Pattern String) -> MVar String -> IO ()
-hydraLoopInit win str pM bufM = do
-              ss <- liftIO $ createAndCaptureAppSessionState (sLink str)
-              hydraLoop win str ss pM bufM
-
-hydraLoop :: Window -> Stream -> SessionState -> MVar (Pattern String) -> MVar String -> IO ()
-hydraLoop win str ss pM bufM = do
-          now <- streamGetnow' ss str
+hydraLoop :: Window -> Stream -> MVar (Pattern Text) -> MVar Text -> IO ()
+hydraLoop win str pM bufM = do
+          now <- streamGetnow' str
+          sMap <- readMVar (sStateMV str)
           ps <- readMVar pM
           buf <- readMVar bufM
-          case queryArc (segment 32 ps) (Arc (toRational now) (toRational now)) of
-                        [] -> case "solid().out()" == buf of
+          case query (segment 32 ps) (State (Arc (toRational now) (toRational now)) sMap) of
+                        [] -> case (Text "solid().out()") == buf of
                                       False -> do
                                         runUI win $ runFunction $ ffi $ "solid().out()"
-                                        modifyMVar_ bufM (const $ pure $ "solid().out()")
+                                        modifyMVar_ bufM (const $ pure $ Text "solid().out()")
                                         threadDelay 100000
-                                        hydraLoop win str ss pM bufM
-                                      True -> threadDelay 100000 >> hydraLoop win str ss pM bufM
+                                        hydraLoop win str pM bufM
+                                      True -> threadDelay 100000 >> hydraLoop win str pM bufM
                         (e:_) -> case value e == buf of
                                       False -> do
-                                        runUI win $ runFunction $ ffi $ wrapCatchErr $ value e
+                                        runUI win $ runFunction $ ffi $ wrapAsync $ _fromTarget $ value e
                                         modifyMVar_ bufM (const $ pure $ value e)
                                         threadDelay 100000
-                                        hydraLoop win str ss pM bufM
-                                      True -> threadDelay 100000 >> hydraLoop win str ss pM bufM
+                                        hydraLoop win str pM bufM
+                                      True -> threadDelay 100000 >> hydraLoop win str pM bufM
 
 wrapCatchErr :: String -> String
 wrapCatchErr st = "try {" ++ st ++ "} catch (err) {}"
+
+wrapAsync :: String -> String
+wrapAsync st = "(async() => {" ++ st ++ "})().catch(err=>log(err.message,\"log-error\"))"
+
+-- toggle hydra
+
+hydraOff :: MVar Text -> UI ()
+hydraOff buffMV = do
+              _ <- liftIO $ takeMVar buffMV
+              runFunction $ ffi $ "solid().out()"
+
+hydraOn :: MVar Text -> IO ()
+hydraOn buffMV = putMVar buffMV (Text empty)
+
+toggleHydra :: MVar Bool -> MVar Environment -> MVar Text -> MVar (Pattern Text) -> UI ()
+toggleHydra boolMV envMV buffMV hydMV = do
+                    bool <- liftIO $ takeMVar boolMV
+                    case bool of
+                      True -> do
+                        hydraOff buffMV
+                        liftIO $ modifyMVar_ envMV (\e -> return $ e {jsMV = Nothing})
+                      False -> do
+                        liftIO $ hydraOn buffMV
+                        liftIO $ modifyMVar_ envMV (\e -> return $ e {jsMV = Just hydMV})
+                    liftIO $ putMVar boolMV (not bool)

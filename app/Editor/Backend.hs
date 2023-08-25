@@ -1,113 +1,68 @@
 module Editor.Backend where
 
+{-
+    Backend.hs - Implements the interaction between the compiler-interpreter and the editor
+    Copyright (C) 2023, Martin Gius
+
+    This library is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This library is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this library.  If not, see <http://www.gnu.org/licenses/>.
+-}
+
 import Control.Monad  (void)
 
-import qualified Sound.Tidal.Context as T (streamReplace)
-
-import Control.Concurrent.MVar  (putMVar, takeMVar, modifyMVar_)
-import Control.Exception (try, SomeException)
+import Control.Concurrent.MVar  (MVar, putMVar, takeMVar)
 
 import Foreign.JavaScript (JSObject)
 
 import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core as C hiding (text)
 
-import Text.Megaparsec (errorBundlePretty)
-
-import Editor.Hint
-import Editor.Block
 import Editor.UI
-import Megaparsec
-import Compiler
-import Language
+import Zwirn.Language.Compiler
 
-data ActionResponse = ASucc String
-                    | AErr String
-                    deriving (Eq,Show)
+import Data.Text (pack)
 
-interpretCommands :: JSObject -> Bool -> Env -> UI ()
-interpretCommands cm lineBool env = do
+data EvalMode
+  = EvalBlock
+  | EvalLine
+  | EvalWhole
+  deriving (Eq, Show)
+
+evalContentAtCursor :: EvalMode -> JSObject -> MVar Environment -> UI ()
+evalContentAtCursor mode cm envMV = do
                 line <- getCursorLine cm
-                interpretCommandsLine cm lineBool line env
+                evalContentAtLine mode cm line envMV
 
-interpretCommandsLine :: JSObject -> Bool -> Int -> Env -> UI ()
-interpretCommandsLine cm lineBool line env = do
-    contentsControl <- liftUI $ getValue cm
-    editorNum <- liftUI $ getEditorNumber cm
-    out <- liftUI getOutputEl
-    let bs = getBlocks contentsControl
-        blockMaybe = if lineBool then getLineContent line (linesNum contentsControl) else getBlock line bs
-    case blockMaybe of
-        Nothing -> void $ liftUI $ element out # set UI.text "Failed to get Block"
-        Just (Block blockLineStart blockLineEnd block) -> case parseWithPos editorNum (blockLineStart + 1) block of
-                  Left err -> errorUI $ errorBundlePretty err
-                  Right actions ->  do
-                                asr <- liftIO $ sequence $ map (processAction env) actions
-                                case resolveActionResponse (ASucc "") asr of
-                                          AErr e -> errorUI e
-                                          ASucc e -> successUI >> outputUI e
-         where successUI = liftUI $ flashSuccess cm blockLineStart blockLineEnd
-               errorUI err = (liftUI $ flashError cm blockLineStart blockLineEnd) >> (void $ liftUI $ element out # set UI.text err)
-               outputUI o = void $ liftUI $ element out # set UI.text o
-
-processAction :: Env -> Action -> IO ActionResponse
-processAction env (Exec idd t) = do
-                        putMVar (hintM env) $ MMini (compile $ simplify t)
-                        res <- liftIO $ takeMVar (hintR env)
-                        case res of
-                          RMini m -> T.streamReplace (streamE env) idd m >> return (ASucc "")
-                          RError e -> return $ AErr e
-                          _ -> return $ AErr "Unkown error!"
-processAction env (Show t) = do
-                        putMVar (hintM env) $ MMini (compile $ simplify t)
-                        res <- liftIO $ takeMVar (hintR env)
-                        case res of
-                          RMini m -> return (ASucc $ show m)
-                          RError e -> return $ AErr e
-                          _ -> return $ AErr "Unkown error!"
-processAction env (Def t) = do
-                        putMVar (hintM env) $ MDef (compileDef $ simplifyDef t)
-                        res <- liftIO $ takeMVar (hintR env)
-                        case res of
-                          RSucc -> return (ASucc "")
-                          RError e -> return $ AErr e
-                          _ -> return $ AErr "Unkown error!"
-processAction env (Type t) = do
-                        putMVar (hintM env) $ MType (compile $ simplify t)
-                        res <- liftIO $ takeMVar (hintR env)
-                        case res of
-                          RType typ -> return (ASucc typ)
-                          RError e -> return $ AErr e
-                          _ -> return $ AErr "Unkown error!"
-processAction env (Hydra t) = do
-                        putMVar (hintM env) $ MHydra (compile $ simplify t)
-                        res <- liftIO $ takeMVar (hintR env)
-                        case res of
-                          RHydra p -> modifyMVar_ (hydraE env) (const $ pure p) >> return (ASucc "")
-                          RError e -> return $ AErr e
-                          _ -> return $ AErr "Unkown error!"
-processAction env (Load path) = do
-           mayfile <- ((try $ readFile path) :: IO (Either SomeException String))
-           case mayfile of
-             Right file -> runManyDefs (getBlocks file)
-             Left _ -> return $ AErr "Could not find the file!"
-           where runManyDefs [] = return $ ASucc "Successfully loaded file!"
-                 runManyDefs ((Block _ _ cont):ds) = do
-                                     case parseDef 1 1 cont of
-                                               Left err -> return $ AErr $ errorBundlePretty err
-                                               Right ps -> do
-                                                       res <- sequence $ map (\p -> (liftIO $ putMVar (hintM env) $ MDef (compileDefWithoutContext $ simplifyDef p)) >> (liftIO $ takeMVar (hintR env))) ps
-                                                       case checkForErrs res of
-                                                         RSucc -> runManyDefs ds
-                                                         RError e -> return $ AErr e
-                                                         _ -> return $ AErr "Unkown error!"
-                                                       where checkForErrs [] = RSucc
-                                                             checkForErrs (RSucc:xs) = checkForErrs xs
-                                                             checkForErrs ((RError e):_) = RError e
-                                                             checkForErrs _ = RError "Unknown error"
-
-
-resolveActionResponse :: ActionResponse -> [ActionResponse] -> ActionResponse
-resolveActionResponse curr [] = curr
-resolveActionResponse _ ((AErr e):_) = AErr e
-resolveActionResponse _ (a:as) = resolveActionResponse a as
+evalContentAtLine :: EvalMode -> JSObject -> Int -> MVar Environment -> UI ()
+evalContentAtLine mode cm line envMV = do
+                editorContent <- getValue cm
+                editorNum <- getEditorNumber cm
+                out <- getOutputEl
+                env <- liftIO $ takeMVar envMV
+                let ci = case mode of
+                            EvalBlock -> compilerInterpreterBlock line editorNum (pack editorContent)
+                            EvalLine -> compilerInterpreterLine line editorNum (pack editorContent)
+                            EvalWhole -> compilerInterpreterWhole editorNum (pack editorContent)
+                res <- liftIO $ runCI env ci
+                case res of
+                      Left (CIError err (Just (CurrentBlock st end))) -> do
+                                          flashError cm st end
+                                          void $ element out # set UI.text err  --TODO: get block start and end for flashing error
+                                          liftIO $ putMVar envMV env
+                      Left (CIError err Nothing) -> do
+                                          void $ element out # set UI.text err  --TODO: get block start and end for flashing error
+                                          liftIO $ putMVar envMV env
+                      Right (resp, newEnv, st, end) -> do
+                                          flashSuccess cm st end
+                                          _ <- element out # set UI.text resp
+                                          liftIO $ putMVar envMV newEnv

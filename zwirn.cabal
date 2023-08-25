@@ -1,4 +1,4 @@
-cabal-version:      >=1.10
+cabal-version:      3.0
 name:               zwirn
 
 -- The package version.
@@ -19,16 +19,48 @@ extra-doc-files:    CHANGELOG.md, README.md
 
 library
   hs-source-dirs: src
-  exposed-modules: Meta
-                   Generic
-                   Prelude.MiniPrelude
-                   Prelude.Control
-                   Prelude.Params
-                   Prelude.Hydra
+  exposed-modules: Zwirn.Interactive.Prelude.Chords
+                   Zwirn.Interactive.Prelude.Core
+                   Zwirn.Interactive.Prelude.Control
+                   Zwirn.Interactive.Prelude.Hydra
+                   Zwirn.Interactive.Prelude.MiniPrelude
+                   Zwirn.Interactive.Prelude.Params
+                   Zwirn.Interactive.Generic
+                   Zwirn.Interactive.Transform
+                   Zwirn.Interactive.Convert
+                   Zwirn.Interactive.Prelude
+                   Zwirn.Interactive.Types
+                   Zwirn.Interactive.HydraT
+                   Zwirn.Interactive.TidalT
+                   Zwirn.Interactive
+                   Zwirn.Language.TypeCheck.Types
+                   Zwirn.Language.TypeCheck.Env
+                   Zwirn.Language.TypeCheck.Constraint
+                   Zwirn.Language.TypeCheck.Infer
+                   Zwirn.Language.Syntax
+                   Zwirn.Language.Generator
+                   Zwirn.Language.Lexer
+                   Zwirn.Language.Parser
+                   Zwirn.Language.Compiler
+                   Zwirn.Language.Rotate
+                   Zwirn.Language.Simple
+                   Zwirn.Language.Pretty
+                   Zwirn.Language.Block
+                   Zwirn.Language.Hint
+                   Zwirn.Language.Default
+                   Zwirn.Language
   build-depends: base,
+                 array,
+                 text,
+                 pretty,
+                 mtl,
+                 hint,
+                 exceptions,
+                 filepath,
                  containers,
                  template-haskell,
                  tidal == 1.9.2
+  build-tool-depends: alex:alex, happy:happy
   default-language: Haskell2010
   ghc-options: -threaded
                -Wall
@@ -36,30 +68,23 @@ library
 executable zwirn-interpreter
     main-is:          Main.hs
     other-modules:    Editor.Backend
-                      Editor.Block
                       Editor.Frontend
-                      Editor.Hint
                       Editor.Setup
                       Editor.UI
                       Editor.Highlight
                       Editor.Hydra
                       Editor.CommandLine
-                      Language
-                      Compiler
-                      Megaparsec
     build-depends:    base,
-                      megaparsec,
-                      parser-combinators,
-                      mtl,
+                      text,
                       containers,
                       tidal == 1.9.2,
                       tidal-link,
                       deepseq,
                       zwirn,
-                      hint,
                       threepenny-gui,
                       exceptions,
                       filepath,
+                      directory,
                       optparse-applicative
     hs-source-dirs:   app
     default-language: Haskell2010
@@ -68,3 +93,12 @@ executable zwirn-interpreter
     ld-options: -Wl,-rpath -Wl,$ORIGIN/c-libs
     if os(darwin)
        ld-options: -mmacosx-version-min=10.9
+
+executable generate-default
+   main-is:          Main.hs
+   build-depends:    base,
+                     zwirn,
+                     text,
+                     process
+   hs-source-dirs:   gen
+   default-language: Haskell2010

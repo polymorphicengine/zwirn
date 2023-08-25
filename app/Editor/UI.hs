@@ -1,31 +1,49 @@
+{-# OPTIONS_GHC -Wno-missing-signatures #-}
 module Editor.UI where
+
+{-
+    UI.hs - miscellanious functions for the user interface
+    Copyright (C) 2023, Martin Gius
+
+    This library is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This library is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this library.  If not, see <http://www.gnu.org/licenses/>.
+-}
 
 import Control.Monad  (void)
 
 import Sound.Tidal.Context hiding ((#))-- (Stream, sPMapMV, Pattern, queryArc, Arc(..))
+import Sound.Tidal.Config as Conf
 
 import Control.Concurrent (threadDelay)
-import Control.Concurrent.MVar  (modifyMVar_, MVar)
+import Control.Concurrent.MVar  (MVar, modifyMVar_)
 
 import Data.IORef (IORef, readIORef, modifyIORef)
 import Data.Map as Map  (empty)
+import Data.Text (Text, unpack, pack)
+
+import System.Directory (listDirectory, doesDirectoryExist, doesFileExist)
 
 import Foreign.JavaScript (JSObject)
 
 import qualified Graphics.UI.Threepenny as UI
-import Graphics.UI.Threepenny.Core as C hiding (text, value)
+import Graphics.UI.Threepenny.Core as C hiding (text, value, get)
 
-import Editor.Hint
+import qualified Zwirn.Interactive.Types as Z (Text (..))
 
-data Env = Env {windowE :: Window
-               ,streamE :: Stream
-               ,hintM :: MVar InterpreterMessage
-               ,hintR :: MVar InterpreterResponse
-               ,hydraE :: MVar (Pattern String)
-               }
-
-hush :: Stream -> IO ()
-hush str  = modifyMVar_ (sPMapMV str) (\_ -> return Map.empty)
+hush :: Stream -> (MVar (Pattern Z.Text)) -> IO ()
+hush str hyd = do
+  modifyMVar_ (sPMapMV str) (\_ -> return Map.empty)
+  modifyMVar_ hyd (const $ pure $ pure $ Z.Text $ pack "solid().out()")
 
 getOutputEl :: UI Element
 getOutputEl = do
@@ -44,7 +62,7 @@ getDisplayElV = do
          Just el -> return el
 
 getCursorLine :: ToJS a => a -> UI Int
-getCursorLine cm = callFunction $ (ffi "getCursorLine(%1)") cm
+getCursorLine cm = callFunction $ ffi (wrapCatchErr "getCursorLine(%1)") cm
 
 getValue :: ToJS a => a -> UI String
 getValue cm = callFunction $ ffi "getV(%1)" cm
@@ -62,8 +80,11 @@ createHaskellFunction name fn = do
 
  -- adding and removing editors
 
+catchJSErrors :: UI ()
+catchJSErrors = runFunction $ ffi "window.onerror = function(msg, url, linenumber) { alert(msg);return true;}"
+
 makeEditor :: String -> UI ()
-makeEditor i = runFunction $ ffi $ i ++ "cm = CodeMirror.fromTextArea(document.getElementById('" ++ i ++ "'), editorSettings);"
+makeEditor i = runFunction $ ffi $ i ++ "cm = CodeMirror.fromTextArea(document.getElementById('" ++ i ++ "'), fullSettings.editor);"
 
 addEditor :: IORef [Element]  -> UI ()
 addEditor ref = do
@@ -122,3 +143,66 @@ flashError cm lineStart lineEnd = do
                            liftIO $ threadDelay 100000
                            unHighlight mark
                            flushCallBuffer
+
+-- setting, getting and clearing the config
+
+setConfig :: Window -> Text -> Text -> IO ()
+setConfig win key v = runUI win $ runFunction $ ffi ("window.electronAPI.putInStore(%1," ++ (unpack v) ++ ")") (unpack key)
+
+clearConfig :: Window -> IO ()
+clearConfig win = runUI win $ runFunction $ ffi "window.electronAPI.clearStore()"
+
+configureTarget :: UI Target
+configureTarget = do
+              dirtport <- callFunction $ ffi "fullSettings.tidal.dirtport"
+              latency <- callFunction $ ffi "fullSettings.tidal.latency"
+              return $ superdirtTarget {oLatency = latency, oAddress = "127.0.0.1", oPort = dirtport}
+
+configureStream :: UI Conf.Config
+configureStream = do
+  frameTimespan <- callFunction $ ffi "fullSettings.tidal.frameTimespan"
+  processAhead <- callFunction $ ffi "fullSettings.tidal.processAhead"
+  link  <- callFunction $ ffi "fullSettings.tidal.link"
+  let linkB = case link of
+                  "false" -> False
+                  _ -> True
+  skipTicks  <- callFunction $ ffi "fullSettings.tidal.skipTicks"
+  quantum <- callFunction $ ffi "fullSettings.tidal.quantum"
+  beatsPerCycle <- callFunction $ ffi "fullSettings.tidal.beatsPerCycle"
+  return $ Conf.defaultConfig { cVerbose = False
+                         , cFrameTimespan = frameTimespan
+                         , cEnableLink = linkB
+                         , cProcessAhead = processAhead
+                         , cSkipTicks = read skipTicks
+                         , cQuantum = read quantum
+                         , cBeatsPerCycle = read beatsPerCycle
+                         }
+
+getBootPaths :: UI (Maybe [Text])
+getBootPaths = do
+        p <- callFunction $ ffi "fullSettings.bootPath"
+        b <- liftIO $ doesDirectoryExist p
+        case b of
+          False -> do
+            bb <- liftIO $ doesFileExist p
+            case bb of
+               False -> (getOutputEl # set UI.text (show p)) >> return Nothing
+               True -> return $ Just [pack p]
+          True -> fmap (\xs -> Just $ map (\x -> pack $ p ++ "/" ++ x) xs) $ liftIO $ listDirectory $ p
+
+getHighlight :: UI Bool
+getHighlight = do
+      h <- callFunction $ ffi "fullSettings.highlight"
+      case h of
+        "true" -> return True
+        _ -> return False
+
+getHydra :: UI Bool
+getHydra = do
+      h <- callFunction $ ffi "fullSettings.hydra"
+      case h of
+        "true" -> return True
+        _ -> return False
+
+wrapCatchErr :: String -> String
+wrapCatchErr st = "try {" ++ st ++ "} catch (err) {}"
