@@ -14,8 +14,6 @@ initialize();
 
  // Time to wait for Threepenny server, milliseconds
 const timeout = 10000;
-// Relative path to the Threepenny binary.
-const relBin = './dist-newstyle/build/x86_64-linux/ghc-9.4.2/zwirn-0.1.0.0/x/zwirn-interpreter/build/zwirn-interpreter/zwirn-interpreter'; //binary/zwirn
 
 function handleStoreSet (event, key, value) {
   store.set(key,value)
@@ -24,6 +22,9 @@ function handleStoreSet (event, key, value) {
 function handleClearStore (event) {
   store.clear()
 }
+
+const relBin = 'binary/zwirn'//'./dist-newstyle/build/x86_64-linux/ghc-9.4.2/zwirn-0.1.0.0/x/zwirn-interpreter/build/zwirn-interpreter/zwirn-interpreter';
+
 
 // Assign a random port to run on.
 freeport((err, port) => {
@@ -40,7 +41,7 @@ freeport((err, port) => {
   // browser windows. Some APIs can only be used after this event occurs. We
   // start the child process and wait before loading the web page.
   app.on('ready', () => {
-    child = spawn(path.join(__dirname, relBin), ['-p', port]); //child = spawn(path.join(__dirname, relBin), [8023]);
+    child = spawn(path.join(__dirname, relBin), ['-p', port, '--no-ghc']); //child = spawn(path.join(__dirname, relBin), [8023]);
     child.stdout.setEncoding('utf8');
     child.stderr.setEncoding('utf8');
     child.stdout.on('data', console.log);
