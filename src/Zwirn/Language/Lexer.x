@@ -146,7 +146,7 @@ tokens :-
 <0> @id     { tokText Identifier }
 
 -- Constants
-<0> @num            { tokText Number }
+<0> @num            { tokText NumberT }
 <0> \"[^\"]*\"      { tokText String }
 <0> "~"             { tok Rest }
 
@@ -200,7 +200,7 @@ data Token
   = Identifier Text
   -- Constants
   | String Text
-  | Number Text
+  | NumberT Text
   | Rest
   -- Operators
   | Operator Text
@@ -262,7 +262,7 @@ data Token
 instance Show Token where
  show (Identifier s) = show s
  show (String s) = show s
- show (Number d) = show d
+ show (NumberT d) = show d
  show Rest = quoted "~"
  show (Operator o) = show o
  show (SpecialOp o) = show o

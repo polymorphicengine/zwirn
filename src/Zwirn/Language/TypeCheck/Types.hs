@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, PatternSynonyms #-}
 module Zwirn.Language.TypeCheck.Types where
 
 {-
@@ -44,6 +44,18 @@ data Scheme
  deriving (Show, Eq)
 
 type Instance = Predicate
+
+pattern Number :: Scheme
+pattern Number =  (Forall [] (Qual [] (TypeCon "Number")))
+
+pattern Text :: Scheme
+pattern Text = (Forall [] (Qual [] (TypeCon "Text")))
+
+pattern ValueMap :: Scheme
+pattern ValueMap = (Forall [] (Qual [] (TypeCon "ValueMap")))
+
+pattern Var :: Text -> Scheme
+pattern Var x = (Forall [] (Qual [] (TypeVar x)))
 
 numberT :: Type
 numberT = TypeCon "Number"

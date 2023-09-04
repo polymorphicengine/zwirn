@@ -60,7 +60,7 @@ import Zwirn.Language.Block
   specop          { L.RangedToken (L.SpecialOp _) _ }
   -- Constants
   string          { L.RangedToken (L.String _) _ }
-  number          { L.RangedToken (L.Number _) _ }
+  number          { L.RangedToken (L.NumberT _) _ }
   line            { L.RangedToken (L.LineT _) _ }
   bsep            { L.RangedToken (L.BlockSep) _ }
   '~'             { L.RangedToken L.Rest _ }
@@ -308,7 +308,7 @@ lexer = (=<< L.alexMonadScan)
 
 unTok :: L.RangedToken -> Text
 unTok (L.RangedToken  (L.Identifier x) _) = x
-unTok (L.RangedToken  (L.Number x) _ ) = x
+unTok (L.RangedToken  (L.NumberT x) _ ) = x
 unTok (L.RangedToken  (L.String x) _ )= x
 unTok (L.RangedToken  (L.Operator x) _) = x
 unTok (L.RangedToken  (L.SpecialOp x) _) = x

@@ -261,17 +261,15 @@ showAction t = do
           ty <- runTypeCheck rot
           (Environment {tStream = str}) <- get
           sMap <- liftIO $ readMVar (sStateMV str)
+          gen <- runGenerator True rot
           case ty of
-            (Forall [] (Qual [] (TypeCon "Number"))) -> do
-                      gen <- runGenerator True rot
+            Number -> do
                       cp <- interpret @NumberPattern AsNum gen
                       return $ intercalate "\n" $ map show $ query cp (State (Arc 0 1) sMap)
-            (Forall [] (Qual [] (TypeCon "Text"))) -> do
-                      gen <- runGenerator True rot
+            Text -> do
                       cp <- interpret @TextPattern AsText gen
                       return $ intercalate "\n" $ map show $ query cp (State (Arc 0 1) sMap)
-            (Forall [] (Qual [] (TypeCon "ValueMap"))) -> do
-                      gen <- runGenerator True rot
+            ValueMap -> do
                       cp <- interpret @ControlPattern AsVM gen
                       return $ intercalate "\n" $ map show $ query cp (State (Arc 0 1) sMap)
             _ -> throw $ "Can't show terms of type " ++ ppscheme ty
@@ -318,22 +316,22 @@ streamSetAction ctx idd t = do
               gen <- runGenerator ctx rot
               (Environment {tStream = str}) <- get
               case ty of
-                  (Forall [] (Qual [] (TypeCon "Number"))) -> do
+                  Number -> do
                         modify (\env -> env{typeEnv = extend (typeEnv env) (idd, ty)})
                         interpret @() AsDef $ "let " ++ unpack idd ++ "= _cX' (Num 0) _valToNum " ++ ("\"" ++ unpack idd ++ "\"")
                         np <- interpret @NumberPattern AsNum gen
                         liftIO $ streamSet str (unpack idd) np
-                  (Forall [] (Qual [] (TypeCon "Text"))) -> do
+                  Text -> do
                         modify (\env -> env{typeEnv = extend (typeEnv env) (idd, ty)})
                         interpret @() AsDef $ "let " ++ unpack idd ++ "= _cX' (Text \"\") _valToText " ++ ("\"" ++ unpack idd ++ "\"")
                         tp <- interpret @TextPattern AsText gen
                         liftIO $ streamSet str (unpack idd) tp
-                  (Forall [] (Qual [] (TypeCon "ValueMap"))) -> do
+                  ValueMap -> do
                         modify (\env -> env{typeEnv = extend (typeEnv env) (idd, ty)})
                         interpret @() AsDef $ "let " ++ unpack idd ++ "= _cX' _emptyVM _valToVM " ++ ("\"" ++ unpack idd ++ "\"")
                         tp <- interpret @ControlPattern AsVM gen
                         liftIO $ streamSet str (unpack idd) tp
-                  (Forall _ (Qual [] (TypeVar _))) -> do
+                  (Var _) -> do
                         modify (\env -> env{typeEnv = extend (typeEnv env) (idd, ty)})
                         interpret @() AsDef $ "let " ++ unpack idd ++ "= _cX' _emptyVM _valToVM " ++ ("\"" ++ unpack idd ++ "\"")
                         tp <- interpret @ControlPattern AsVM gen
@@ -346,7 +344,7 @@ streamOnceAction ctx t = do
               rot <- runRotate s
               ty <- runTypeCheck rot
               case ty of
-                  (Forall [] (Qual [] (TypeCon "ValueMap"))) -> do
+                  ValueMap -> do
                         gen <- runGenerator ctx rot
                         cp <- interpret AsVM gen
                         (Environment {tStream = str}) <- get
@@ -359,7 +357,7 @@ streamSetTempoAction ctx tempo t = do
                       rot <- runRotate s
                       ty <- runTypeCheck rot
                       case ty of
-                          (Forall [] (Qual [] (TypeCon "Number"))) -> do
+                          Number -> do
                                 gen <- runGenerator ctx rot
                                 np <- interpret @NumberPattern AsNum gen
                                 (Environment {tStream = str}) <- get
@@ -375,13 +373,13 @@ jsAction ctx t = do
               ty <- runTypeCheck rot
               gen <- runGenerator ctx rot
               case ty of
-                  (Forall [] (Qual [] (TypeCon "Text"))) -> do
+                  Text -> do
                     p <- interpret @TextPattern AsText gen
                     (Environment {jsMV = maybemv}) <- get
                     case maybemv of
                       Just mv -> liftIO $ modifyMVar_ mv (const $ pure p)
                       Nothing -> throw $ "No JavaScript Interpreter available"
-                  (Forall _ (Qual [] (TypeVar _))) -> do
+                  Var _ -> do
                     p <- interpret @TextPattern AsText gen
                     (Environment {jsMV = maybemv}) <- get
                     case maybemv of
@@ -440,6 +438,6 @@ resolveOrbits t cp = case ((readMaybe t) :: Maybe Int) of
                               Nothing -> return cp
 
 isVM :: Scheme -> Bool
-isVM (Forall _ (Qual _ (TypeCon "ValueMap"))) = True
-isVM (Forall _ (Qual [] (TypeVar _))) = True
+isVM ValueMap = True
+isVM (Var _) = True
 isVM _ = False
