@@ -2,6 +2,7 @@
 module Zwirn.Language.Simple
     ( simplify
     , simplifyDef
+    , insertFixpoint
     , SimpleTerm (..)
     , SimpleDef (..)
     , Position (..)
@@ -106,3 +107,24 @@ getTotalElong :: Term -> Term
 getTotalElong (TElong t (Just i)) = getElong (t,i)
 getTotalElong (TElong t Nothing) = getElong (t,2)
 getTotalElong t = t
+
+insertFixpoint :: SimpleDef -> SimpleDef
+insertFixpoint d@(LetS x t) = case occurs x t of
+                                 True -> LetS x (SApp (SVar (Pos 0 0 0 0) "fixpoint") (SLambda x t))
+                                 False -> d
+                            where occurs v (SVar _ y) = v == y
+                                  occurs _ (SNum _ _) = False
+                                  occurs _ (SText _ _ ) = False
+                                  occurs _ SRest = False
+                                  occurs v (SElong tt _) = occurs v tt
+                                  occurs v (SSeq ts) = or $ map (occurs v) ts
+                                  occurs v (SStack ts) = or $ map (occurs v) ts
+                                  occurs v (SChoice _ ts) = or $ map (occurs v) ts
+                                  occurs v (SEuclid t1 t2 t3 Nothing) = or $ map (occurs v) [t1, t2, t3]
+                                  occurs v (SEuclid t1 t2 t3 (Just t4)) = or $ map (occurs v) [t1, t2, t3, t4]
+                                  occurs v (SLambda y tt) = case v == y of
+                                                              True -> False
+                                                              False -> occurs v tt
+                                  occurs v (SApp t1 t2) = occurs v t1 || occurs v t2
+                                  occurs v (SInfix t1 _ t2) = occurs v t1 || occurs v t2
+                                  occurs v (SBracket tt) = occurs v tt

@@ -90,6 +90,11 @@ _emptyVM = Map.empty
 _cX' :: a -> (T.Value -> P.Maybe a) -> P.String -> Pattern a
 _cX' d f s = T.Pattern P.$ \x@(T.State _ m) -> T.query (P.maybe (P.pure d) (T._getP_ f P.. T.valueToPattern) P.$ Map.lookup s m) x
 
+_cN' :: Number -> TextPattern -> NumberPattern
+_cN' n tp = T.outerJoin $$ P.fmap (\t -> _cX' n _valToNum (_fromTarget t)) tp
+
+_cN :: NumberPattern -> TextPattern -> NumberPattern
+_cN = T.tParam _cN'
 
 -- differten kinds of function application
 

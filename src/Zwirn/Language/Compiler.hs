@@ -188,7 +188,7 @@ runSimplify :: Term -> CI SimpleTerm
 runSimplify t = return $ simplify t
 
 runSimplifyDef :: Def -> CI SimpleDef
-runSimplifyDef d = return $ simplifyDef d
+runSimplifyDef d = return $ insertFixpoint $ simplifyDef d
 
 
 -----------------------------------------------------

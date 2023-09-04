@@ -24,6 +24,7 @@ import qualified Sound.Tidal.Context as T hiding (fromList)
 import Zwirn.Interactive.Types
 import Zwirn.Interactive.Transform
 import Zwirn.Interactive.Convert
+import Zwirn.Interactive.TidalT
 
 --TODO: cat, fastcat, randcat, wrandcat?, zoom, compress, folevery?, when, whenT, choose, chooseBy, wchoose?, wchooseBy?, cycleChoose
 -- fadeOut, fadeOutFrom, fadeIn, fadeInFrom, spread ?, ifp, within, distrib, fit, randrun, seqP, ur, inhabit, spaceOut, stutter
@@ -150,6 +151,9 @@ range = _toPat $$ _toTarget (T.range ::  Pattern Double -> Pattern Double -> Pat
 
 rangex :: P (NumberPattern -> NumberPattern -> NumberPattern -> NumberPattern)
 rangex = _toPat $$ _toTarget ((T.tParam2 T.rangex) ::  Pattern Double -> Pattern Double -> Pattern Double -> Pattern Double)
+
+cN :: P (NumberPattern -> TextPattern -> NumberPattern)
+cN = _toPat _cN
 
 ---------------------------------------------
 -----------------randomness------------------

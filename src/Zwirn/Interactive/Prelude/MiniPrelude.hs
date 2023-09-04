@@ -59,6 +59,9 @@ const = _toPat (P.const :: Pattern a -> Pattern b -> Pattern a)
 tick :: Pat b => P (Pattern a -> (Pattern a -> Pattern b) -> Pattern b)
 tick = _toPat (P.flip _apply)
 
+fixpoint :: Pat a => P ((Pattern a -> Pattern a) -> Pattern a)
+fixpoint = _toPat ( ((\f -> let x = f x in x) :: (Pattern a -> Pattern a) -> Pattern a))
+
 (.) :: (Pat b, Pat d) => P ((Pattern b -> Pattern d) -> (Pattern a -> Pattern b)-> Pattern a -> Pattern d)
 (.) = _toPat compose
     where compose = (P..) :: ((Pattern b -> Pattern d) -> (Pattern a -> Pattern b)-> Pattern a -> Pattern d)
@@ -143,6 +146,9 @@ sn = P.pure $$ Text "sn"
 
 (||) :: P (NumberPattern -> NumberPattern -> NumberPattern)
 (||) = _toPat $$ _toTarget _or
+
+iff :: Pat a => P (NumberPattern -> Pattern a -> Pattern a -> Pattern a)
+iff = _toPat (\bp x y -> T.innerJoin $$ P.fmap (\b -> if (_fromTarget b) then x else y) bp)
 
 -- list stuff
 
