@@ -48,6 +48,8 @@ others = [ ("\'", Forall ["a","b"] (Qual [] (TypeArr (TypeVar "a") (TypeArr (Typ
          , ("_fixpoint", Forall ["a"] (Qual [] (TypeArr (TypeArr (TypeVar "a") (TypeVar "a")) (TypeVar "a"))))
          , ("fixpoint", Forall ["a"] (Qual [] (TypeArr (TypeArr (TypeVar "a") (TypeVar "a")) (TypeVar "a"))))
          , ("iff", Forall ["a"] (Qual [] (TypeArr (TypeCon "Number") (TypeArr (TypeVar "a") (TypeArr (TypeVar "a") (TypeVar "a"))))))
+         , ("lookup", Forall [] (Qual [] (TypeArr (TypeCon "Text") (TypeArr (TypeCon "ValueMap") (TypeCon "Number")))))
+         , ("lookupT", Forall [] (Qual [] (TypeArr (TypeCon "Text") (TypeArr (TypeCon "ValueMap") (TypeCon "Text")))))
          ]
 
 typeList :: [(Text,Scheme)]

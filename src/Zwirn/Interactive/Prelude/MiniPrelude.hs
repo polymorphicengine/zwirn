@@ -69,6 +69,11 @@ fixpoint = _toPat ( ((\f -> let x = f x in x) :: (Pattern a -> Pattern a) -> Pat
 (++) :: P (TextPattern -> TextPattern -> TextPattern)
 (++) = _toPat $$ _lift2 (_toTarget ((P.++) :: P.String -> P.String -> P.String))
 
+lookup :: P (TextPattern -> ControlPattern -> NumberPattern)
+lookup = _toPat _lookup
+
+lookupT :: P (TextPattern -> ControlPattern -> TextPattern)
+lookupT = _toPat _lookupT
 
 -- arithmetic
 

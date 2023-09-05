@@ -297,3 +297,17 @@ _recv cpf busid = (T.tParam T.pI) (P.fmap (\v -> '^':((Map.keys v) P.!! 0)) P.$ 
 
 _send :: NumberPattern -> NumberPattern -> ControlPattern
 _send busid pat = T.pF "" (_fromTarget pat) T.# T.pI "^" (_fromTarget busid)
+
+_lookup :: TextPattern -> ControlPattern -> NumberPattern
+_lookup = T.tParam $$ \k vmp -> T.outerJoin $$ P.fmap (\vm -> case Map.lookup (_fromTarget k) vm of
+                        P.Just (T.VI x) -> P.pure $$ _toTarget x
+                        P.Just (T.VF x) -> P.pure $$ _toTarget x
+                        P.Just (T.VN x) -> P.pure $$ _toTarget x
+                        P.Just (T.VR x) -> P.pure $$ _toTarget x
+                        P.Just (T.VB x) -> P.pure $$ _toTarget x
+                        _ -> T.silence) vmp
+
+_lookupT :: TextPattern -> ControlPattern -> TextPattern
+_lookupT = T.tParam $$ \k vmp -> T.outerJoin $$ P.fmap (\vm -> case Map.lookup (_fromTarget k) vm of
+                        P.Just (T.VS x) -> P.pure $$ _toTarget x
+                        _ -> T.silence) vmp
