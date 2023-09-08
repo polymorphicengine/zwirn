@@ -50,6 +50,7 @@ others = [ ("\'", Forall ["a","b"] (Qual [] (TypeArr (TypeVar "a") (TypeArr (Typ
          , ("iff", Forall ["a"] (Qual [] (TypeArr (TypeCon "Number") (TypeArr (TypeVar "a") (TypeArr (TypeVar "a") (TypeVar "a"))))))
          , ("lookup", Forall [] (Qual [] (TypeArr (TypeCon "Text") (TypeArr (TypeCon "ValueMap") (TypeCon "Number")))))
          , ("lookupT", Forall [] (Qual [] (TypeArr (TypeCon "Text") (TypeArr (TypeCon "ValueMap") (TypeCon "Text")))))
+         , ("map", Forall ["a","b"] (Qual [] (TypeArr (TypeArr (TypeVar "a") (TypeVar "b")) (TypeArr (TypeVar "a") (TypeVar "b")))))
          ]
 
 typeList :: [(Text,Scheme)]

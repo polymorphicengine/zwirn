@@ -311,3 +311,6 @@ _lookupT :: TextPattern -> ControlPattern -> TextPattern
 _lookupT = T.tParam $$ \k vmp -> T.outerJoin $$ P.fmap (\vm -> case Map.lookup (_fromTarget k) vm of
                         P.Just (T.VS x) -> P.pure $$ _toTarget x
                         _ -> T.silence) vmp
+
+_map :: Pattern (Pattern a -> Pattern b) -> Pattern a -> Pattern b
+_map = T.tParam $$ \f xp -> T.squeezeJoin (P.fmap (\x -> f (P.pure x)) xp)

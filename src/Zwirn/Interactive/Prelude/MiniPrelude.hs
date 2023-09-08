@@ -41,6 +41,9 @@ import Zwirn.Interactive.TidalT
 ($|) :: Pat b => P ((Pattern a -> Pattern b) -> Pattern a -> Pattern b)
 ($|) = _toPat _applyRight
 
+map :: Pat b => P ((Pattern a -> Pattern b) -> Pattern a -> Pattern b)
+map = _toPat _map
+
 silence :: P (Pattern a)
 silence = T.silence
 
