@@ -72,7 +72,6 @@ data Action
   | Type Term
   | Show Term
   | Load Text
-  | JS Term
   deriving (Eq, Show)
 
 data Associativity

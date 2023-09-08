@@ -299,14 +299,30 @@ streamAction ctx idd t = do
               s <- runSimplify t
               rot <- runRotate s
               ty <- runTypeCheck rot
-              case isVM ty of
-                  True -> do
-                      gen <- runGenerator ctx rot
+              gen <- runGenerator ctx rot
+              case ty of
+                  ValueMap -> do
                       cp <- interpret AsVM gen
                       (Environment {tStream = str}) <- get
                       cp' <- resolveOrbits (unpack idd) cp
                       liftIO $ streamReplace str (ID (unpack idd)) cp'
-                  False -> throw $ "Type Error: can only stream value maps"
+                  Var _ -> do
+                      cp <- interpret AsVM gen
+                      (Environment {tStream = str}) <- get
+                      cp' <- resolveOrbits (unpack idd) cp
+                      liftIO $ streamReplace str (ID (unpack idd)) cp'
+                      p <- interpret @TextPattern AsText gen
+                      (Environment {jsMV = maybemv}) <- get
+                      case maybemv of
+                        Just mv -> liftIO $ modifyMVar_ mv (const $ pure p)
+                        Nothing -> throw $ "No JavaScript Interpreter available"
+                  Text -> do
+                     p <- interpret @TextPattern AsText gen
+                     (Environment {jsMV = maybemv}) <- get
+                     case maybemv of
+                       Just mv -> liftIO $ modifyMVar_ mv (const $ pure p)
+                       Nothing -> throw $ "No JavaScript Interpreter available"
+                  _ -> throw $ "Type Error: can only stream valuemaps/text"
 
 streamSetAction :: Bool -> Text -> Term -> CI ()
 streamSetAction ctx idd t = do
@@ -343,12 +359,18 @@ streamOnceAction ctx t = do
               s <- runSimplify t
               rot <- runRotate s
               ty <- runTypeCheck rot
+              gen <- runGenerator ctx rot
               case ty of
                   ValueMap -> do
-                        gen <- runGenerator ctx rot
                         cp <- interpret AsVM gen
                         (Environment {tStream = str}) <- get
                         liftIO $ streamOnce str cp
+                  Text -> do
+                     p <- interpret @TextPattern AsText gen
+                     (Environment {jsMV = maybemv}) <- get
+                     case maybemv of
+                       Just mv -> liftIO $ modifyMVar_ mv (const $ pure p)
+                       Nothing -> throw $ "No JavaScript Interpreter available"
                   _ -> throw $ "Type Error: can only stream value maps"
 
 streamSetTempoAction :: Bool -> Tempo -> Term -> CI ()
@@ -365,27 +387,6 @@ streamSetTempoAction ctx tempo t = do
                                   CPS -> liftIO $ streamOnce str $ cps (_fromTarget np)
                                   BPM -> liftIO $ streamOnce str $ cps (fmap (\x -> x/60/4) $ _fromTarget np)
                           _ -> throw $ "Type Error: tempo must be a number"
-
-jsAction :: Bool -> Term -> CI ()
-jsAction ctx t = do
-              s <- runSimplify t
-              rot <- runRotate s
-              ty <- runTypeCheck rot
-              gen <- runGenerator ctx rot
-              case ty of
-                  Text -> do
-                    p <- interpret @TextPattern AsText gen
-                    (Environment {jsMV = maybemv}) <- get
-                    case maybemv of
-                      Just mv -> liftIO $ modifyMVar_ mv (const $ pure p)
-                      Nothing -> throw $ "No JavaScript Interpreter available"
-                  Var _ -> do
-                    p <- interpret @TextPattern AsText gen
-                    (Environment {jsMV = maybemv}) <- get
-                    case maybemv of
-                      Just mv -> liftIO $ modifyMVar_ mv (const $ pure p)
-                      Nothing -> throw $ "No JavaScript Interpreter available"
-                  _ -> throw $ "Type Error: can only accept text"
 
 resetConfigAction :: CI String
 resetConfigAction = do
@@ -419,7 +420,6 @@ runAction _ (Show t) = showAction t
 runAction b (Def d) = defAction b d >> return ""
 runAction _ (Type t) = typeAction t
 runAction _ (Load p) = loadAction p >> return ""
-runAction b (JS t) = jsAction b t >> return ""
 runAction _ (Config k v) = setConfigAction k v
 runAction _ ResetConfig = resetConfigAction
 
@@ -436,8 +436,3 @@ resolveOrbits :: String -> ControlPattern -> CI ControlPattern
 resolveOrbits t cp = case ((readMaybe t) :: Maybe Int) of
                               Just o -> return $ cp # orbit (pure $ o-1)
                               Nothing -> return cp
-
-isVM :: Scheme -> Bool
-isVM ValueMap = True
-isVM (Var _) = True
-isVM _ = False

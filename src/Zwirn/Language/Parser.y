@@ -101,7 +101,6 @@ import Zwirn.Language.Block
   ':resetconfig'  { L.RangedToken L.ResetConfigA _ }
   '='             { L.RangedToken L.Assign _ }
   ':load'         { L.RangedToken (L.LoadA _ ) _}
-  ':js'           { L.RangedToken L.JSA _ }
   -- Type Tokens
   '::'       { L.RangedToken L.DoubleColon _ }
   typefam    { L.RangedToken L.PTypeFam _ }
@@ -239,7 +238,6 @@ action :: { Action }
   | ':t' term                         { Type $2 }
   | ':show' term                      { Show $2 }
   | ':load'                           { Load $ unTok $1 }
-  | ':js' term                        { JS $2 }
 
 actionsrecrev :: { [Action] }
   : actionsrecrev ';' action           {$3:$1}
