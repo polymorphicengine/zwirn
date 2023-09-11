@@ -56,6 +56,9 @@ voronoi = _toPat $$ _toTarget _voronoi
 add :: P (NumberPattern -> TextPattern -> TextPattern -> TextPattern)
 add = _toPat $$ _toTarget _add
 
+sub :: P (NumberPattern -> TextPattern -> TextPattern -> TextPattern)
+sub = _toPat $$ _toTarget _sub
+
 mult :: P (NumberPattern -> TextPattern -> TextPattern -> TextPattern)
 mult = _toPat $$ _toTarget _mult
 
@@ -76,6 +79,27 @@ hmask = _toPat $$ _toTarget _hmask
 modulate :: P (NumberPattern -> TextPattern -> TextPattern -> TextPattern)
 modulate = _toPat $$ _toTarget _modulate
 
+modulateRepeat :: P (NumberPattern -> TextPattern -> TextPattern -> TextPattern)
+modulateRepeat = _toPat $$ _toTarget _modulateRepeat
+
+modulateRepeatX :: P (NumberPattern -> TextPattern -> TextPattern -> TextPattern)
+modulateRepeatX = _toPat $$ _toTarget _modulateRepeatX
+
+modulateRepeatY :: P (NumberPattern -> TextPattern -> TextPattern -> TextPattern)
+modulateRepeatY = _toPat $$ _toTarget _modulateRepeatY
+
+modulateScrollX :: P (NumberPattern -> TextPattern -> TextPattern -> TextPattern)
+modulateScrollX = _toPat $$ _toTarget _modulateScrollX
+
+modulateScale :: P (NumberPattern -> TextPattern -> TextPattern -> TextPattern)
+modulateScale = _toPat $$ _toTarget _modulateScale
+
+modulatePixelate :: P (NumberPattern -> TextPattern -> TextPattern -> TextPattern)
+modulatePixelate = _toPat $$ _toTarget _modulatePixelate
+
+modulateRotate :: P (NumberPattern -> TextPattern -> TextPattern -> TextPattern)
+modulateRotate = _toPat $$ _toTarget _modulateRotate
+
 modulateHue :: P (NumberPattern -> TextPattern -> TextPattern -> TextPattern)
 modulateHue = _toPat $$ _toTarget _modulateHue
 
@@ -86,3 +110,47 @@ modulateKaleid = _toPat $$ _toTarget _modulateKaleid
 
 color :: P (NumberPattern -> NumberPattern -> NumberPattern -> TextPattern -> TextPattern)
 color = _toPat $$ _toTarget _color
+
+posterize :: P (NumberPattern -> NumberPattern -> TextPattern -> TextPattern)
+posterize = _toPat $$ _toTarget _posterize
+
+shift :: P (NumberPattern -> NumberPattern -> NumberPattern -> TextPattern -> TextPattern)
+shift = _toPat $$ _toTarget _shift
+
+invert :: P (NumberPattern -> TextPattern -> TextPattern)
+invert = _toPat $$ _toTarget _invert
+
+hcontrast :: P (NumberPattern -> TextPattern -> TextPattern)
+hcontrast = _toPat $$ _toTarget _contrast
+
+brightness :: P (NumberPattern -> TextPattern -> TextPattern)
+brightness = _toPat $$ _toTarget _brightness
+
+luma :: P (NumberPattern -> NumberPattern -> TextPattern -> TextPattern)
+luma = _toPat $$ _toTarget _luma
+
+thresh :: P (NumberPattern -> NumberPattern -> TextPattern -> TextPattern)
+thresh = _toPat $$ _toTarget _thresh
+
+saturate :: P (NumberPattern -> TextPattern -> TextPattern)
+saturate = _toPat $$ _toTarget _saturate
+
+hue :: P (NumberPattern -> TextPattern -> TextPattern)
+hue = _toPat $$ _toTarget _hue
+
+colorama :: P (NumberPattern -> TextPattern -> TextPattern)
+colorama = _toPat $$ _toTarget _colorama
+
+-- external
+
+initCam :: P (TextPattern -> NumberPattern -> TextPattern)
+initCam = _toPat $$ _toTarget _initCam
+
+initImage :: P (TextPattern -> TextPattern -> TextPattern)
+initImage = _toPat $$ _toTarget _initImage
+
+initVideo :: P (TextPattern -> TextPattern -> TextPattern)
+initVideo = _toPat $$ _toTarget _initVideo
+
+initScreen :: P (TextPattern -> TextPattern)
+initScreen = _toPat $$ _toTarget _initScreen

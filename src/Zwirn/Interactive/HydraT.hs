@@ -66,6 +66,9 @@ _voronoi = _lift3 $$ \i j k -> _insert "voronoi(%1,%2,%3)" [P.show i, P.show j, 
 _add :: Pattern Double -> Pattern String -> Pattern String -> Pattern String
 _add = _lift3 $$ (\i o1 o2 -> _insert "%2.add(%3,%1)" [P.show i, o1, o2])
 
+_sub :: Pattern Double -> Pattern String -> Pattern String -> Pattern String
+_sub = _lift3 $$ (\i o1 o2 -> _insert "%2.sub(%3,%1)" [P.show i, o1, o2])
+
 _mult :: Pattern Double -> Pattern String -> Pattern String -> Pattern String
 _mult = _lift3 $$ (\i o1 o2 -> _insert "%2.mult(%3,%1)" [P.show i, o1, o2])
 
@@ -86,6 +89,30 @@ _hmask = _lift2 $$ (\o1 o2 -> _insert "%1.mask(%2)" [o1, o2])
 _modulate :: Pattern Double -> Pattern String -> Pattern String -> Pattern String
 _modulate = _lift3 $$ (\i o1 o2 -> _insert "%2.modulate(%3,%1)" [P.show i, o1, o2])
 
+_modulateScale :: Pattern Double -> Pattern String -> Pattern String -> Pattern String
+_modulateScale = _lift3 $$ (\i o1 o2 -> _insert "%2.modulateScale(%3,%1)" [P.show i, o1, o2])
+
+_modulateRepeat :: Pattern Double -> Pattern String -> Pattern String -> Pattern String
+_modulateRepeat = _lift3 $$ (\i o1 o2 -> _insert "%2.modulateRepeat(%3,%1)" [P.show i, o1, o2])
+
+_modulateRepeatX :: Pattern Double -> Pattern String -> Pattern String -> Pattern String
+_modulateRepeatX = _lift3 $$ (\i o1 o2 -> _insert "%2.modulateRepeatX(%3,%1)" [P.show i, o1, o2])
+
+_modulateRepeatY :: Pattern Double -> Pattern String -> Pattern String -> Pattern String
+_modulateRepeatY = _lift3 $$ (\i o1 o2 -> _insert "%2.modulateRepeatY(%3,%1)" [P.show i, o1, o2])
+
+_modulateScrollX :: Pattern Double -> Pattern String -> Pattern String -> Pattern String
+_modulateScrollX = _lift3 $$ (\i o1 o2 -> _insert "%2.modulateScrollX(%3,%1)" [P.show i, o1, o2])
+
+_modulateScrollY :: Pattern Double -> Pattern String -> Pattern String -> Pattern String
+_modulateScrollY = _lift3 $$ (\i o1 o2 -> _insert "%2.modulateScrollY(%3,%1)" [P.show i, o1, o2])
+
+_modulatePixelate :: Pattern Double -> Pattern String -> Pattern String -> Pattern String
+_modulatePixelate = _lift3 $$ (\i o1 o2 -> _insert "%2.modulatePixelate(%3,%1)" [P.show i, o1, o2])
+
+_modulateRotate :: Pattern Double -> Pattern String -> Pattern String -> Pattern String
+_modulateRotate = _lift3 $$ (\i o1 o2 -> _insert "%2.modulateRotate(%3,%1)" [P.show i, o1, o2])
+
 _modulateHue :: Pattern Double -> Pattern String -> Pattern String -> Pattern String
 _modulateHue = _lift3 $$ (\i o1 o2 -> _insert "%2.modulateHue(%3,%1)" [P.show i, o1, o2])
 
@@ -94,5 +121,49 @@ _modulateKaleid = _lift3 $$ (\i o1 o2 -> _insert "%2.modulateKaleid(%3,%1)" [P.s
 
 -- modifiers
 
+_posterize :: Pattern Double -> Pattern Double -> Pattern String -> Pattern String
+_posterize = _lift3 $$ \i j k -> _insert "%3.shift(%1,%2)" [P.show i, P.show j, k]
+
+_shift :: Pattern Double -> Pattern Double -> Pattern Double -> Pattern String -> Pattern String
+_shift = _lift4 $$ \i j k o -> _insert "%4.shift(%1,%2,%3)" [P.show i, P.show j, P.show k, o]
+
+_invert :: Pattern Double -> Pattern String -> Pattern String
+_invert = _lift2 $$ \i j -> _insert "%2.invert(%1)" [P.show i, j]
+
+_contrast :: Pattern Double -> Pattern String -> Pattern String
+_contrast = _lift2 $$ \i j -> _insert "%2.contrast(%1)" [P.show i, j]
+
+_brightness :: Pattern Double -> Pattern String -> Pattern String
+_brightness = _lift2 $$ \i j -> _insert "%2.brightness(%1)" [P.show i, j]
+
+_luma :: Pattern Double -> Pattern Double -> Pattern String -> Pattern String
+_luma = _lift3 $$ \i j k -> _insert "%3.luma(%1,%2)" [P.show i, P.show j, k]
+
+_thresh :: Pattern Double -> Pattern Double -> Pattern String -> Pattern String
+_thresh = _lift3 $$ \i j k -> _insert "%3.thresh(%1,%2)" [P.show i, P.show j, k]
+
 _color :: Pattern Double -> Pattern Double -> Pattern Double -> Pattern String -> Pattern String
 _color = _lift4 $$ \i j k o -> _insert "%4.color(%1,%2,%3)" [P.show i, P.show j, P.show k, o]
+
+_saturate :: Pattern Double -> Pattern String -> Pattern String
+_saturate = _lift2 $$ \i j -> _insert "%2.saturate(%1)" [P.show i, j]
+
+_hue :: Pattern Double -> Pattern String -> Pattern String
+_hue = _lift2 $$ \i j -> _insert "%2.hue(%1)" [P.show i, j]
+
+_colorama :: Pattern Double -> Pattern String -> Pattern String
+_colorama = _lift2 $$ \i j -> _insert "%2.colorama(%1)" [P.show i, j]
+
+-- external
+
+_initCam :: Pattern String -> Pattern Int -> Pattern String
+_initCam = _lift2 $$ (\o i -> _insert "%1.initCam(%2)" [o, P.show i])
+
+_initImage :: Pattern String -> Pattern String -> Pattern String
+_initImage = _lift2 $$ (\o i -> _insert "%1.initImage(%2)" [o, i])
+
+_initVideo :: Pattern String -> Pattern String -> Pattern String
+_initVideo = _lift2 $$ (\o i -> _insert "%1.initVideo(%2)" [o, i])
+
+_initScreen :: Pattern String -> Pattern String
+_initScreen = _lift $$ (\o -> _insert "%1.initScreen()" [o])
