@@ -339,7 +339,7 @@ streamSetAction ctx idd t = do
                         liftIO $ streamSet str (unpack idd) np
                   Text -> do
                         modify (\env -> env{typeEnv = extend (typeEnv env) (idd, ty)})
-                        interpret @() AsDef $ "let " ++ unpack idd ++ "= _cX' (Text \"\") _valToText " ++ ("\"" ++ unpack idd ++ "\"")
+                        interpret @() AsDef $ "let " ++ unpack idd ++ "= _cX' _emptyText _valToText " ++ ("\"" ++ unpack idd ++ "\"")
                         tp <- interpret @TextPattern AsText gen
                         liftIO $ streamSet str (unpack idd) tp
                   ValueMap -> do

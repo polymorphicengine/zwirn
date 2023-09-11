@@ -87,6 +87,9 @@ _valToVM _ = P.Nothing
 _emptyVM :: ValueMap
 _emptyVM = Map.empty
 
+_emptyText :: Text
+_emptyText = Text Text.empty
+
 _cX' :: a -> (T.Value -> P.Maybe a) -> P.String -> Pattern a
 _cX' d f s = T.Pattern P.$ \x@(T.State _ m) -> T.query (P.maybe (P.pure d) (T._getP_ f P.. T.valueToPattern) P.$ Map.lookup s m) x
 
