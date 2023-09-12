@@ -236,6 +236,8 @@ action :: { Action }
   | ':resetconfig'                    { ResetConfig }
   | def                               { Def $1 }
   | ':t' term                         { Type $2 }
+  | ':t' operator                     { % ((mkAtom TVar) $2) >>= (\x -> return $ Type x)}
+  | ':t' specop                       { % ((mkAtom TVar) $2) >>= (\x -> return $ Type x)}
   | ':show' term                      { Show $2 }
   | ':load'                           { Load $ unTok $1 }
 
