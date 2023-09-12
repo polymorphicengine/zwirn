@@ -41,6 +41,8 @@ defaultInstances = [ IsIn "Num" numberT
                    , IsIn "Show" numberT
                    , IsIn "Show" valMapT
                    , IsIn "show" textT
+                   , IsIn "Moddable" numberT
+                   , IsIn "Moddable" valMapT
                    ]
 
 others :: [(Text,Scheme)]

@@ -53,6 +53,12 @@ true = _toPat $$ _toTarget (1 :: P.Int)
 false :: P NumberPattern
 false = _toPat $$ _toTarget (0 :: P.Int)
 
+time :: P NumberPattern
+time = _toPat $$ _toTarget _time
+
+cycle :: P NumberPattern
+cycle = _toPat $$ _toTarget _cycle
+
 id :: Pat a => P (Pattern a -> Pattern a)
 id = _toPat (P.id :: Pattern a -> Pattern a)
 
@@ -118,6 +124,15 @@ lookupT = _toPat _lookupT
 (|/) :: (Pat a, P.Fractional a) => P (Pattern a -> Pattern a -> Pattern a)
 (|/) = _toPat ((T.|/) :: P.Fractional a => Pattern a -> Pattern a -> Pattern a)
 
+(|%|) :: (Pat a, T.Moddable a) => P (Pattern a -> Pattern a -> Pattern a)
+(|%|) = _toPat ((T.|%|) :: T.Moddable a => Pattern a -> Pattern a -> Pattern a)
+
+(%|) :: (Pat a, T.Moddable a) => P (Pattern a -> Pattern a -> Pattern a)
+(%|) = _toPat ((T.%|) :: T.Moddable a => Pattern a -> Pattern a -> Pattern a)
+
+(|%) :: (Pat a, T.Moddable a) => P (Pattern a -> Pattern a -> Pattern a)
+(|%) = _toPat ((T.|%) :: T.Moddable a => Pattern a -> Pattern a -> Pattern a)
+
 round :: P (NumberPattern -> NumberPattern)
 round = _toPat $$ _toTarget (_lift (P.round :: Double -> Int))
 
@@ -167,7 +182,7 @@ at :: Pat a => P (NumberPattern -> Pattern a -> Pattern a)
 at = _toPat $$ (\x -> _at (_fromTarget x))
 
 over :: Pat a => P (NumberPattern -> (Pattern a -> Pattern a) -> Pattern a -> Pattern a)
-over = _toPat $$ (\x -> _at (_fromTarget x))
+over = _toPat $$ (\x -> _over (_fromTarget x))
 
 layer :: Pat b => P ((Pattern a -> Pattern b) -> Pattern a -> Pattern b)
 layer = _toPat _layer

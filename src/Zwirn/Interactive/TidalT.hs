@@ -317,3 +317,11 @@ _lookupT = T.tParam $$ \k vmp -> T.outerJoin $$ P.fmap (\vm -> case Map.lookup (
 
 _map :: Pattern (Pattern a -> Pattern b) -> Pattern a -> Pattern b
 _map = T.tParam $$ \f xp -> T.squeezeJoin (P.fmap (\x -> f (P.pure x)) xp)
+
+
+_time :: Pattern Time
+_time = T.Pattern P.$ (\st -> [T.Event (T.Context []) P.Nothing (T.arc st) (getStart P.$ T.arc st)])
+     where getStart (T.Arc x _) = x
+
+_cycle :: Pattern Time
+_cycle = P.fmap (\x -> P.fromIntegral P.$ P.floor x) _time

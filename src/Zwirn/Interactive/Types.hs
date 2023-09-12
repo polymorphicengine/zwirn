@@ -99,6 +99,9 @@ instance T.Valuable (String, Value) where
 instance T.Valuable T.ValueMap where
   toValue vm = T.VList $$ P.map T.toValue (Map.toList vm)
 
+instance T.Moddable Number where
+  gmod (Num x) (Num y) = Num (T.gmod x y)
+
 infixl 0 $$
 ($$) :: (a -> b) -> a -> b
 ($$) = (P.$)
