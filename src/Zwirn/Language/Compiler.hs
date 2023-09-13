@@ -124,7 +124,6 @@ compilerInterpreterWhole editor input = do
                       let sorted = sortOn (\(Block x _ _ ) -> x) blocks
                           (Block strt _ _) = head sorted
                           (Block _ end _) = last sorted
-                      liftIO $ putStrLn $ show sorted
                       setCurrentBlock strt end
                       let parseBlock (Block s _ c) = runParserWithPos s editor c
                       ass <- sequence $ map parseBlock sorted
