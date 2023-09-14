@@ -1,2 +1,4 @@
 allow-newer: threepenny-gui:template-haskell
 ignore-project: False
+optimization: 2
+profiling: True
