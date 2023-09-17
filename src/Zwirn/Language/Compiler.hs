@@ -83,6 +83,7 @@ data ConfigEnv
 data Environment
   = Environment { tStream :: Stream
                 , jsMV :: Maybe (MVar TextPattern)
+                , audioMV :: Maybe (MVar NumberPattern)
                 , typeEnv :: TypeEnv
                 , hintEnv :: HintEnv
                 , confEnv :: Maybe ConfigEnv
@@ -321,7 +322,13 @@ streamAction ctx idd t = do
                      case maybemv of
                        Just mv -> liftIO $ modifyMVar_ mv (const $ pure p)
                        Nothing -> throw $ "No JavaScript Interpreter available"
-                  _ -> throw $ "Type Error: can only stream valuemaps/text"
+                  Number -> do
+                      p <- interpret @NumberPattern AsNum gen
+                      (Environment {audioMV = maybemv}) <- get
+                      case maybemv of
+                        Just mv -> liftIO $ modifyMVar_ mv (const $ pure p)
+                        Nothing -> throw $ "No audio playback available!"
+                  x -> throw $ "Type Error: can only stream valuemaps/text, not " ++ ppscheme x
 
 streamSetAction :: Bool -> Text -> Term -> CI ()
 streamSetAction ctx idd t = do

@@ -38,7 +38,7 @@ setupHint mode = do
 
 setupEnvironment :: Stream -> HintMode -> MVar InterpreterMessage -> MVar InterpreterResponse -> IO (MVar Environment)
 setupEnvironment str mode mMV rMV = do
-       let env = Environment str Nothing defaultTypeEnv (HintEnv mode mMV rMV) Nothing Nothing
+       let env = Environment str Nothing Nothing defaultTypeEnv (HintEnv mode mMV rMV) Nothing Nothing
        envMV <- newMVar env
        return envMV
 

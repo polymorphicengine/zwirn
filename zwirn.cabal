@@ -73,6 +73,7 @@ executable zwirn-interpreter
                       Editor.Highlight
                       Editor.Hydra
                       Editor.CommandLine
+                      Editor.Tomato
     build-depends:    base,
                       text,
                       containers,
@@ -83,13 +84,15 @@ executable zwirn-interpreter
                       exceptions,
                       filepath,
                       directory,
+                      tomato-rubato-openal,
+                      vector,
                       optparse-applicative
     hs-source-dirs:   zwirn-interpreter
     default-language: Haskell2010
     ghc-options: -O2
                  -threaded
-                 -fprof-auto
-                 "-with-rtsopts=-N -p -s -h -i0.1"
+                 ---fprof-auto
+                 --"-with-rtsopts=-N -p -s -h -i0.1"
                  -Wall
     ld-options: -Wl,-rpath -Wl,$ORIGIN/c-libs
     if os(darwin)

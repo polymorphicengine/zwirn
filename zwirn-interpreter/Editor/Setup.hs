@@ -37,12 +37,13 @@ import Editor.Frontend
 import Editor.UI
 import Editor.Highlight
 import Editor.Hydra
+import Editor.Tomato
 
 import Zwirn.Language.Hint
 import Zwirn.Language.Compiler
 import Zwirn.Language.Default
 
-import Zwirn.Interactive.Types (Text (..))
+import Zwirn.Interactive.Types (Text (..), NumberPattern)
 
 
 setup :: HintMode -> Window -> UI ()
@@ -59,8 +60,10 @@ setup mode win = void $ do
      (hyd, hydBuf) <- setupHydra str
      (mMV, rMV) <- setupHint mode
 
+     audio <- setupAudio
+
      createHaskellFunction "hush" (hush str hyd)
-     envMV <- setupBackend str hyd mode mMV rMV
+     envMV <- setupBackend str hyd audio mode mMV rMV
      addFileInputAndSettings
      makeEditor "editor0"
      loadBootDefs envMV
@@ -108,11 +111,11 @@ setupHint mode = do
       void $ liftIO $ forkIO $ hintJob mode mMV rMV
       return (mMV, rMV)
 
-setupBackend :: Stream -> MVar (Pattern Text) -> HintMode -> MVar InterpreterMessage -> MVar InterpreterResponse -> UI (MVar Environment)
-setupBackend str hyd mode mMV rMV = do
+setupBackend :: Stream -> MVar (Pattern Text) -> MVar NumberPattern -> HintMode -> MVar InterpreterMessage -> MVar InterpreterResponse -> UI (MVar Environment)
+setupBackend str hyd audio mode mMV rMV = do
 
        win <- askWindow
-       let env = Environment str (Just $ hyd) defaultTypeEnv (HintEnv mode mMV rMV) (Just $ ConfigEnv (setConfig win) (clearConfig win)) Nothing
+       let env = Environment str (Just hyd) (Just audio) defaultTypeEnv (HintEnv mode mMV rMV) (Just $ ConfigEnv (setConfig win) (clearConfig win)) Nothing
 
        envMV <- liftIO $ newMVar env
 
@@ -154,3 +157,11 @@ addFileInputAndSettings = do
               void $ (element body) #+ [ fileInput
                                        , tidalSettings
                                        ]
+
+-- audio
+
+setupAudio :: UI (MVar NumberPattern)
+setupAudio = do
+        mv <- liftIO $ newMVar (pure 0)
+        liftIO $ playMV mv
+        return mv
