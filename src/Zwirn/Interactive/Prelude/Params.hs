@@ -1,5 +1,6 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# OPTIONS_GHC -Wno-missing-signatures #-}
+
 module Zwirn.Interactive.Prelude.Params where
 
 {-
@@ -21,10 +22,11 @@ module Zwirn.Interactive.Prelude.Params where
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 -}
 
+-- import Zwirn.Interactive.Generic (_mkNumParams, _mkStringParams, _numParams, _stringParams)
 import qualified Prelude as P ()
-import Zwirn.Interactive.Generic (_mkNumParams, _mkStringParams, _stringParams, _numParams)
-import qualified Sound.Tidal.Context as T hiding (fromList)
 
-$(_mkNumParams _numParams)
+-- import qualified Sound.Tidal.Context as T hiding (fromList)
 
-$(_mkStringParams _stringParams)
+-- $(_mkNumParams _numParams)
+
+-- $(_mkStringParams _stringParams)

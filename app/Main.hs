@@ -18,24 +18,23 @@ module Main where
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 -}
 
-import System.FilePath  (dropFileName)
-import System.Environment (getExecutablePath)
-
-import Graphics.UI.Threepenny.Core as C hiding (text)
-
-import Editor.Setup
 import Editor.CommandLine
-
+import Editor.Setup
+import Graphics.UI.Threepenny.Core as C hiding (text)
 import Options.Applicative (execParser)
-
+import System.Environment (getExecutablePath)
+import System.FilePath (dropFileName)
+import Zwirn.Language.Hint
 
 main :: IO ()
 main = do
-    config <- execParser conf
-    execPath <- dropFileName <$> getExecutablePath
+  config <- execParser conf
+  execPath <- dropFileName <$> getExecutablePath
 
-    startGUI C.defaultConfig {
-          jsStatic = Just $ execPath ++ "static",
-          jsCustomHTML     = Just "tidal.html",
-          jsPort = Just (tpPort config)
-        } $ setup (hintMode config)
+  startGUI
+    C.defaultConfig
+      { jsStatic = Just $ execPath ++ "static",
+        jsCustomHTML = Just "tidal.html",
+        jsPort = Just (tpPort config)
+      }
+    $ setup GHC

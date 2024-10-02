@@ -1,9 +1,10 @@
 module Zwirn.Language.Generator
-    ( generate
-    , generateDef
-    , generateWithoutContext
-    , generateDefWithoutContext
-    ) where
+  ( generate,
+    generateDef,
+    generateWithoutContext,
+    generateDefWithoutContext,
+  )
+where
 
 {-
     Generator.hs - generate haskell source code from the
@@ -24,32 +25,32 @@ module Zwirn.Language.Generator
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 -}
 
+import Data.List (intercalate)
+import Data.Text (unpack)
 import Zwirn.Language.Simple
 
-import Data.Text (unpack)
-import Data.List (intercalate)
-
 generate :: SimpleTerm -> String
-generate (SVar p x) = "(_addContext " ++ generatePosition p ++ " (" ++ unpack x ++ "))"
-generate (SText p x) = "(_addContext " ++ generatePosition p ++ " (_textPat " ++ unpack x ++ "))"
-generate (SNum (Just p) x) = "(_addContext " ++ generatePosition p ++ " (_numPat (" ++ unpack x ++ ")))"
-generate (SNum Nothing x) = "(_numPat " ++ unpack x ++ ")"
+generate (SVar p x) = "(" ++ unpack x ++ ")"
+generate (SText p x) = "(_textPat " ++ unpack x ++ ")"
+generate (SNum _ x) = "(_numPat " ++ unpack x ++ ")"
+-- generate (SNum Nothing x) = "(_numPat " ++ unpack x ++ ")"
 generate (SRest) = "silence"
 generate (SElong t _) = "(" ++ generate t ++ ")"
-generate (SSeq ts) = "(T.timecat " ++ "[" ++ intercalate "," ss ++  "])"
-                     where ss = map (\(n,m) -> "(" ++ show n ++ "," ++ generate m ++ ")") $ resolveSize $ ts
-generate (SStack ts) = "(T.stack [" ++ intercalate "," (map generate ts) ++ "])"
+generate (SSeq ts) = "(Z.timecat " ++ "[" ++ intercalate "," ss ++ "])"
+  where
+    ss = map (\(n, m) -> "(" ++ show n ++ "," ++ generate m ++ ")") $ resolveSize $ ts
+generate (SStack ts) = "(Z.stack [" ++ intercalate "," (map generate ts) ++ "])"
 generate (SChoice seed ts) = "(_choiceBy " ++ show seed ++ " [" ++ intercalate "," (map generate ts) ++ "])"
 generate (SEuclid s n m (Just k)) = "(_euclidOff " ++ generate n ++ " " ++ generate m ++ " " ++ generate k ++ " " ++ generate s ++ ")"
 generate (SEuclid s n m Nothing) = "(_euclid " ++ generate n ++ " " ++ generate m ++ " " ++ generate s ++ ")"
 generate (SApp x y) = "(_apply " ++ generate x ++ " " ++ generate y ++ ")"
 generate (SInfix x op y) = case unpack op of
-                                   "'" -> "(_apply (_apply tick " ++ generate x ++ ") " ++ generate y ++ ")" -- TODO: make this a bit less hacky
-                                   un -> "(_apply (_apply (" ++ un ++ ") " ++ generate x ++ ") " ++ generate y ++ ")"
-generate (SLambda v x) = "(_pat (\\" ++ unpack v ++ " -> " ++ generate x ++"))"
+  "'" -> "(_apply (_apply tick " ++ generate x ++ ") " ++ generate y ++ ")" -- TODO: make this a bit less hacky
+  un -> "(_apply (_apply (" ++ un ++ ") " ++ generate x ++ ") " ++ generate y ++ ")"
+generate (SLambda v x) = "(_pat (\\" ++ unpack v ++ " -> " ++ generate x ++ "))"
 generate (SBracket x) = "(" ++ generate x ++ ")"
 
-resolveSize :: [SimpleTerm] -> [(Int,SimpleTerm)]
+resolveSize :: [SimpleTerm] -> [(Int, SimpleTerm)]
 resolveSize = map (\m -> (elongAmount m, m))
 
 elongAmount :: SimpleTerm -> Int

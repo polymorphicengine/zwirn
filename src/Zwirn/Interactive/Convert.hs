@@ -1,4 +1,6 @@
-{-# LANGUAGE TypeFamilies, FlexibleInstances #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE TypeFamilies #-}
+
 module Zwirn.Interactive.Convert where
 
 {-
@@ -20,11 +22,10 @@ module Zwirn.Interactive.Convert where
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 -}
 
-import qualified Prelude as P
-import qualified Sound.Tidal.Context as T
 import qualified Data.Text as Text
-
+import qualified Time as Z
 import Zwirn.Interactive.Types
+import qualified Prelude as P
 
 -- this class will help us convert basic types.
 class Convertible a where
@@ -36,7 +37,7 @@ instance Convertible Bool where
   type Target Bool = Number
   _toTarget P.True = Num 1
   _toTarget P.False = Num 0
-  _fromTarget n = (n P.> 0)
+  _fromTarget n = n P.> 0
 
 instance Convertible Number where
   type Target Number = Number
@@ -45,13 +46,13 @@ instance Convertible Number where
 
 instance Convertible Double where
   type Target Double = Number
-  _toTarget d = Num d
   _fromTarget (Num n) = n
+  _toTarget = Num
 
 instance Convertible Time where
   type Target Time = Number
-  _toTarget d = Num $$ P.fromRational d
-  _fromTarget (Num n) = P.toRational n
+  _toTarget (Z.Time d _) = Num $$ P.fromRational d
+  _fromTarget (Num n) = Z.Time (P.toRational n) 1
 
 instance Convertible Int where
   type Target Int = Number
@@ -63,22 +64,12 @@ instance Convertible P.Integer where
   _toTarget i = Num $$ P.fromIntegral i
   _fromTarget (Num n) = P.floor n
 
-instance Convertible Note where
-  type Target Note = Number
-  _toTarget (T.Note i) = Num i
-  _fromTarget (Num n) = T.Note n
-
 instance Convertible String where
   type Target String = Text
-  _toTarget s = (Text (Text.pack s))
-  _fromTarget (Text t) = (Text.unpack t)
+  _toTarget s = Text (Text.pack s)
+  _fromTarget (Text t) = Text.unpack t
 
-instance Convertible ValueMap where
-  type Target ValueMap = ValueMap
-  _toTarget = P.id
-  _fromTarget = P.id
-
-instance Convertible a => Convertible (Pattern a) where
+instance (Convertible a) => Convertible (Pattern a) where
   type Target (Pattern a) = Pattern (Target a)
   _toTarget = P.fmap _toTarget
   _fromTarget = P.fmap _fromTarget

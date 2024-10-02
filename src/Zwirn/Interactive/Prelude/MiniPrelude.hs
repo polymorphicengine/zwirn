@@ -1,5 +1,6 @@
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeApplications #-}
+
 module Zwirn.Interactive.Prelude.MiniPrelude where
 
 {-
@@ -21,28 +22,19 @@ module Zwirn.Interactive.Prelude.MiniPrelude where
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 -}
 
-import qualified Prelude as P
-import qualified Sound.Tidal.Context as T hiding (fromList)
+-- import qualified Sound.Tidal.Context as T hiding (fromList)
 
-import Zwirn.Interactive.Types
-import Zwirn.Interactive.Transform
 import Zwirn.Interactive.Convert
 import Zwirn.Interactive.TidalT
+import Zwirn.Interactive.Transform
+import Zwirn.Interactive.Types
+import qualified Prelude as P
 
-($) :: Pat b => P ((Pattern a -> Pattern b) -> Pattern a -> Pattern b)
+($) :: (Pat b) => P ((Pattern a -> Pattern b) -> Pattern a -> Pattern b)
 ($) = _toPat _apply
 
-(|$|) :: Pat b => P ((Pattern a -> Pattern b) -> Pattern a -> Pattern b)
-(|$|) = _toPat _applyBoth
-
-(|$) :: Pat b => P ((Pattern a -> Pattern b) -> Pattern a -> Pattern b)
-(|$) = _toPat _applyLeft
-
-($|) :: Pat b => P ((Pattern a -> Pattern b) -> Pattern a -> Pattern b)
-($|) = _toPat _applyRight
-
-silence :: P (Pattern a)
-silence = T.silence
+-- silence :: P (Pattern a)
+-- silence = T.silence
 
 true :: P NumberPattern
 true = _toPat $$ _toTarget (1 :: P.Int)
@@ -50,73 +42,69 @@ true = _toPat $$ _toTarget (1 :: P.Int)
 false :: P NumberPattern
 false = _toPat $$ _toTarget (0 :: P.Int)
 
-id :: Pat a => P (Pattern a -> Pattern a)
+id :: (Pat a) => P (Pattern a -> Pattern a)
 id = _toPat (P.id :: Pattern a -> Pattern a)
 
-const :: Pat a => P (Pattern a -> Pattern b -> Pattern a)
+const :: (Pat a) => P (Pattern a -> Pattern b -> Pattern a)
 const = _toPat (P.const :: Pattern a -> Pattern b -> Pattern a)
 
-tick :: Pat b => P (Pattern a -> (Pattern a -> Pattern b) -> Pattern b)
+tick :: (Pat b) => P (Pattern a -> (Pattern a -> Pattern b) -> Pattern b)
 tick = _toPat (P.flip _apply)
 
-(.) :: (Pat b, Pat d) => P ((Pattern b -> Pattern d) -> (Pattern a -> Pattern b)-> Pattern a -> Pattern d)
+(.) :: (Pat b, Pat d) => P ((Pattern b -> Pattern d) -> (Pattern a -> Pattern b) -> Pattern a -> Pattern d)
 (.) = _toPat compose
-    where compose = (P..) :: ((Pattern b -> Pattern d) -> (Pattern a -> Pattern b)-> Pattern a -> Pattern d)
+  where
+    compose = (P..) :: ((Pattern b -> Pattern d) -> (Pattern a -> Pattern b) -> Pattern a -> Pattern d)
 
-(++) :: P (TextPattern -> TextPattern -> TextPattern)
-(++) = _toPat $$ _lift2 (_toTarget ((P.++) :: P.String -> P.String -> P.String))
-
+-- (++) :: P (TextPattern -> TextPattern -> TextPattern)
+-- (++) = _toPat $$ _lift2 (_toTarget ((P.++) :: P.String -> P.String -> P.String))
 
 -- arithmetic
 
-(+) :: (Pat a, P.Num a) => P (Pattern a -> Pattern a -> Pattern a)
-(+) = _toPat ((P.+) :: P.Num a => Pattern a -> Pattern a -> Pattern a)
+-- (+) :: (Pat a, P.Num a) => P (Pattern a -> Pattern a -> Pattern a)
+-- (+) = _toPat ((P.+) :: (P.Num a) => Pattern a -> Pattern a -> Pattern a)
 
-(+|) :: (Pat a, P.Num a) => P (Pattern a -> Pattern a -> Pattern a)
-(+|) = _toPat ((T.+|) :: P.Num a => Pattern a -> Pattern a -> Pattern a)
+-- (+|) :: (Pat a, P.Num a) => P (Pattern a -> Pattern a -> Pattern a)
+-- (+|) = _toPat ((T.+|) :: (P.Num a) => Pattern a -> Pattern a -> Pattern a)
 
-(|+) :: (Pat a, P.Num a) => P (Pattern a -> Pattern a -> Pattern a)
-(|+) = _toPat ((T.|+) :: P.Num a => Pattern a -> Pattern a -> Pattern a)
+-- (|+) :: (Pat a, P.Num a) => P (Pattern a -> Pattern a -> Pattern a)
+-- (|+) = _toPat ((T.|+) :: (P.Num a) => Pattern a -> Pattern a -> Pattern a)
 
+-- (-) :: (Pat a, P.Num a) => P (Pattern a -> Pattern a -> Pattern a)
+-- (-) = _toPat ((P.-) :: (P.Num a) => Pattern a -> Pattern a -> Pattern a)
 
-(-) :: (Pat a, P.Num a) => P (Pattern a -> Pattern a -> Pattern a)
-(-) = _toPat ((P.-) :: P.Num a => Pattern a -> Pattern a -> Pattern a)
+-- (-|) :: (Pat a, P.Num a) => P (Pattern a -> Pattern a -> Pattern a)
+-- (-|) = _toPat ((T.-|) :: (P.Num a) => Pattern a -> Pattern a -> Pattern a)
 
-(-|) :: (Pat a, P.Num a) => P (Pattern a -> Pattern a -> Pattern a)
-(-|) = _toPat ((T.-|) :: P.Num a => Pattern a -> Pattern a -> Pattern a)
+-- (|-) :: (Pat a, P.Num a) => P (Pattern a -> Pattern a -> Pattern a)
+-- (|-) = _toPat ((T.|-) :: (P.Num a) => Pattern a -> Pattern a -> Pattern a)
 
-(|-) :: (Pat a, P.Num a) => P (Pattern a -> Pattern a -> Pattern a)
-(|-) = _toPat ((T.|-) :: P.Num a => Pattern a -> Pattern a -> Pattern a)
+-- (|*|) :: (Pat a, P.Num a) => P (Pattern a -> Pattern a -> Pattern a)
+-- (|*|) = _toPat ((T.|*|) :: (P.Num a) => Pattern a -> Pattern a -> Pattern a)
 
+-- (*|) :: (Pat a, P.Num a) => P (Pattern a -> Pattern a -> Pattern a)
+-- (*|) = _toPat ((T.*|) :: (P.Num a) => Pattern a -> Pattern a -> Pattern a)
 
-(|*|) :: (Pat a, P.Num a) => P (Pattern a -> Pattern a -> Pattern a)
-(|*|) = _toPat ((T.|*|) :: P.Num a => Pattern a -> Pattern a -> Pattern a)
+-- (|*) :: (Pat a, P.Num a) => P (Pattern a -> Pattern a -> Pattern a)
+-- (|*) = _toPat ((T.|*) :: (P.Num a) => Pattern a -> Pattern a -> Pattern a)
 
-(*|) :: (Pat a, P.Num a) => P (Pattern a -> Pattern a -> Pattern a)
-(*|) = _toPat ((T.*|) :: P.Num a => Pattern a -> Pattern a -> Pattern a)
+-- (//) :: (Pat a, P.Fractional a) => P (Pattern a -> Pattern a -> Pattern a)
+-- (//) = _toPat ((P./) :: (P.Fractional a) => Pattern a -> Pattern a -> Pattern a)
 
-(|*) :: (Pat a, P.Num a) => P (Pattern a -> Pattern a -> Pattern a)
-(|*) = _toPat ((T.|*) :: P.Num a => Pattern a -> Pattern a -> Pattern a)
+-- (/|) :: (Pat a, P.Fractional a) => P (Pattern a -> Pattern a -> Pattern a)
+-- (/|) = _toPat ((T./|) :: (P.Fractional a) => Pattern a -> Pattern a -> Pattern a)
 
-(//) ::(Pat a, P.Fractional a) => P (Pattern a -> Pattern a -> Pattern a)
-(//) = _toPat ((P./) :: P.Fractional a => Pattern a -> Pattern a -> Pattern a)
+-- (|/) :: (Pat a, P.Fractional a) => P (Pattern a -> Pattern a -> Pattern a)
+-- (|/) = _toPat ((T.|/) :: (P.Fractional a) => Pattern a -> Pattern a -> Pattern a)
 
-(/|) :: (Pat a, P.Fractional a) => P (Pattern a -> Pattern a -> Pattern a)
-(/|) = _toPat ((T./|) :: P.Fractional a => Pattern a -> Pattern a -> Pattern a)
+-- round :: P (NumberPattern -> NumberPattern)
+-- round = _toPat $$ _toTarget (_lift (P.round :: Double -> Int))
 
-(|/) :: (Pat a, P.Fractional a) => P (Pattern a -> Pattern a -> Pattern a)
-(|/) = _toPat ((T.|/) :: P.Fractional a => Pattern a -> Pattern a -> Pattern a)
+-- floor :: P (NumberPattern -> NumberPattern)
+-- floor = _toPat $$ _toTarget (_lift (P.floor :: Double -> Int))
 
-round :: P (NumberPattern -> NumberPattern)
-round = _toPat $$ _toTarget (_lift (P.round :: Double -> Int))
-
-floor :: P (NumberPattern -> NumberPattern)
-floor = _toPat $$ _toTarget (_lift (P.floor :: Double -> Int))
-
-show :: Show a => P (Pattern a -> TextPattern)
+show :: (Show a) => P (Pattern a -> TextPattern)
 show = _toPat _show
-
-
 
 -- samples
 
@@ -126,34 +114,33 @@ bd = P.pure $$ Text "bd"
 sn :: P TextPattern
 sn = P.pure $$ Text "sn"
 
-
 --- comparisons
 
-(>=) :: P (NumberPattern -> NumberPattern -> NumberPattern)
-(>=) = _toPat $$ _toTarget _geq
+-- (>=) :: P (NumberPattern -> NumberPattern -> NumberPattern)
+-- (>=) = _toPat $$ _toTarget _geq
 
-(<=) :: P (NumberPattern -> NumberPattern -> NumberPattern)
-(<=) = _toPat $$ _toTarget _leq
+-- (<=) :: P (NumberPattern -> NumberPattern -> NumberPattern)
+-- (<=) = _toPat $$ _toTarget _leq
 
-(==) :: P (NumberPattern -> NumberPattern -> NumberPattern)
-(==) = _toPat $$ _toTarget _eq
+-- (==) :: P (NumberPattern -> NumberPattern -> NumberPattern)
+-- (==) = _toPat $$ _toTarget _eq
 
-(&&) :: P (NumberPattern -> NumberPattern -> NumberPattern)
-(&&) = _toPat $$ _toTarget _and
+-- (&&) :: P (NumberPattern -> NumberPattern -> NumberPattern)
+-- (&&) = _toPat $$ _toTarget _and
 
-(||) :: P (NumberPattern -> NumberPattern -> NumberPattern)
-(||) = _toPat $$ _toTarget _or
+-- (||) :: P (NumberPattern -> NumberPattern -> NumberPattern)
+-- (||) = _toPat $$ _toTarget _or
 
--- list stuff
+-- -- list stuff
 
-head :: Pat a => P (Pattern a -> Pattern a)
-head = _toPat $$ _transformStackSafe P.head
+-- head :: (Pat a) => P (Pattern a -> Pattern a)
+-- head = _toPat $$ _transformStackSafe P.head
 
-at :: Pat a => P (NumberPattern -> Pattern a -> Pattern a)
-at = _toPat $$ (\x -> _at (_fromTarget x))
+-- at :: (Pat a) => P (NumberPattern -> Pattern a -> Pattern a)
+-- at = _toPat $$ (\x -> _at (_fromTarget x))
 
-over :: Pat a => P (NumberPattern -> (Pattern a -> Pattern a) -> Pattern a -> Pattern a)
-over = _toPat $$ (\x -> _at (_fromTarget x))
+-- over :: (Pat a) => P (NumberPattern -> (Pattern a -> Pattern a) -> Pattern a -> Pattern a)
+-- over = _toPat $$ (\x -> _at (_fromTarget x))
 
-layer :: Pat b => P ((Pattern a -> Pattern b) -> Pattern a -> Pattern b)
-layer = _toPat _layer
+-- layer :: (Pat b) => P ((Pattern a -> Pattern b) -> Pattern a -> Pattern b)
+-- layer = _toPat _layer
