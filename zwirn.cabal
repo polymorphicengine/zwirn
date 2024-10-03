@@ -49,6 +49,7 @@ library
                    Zwirn.Language.Hint
                    Zwirn.Language.Default
                    Zwirn.Language
+                   Zwirn.Stream
   build-depends: base,
                  array,
                  text,
@@ -60,7 +61,10 @@ library
                  containers,
                  template-haskell,
                  tidal == 1.10.0,
-                 zwirn-core
+                 zwirn-core,
+                 jack,
+                 explicit-exception,
+                 transformers
   build-tool-depends: alex:alex, happy:happy
   default-language: Haskell2010
   ghc-options: -threaded

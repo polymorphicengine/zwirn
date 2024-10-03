@@ -36,11 +36,12 @@ where
 
 import Control.Concurrent.MVar (MVar, modifyMVar_, putMVar, readMVar, takeMVar)
 import Control.Exception (SomeException, try)
-import Control.Monad.Except
-import Control.Monad.State
 -- import Sound.Tidal.Context (ControlPattern, Stream, State (..), ArcF (..), streamReplace, streamSet, streamOnce, cps, (#), orbit, query, sStateMV)
 -- import Sound.Tidal.ID (ID(..))
 
+import Control.Monad
+import Control.Monad.Except
+import Control.Monad.State
 import Data.List (intercalate, sortOn)
 import Data.Text (Text, unpack)
 import Data.Text.IO (readFile)
@@ -58,6 +59,7 @@ import Zwirn.Language.Syntax
 import Zwirn.Language.TypeCheck.Env
 import Zwirn.Language.TypeCheck.Infer
 import Zwirn.Language.TypeCheck.Types
+import Zwirn.Stream
 import Prelude hiding (readFile)
 
 newtype CIMessage
@@ -80,8 +82,6 @@ data ConfigEnv
   { cSetConfig :: Text -> Text -> IO (),
     cResetConfig :: IO ()
   }
-
-type Stream = MVar NumberPattern
 
 data Environment
   = Environment
@@ -128,19 +128,16 @@ compilerInterpreterWhole editor input = do
   let sorted = sortOn (\(Block x _ _) -> x) blocks
       (Block strt _ _) = head sorted
       (Block _ end _) = last sorted
-  liftIO $ putStrLn $ show sorted
+  liftIO $ print sorted
   setCurrentBlock strt end
   let parseBlock (Block s _ c) = runParserWithPos s editor c
-  ass <- sequence $ map parseBlock sorted
-  rs <- sequence $ map (runActions True) ass
+  ass <- mapM parseBlock sorted
+  rs <- mapM (runActions True) ass
   e <- get
   return (last rs, e, strt, end)
 
 compilerInterpreterBoot :: [Text] -> CI Environment
-compilerInterpreterBoot ps = do
-  _ <- runActions False (map Load ps)
-  e <- get
-  return e
+compilerInterpreterBoot ps = runActions False (map Load ps) >> get
 
 -----------------------------------------------------
 ----------------- Throwing Errors -------------------
@@ -238,7 +235,7 @@ interpret typ input = do
   res <- liftIO $ takeMVar hRV
   case fromResponse res of
     Left err -> throw $ "GHC Error: " ++ err
-    Right a -> return $ a
+    Right a -> return a
 
 -----------------------------------------------------
 ----------------- Compiling Actions -----------------
@@ -258,26 +255,8 @@ showAction :: Term -> CI String
 showAction t = do
   s <- runSimplify t
   rot <- runRotate s
-  ty <- runTypeCheck rot
+  _ <- runTypeCheck rot
   runGenerator True rot
-
--- (Environment {tStream = str}) <- get
--- sMap <- liftIO $ readMVar str
--- case ty of
---   (Forall [] (Qual [] (TypeCon "Number"))) -> do
---     gen <- runGenerator True rot
---     cp <- interpret @NumberPattern AsNum gen
---     return $ intercalate "\n" $ map show "OOPS"
---   (Forall [] (Qual [] (TypeCon "Text"))) -> do
---     gen <- runGenerator True rot
---     cp <- interpret @TextPattern AsText gen
---     return $ intercalate "\n" $ map show "OOPS"
-
--- (Forall [] (Qual [] (TypeCon "ValueMap"))) -> do
---   gen <- runGenerator True rot
---   cp <- interpret @ControlPattern AsVM gen
---   return $ intercalate "\n" $ map show $ query cp (State (Arc 0 1) sMap)
--- _ -> throw $ "Can't show terms of type " ++ ppscheme ty
 
 typeAction :: Term -> CI String
 typeAction t = do
@@ -294,75 +273,28 @@ loadAction path = do
     Right input -> do
       blocks <- runBlocks 0 input
       let sorted = sortOn (\(Block x _ _) -> x) blocks
-      ass <- sequence $ map (runParser . bContent) sorted
-      _ <- sequence $ map (runActions False) ass
-      return ()
+      ass <- mapM (runParser . bContent) sorted
+      mapM_ (runActions False) ass
 
 streamAction :: Bool -> Text -> Term -> CI ()
-streamAction ctx idd t = do
-  s <- runSimplify t
-  rot <- runRotate s
-  ty <- runTypeCheck rot
-  return ()
-
-streamSetAction :: Bool -> Text -> Term -> CI ()
-streamSetAction ctx idd t = do
+streamAction ctx _ t = do
   s <- runSimplify t
   rot <- runRotate s
   ty <- runTypeCheck rot
   gen <- runGenerator ctx rot
-  (Environment {tStream = str}) <- get
-  case ty of
-    (Forall [] (Qual [] (TypeCon "Number"))) -> do
-      modify (\env -> env {typeEnv = extend (typeEnv env) (idd, ty)})
-      interpret @() AsDef $ "let " ++ unpack idd ++ "= _cX' (Num 0) _valToNum " ++ ("\"" ++ unpack idd ++ "\"")
-      np <- interpret @NumberPattern AsNum gen
-      return ()
-    (Forall [] (Qual [] (TypeCon "Text"))) -> do
-      modify (\env -> env {typeEnv = extend (typeEnv env) (idd, ty)})
-      interpret @() AsDef $ "let " ++ unpack idd ++ "= _cX' (Text \"\") _valToText " ++ ("\"" ++ unpack idd ++ "\"")
-      tp <- interpret @TextPattern AsText gen
-      return ()
+  when (isNumberT ty) $ do
+    (Environment {tStream = str}) <- get
+    p <- interpret @NumberPattern AsNum gen
+    liftIO $ streamReplace str p
 
--- (Forall [] (Qual [] (TypeCon "ValueMap"))) -> do
---   modify (\env -> env {typeEnv = extend (typeEnv env) (idd, ty)})
---   interpret @() AsDef $ "let " ++ unpack idd ++ "= _cX' _emptyVM _valToVM " ++ ("\"" ++ unpack idd ++ "\"")
---   tp <- interpret @ControlPattern AsVM gen
---   liftIO $ streamSet str (unpack idd) tp
--- (Forall _ (Qual [] (TypeVar _))) -> do
---   modify (\env -> env {typeEnv = extend (typeEnv env) (idd, ty)})
---   interpret @() AsDef $ "let " ++ unpack idd ++ "= _cX' _emptyVM _valToVM " ++ ("\"" ++ unpack idd ++ "\"")
---   tp <- interpret @ControlPattern AsVM gen
---   liftIO $ streamSet str (unpack idd) tp
--- _ -> throw $ "Type Error: can only set basic patterns"
+streamSetAction :: Bool -> Text -> Term -> CI ()
+streamSetAction _ _ _ = throw "not implemented"
 
 streamOnceAction :: Bool -> Term -> CI ()
-streamOnceAction ctx t = do
-  s <- runSimplify t
-  rot <- runRotate s
-  ty <- runTypeCheck rot
-  case ty of
-    (Forall [] (Qual [] (TypeCon "ValueMap"))) -> do
-      gen <- runGenerator ctx rot
-      -- cp <- interpret AsVM gen
-      (Environment {tStream = str}) <- get
-      return ()
-    _ -> throw $ "Type Error: can only stream value maps"
+streamOnceAction _ _ = throw "not implemented"
 
 streamSetTempoAction :: Bool -> Tempo -> Term -> CI ()
-streamSetTempoAction ctx tempo t = do
-  s <- runSimplify t
-  rot <- runRotate s
-  ty <- runTypeCheck rot
-  case ty of
-    (Forall [] (Qual [] (TypeCon "Number"))) -> do
-      gen <- runGenerator ctx rot
-      np <- interpret @NumberPattern AsNum gen
-      (Environment {tStream = str}) <- get
-      case tempo of
-        CPS -> return ()
-        BPM -> return ()
-    _ -> throw $ "Type Error: tempo must be a number"
+streamSetTempoAction _ _ _ = throw "not implemented"
 
 jsAction :: Bool -> Term -> CI ()
 jsAction ctx t = do
@@ -382,14 +314,14 @@ jsAction ctx t = do
       (Environment {jsMV = maybemv}) <- get
       case maybemv of
         Just mv -> liftIO $ modifyMVar_ mv (const $ pure p)
-        Nothing -> throw $ "No JavaScript Interpreter available"
-    _ -> throw $ "Type Error: can only accept text"
+        Nothing -> throw "No JavaScript Interpreter available"
+    _ -> throw "Type Error: can only accept text"
 
 resetConfigAction :: CI String
 resetConfigAction = do
   (Environment {confEnv = mayEnv}) <- get
   case mayEnv of
-    Nothing -> throw $ "reset config not available"
+    Nothing -> throw "reset config not available"
     Just (ConfigEnv _ reset) -> liftIO $ reset >> return "configuration reset to default! please restart for it to have an effect!"
 
 setConfigAction :: Text -> Text -> CI String
@@ -397,13 +329,15 @@ setConfigAction key v = do
   (Environment {confEnv = mayEnv}) <- get
   case mayEnv of
     Nothing -> throw $ "set config not available"
-    Just (ConfigEnv setC _) -> case elem key tidalKeys of
-      False -> case elem key editorKeys of
-        False -> case elem key otherKeys of
-          False -> throw $ "unknown configuration key!"
-          True -> liftIO $ setC key v >> return "configuration set! please restart for it to have an effect!"
-        True -> liftIO $ setC ("editor." <> key) v >> return "configuration set! please restart for it to have an effect!"
-      True -> liftIO $ setC ("tidal." <> key) v >> return "configuration set! please restart for it to have an effect!"
+    Just (ConfigEnv setC _) ->
+      ( if key `elem` tidalKeys
+          then liftIO $ setC ("tidal." <> key) v >> return "configuration set! please restart for it to have an effect!"
+          else
+            ( if key `elem` editorKeys
+                then liftIO $ setC ("editor." <> key) v >> return "configuration set! please restart for it to have an effect!"
+                else (if key `elem` otherKeys then liftIO $ setC key v >> return "configuration set! please restart for it to have an effect!" else throw "unknown configuration key!")
+            )
+      )
   where
     tidalKeys = ["dirtport", "latency", "frameTimespan", "processAhead", "link", "skipTicks", "quantum", "beatsPerCycle"]
     editorKeys = ["lineNumbers", "keyMap", "matchBrackets", "autoCloseBrackets"]
@@ -423,4 +357,9 @@ runAction _ (Config k v) = setConfigAction k v
 runAction _ ResetConfig = resetConfigAction
 
 runActions :: Bool -> [Action] -> CI String
-runActions b as = fmap last $ sequence $ map (runAction b) as
+runActions b as = last <$> mapM (runAction b) as
+
+isNumberT :: Scheme -> Bool
+isNumberT (Forall _ (Qual _ (TypeCon "Number"))) = True
+isNumberT (Forall _ (Qual [] (TypeVar _))) = True
+isNumberT _ = False

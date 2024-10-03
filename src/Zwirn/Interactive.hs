@@ -1,34 +1,37 @@
 {-# OPTIONS_GHC -Wno-unused-imports #-}
-module Zwirn.Interactive
-    ( module Zwirn.Interactive.Prelude.Chords
-    , module Zwirn.Interactive.Prelude.Core
-    , module Zwirn.Interactive.Prelude.Control
-    , module Zwirn.Interactive.Prelude.Hydra
-    , module Zwirn.Interactive.Prelude.MiniPrelude
-    , module Zwirn.Interactive.Prelude.Params
-    , module Zwirn.Interactive.Generic
-    , module Zwirn.Interactive.Transform
-    , module Zwirn.Interactive.Types
-    , module Zwirn.Interactive.Convert
-    , module Zwirn.Interactive.HydraT
-    , module Zwirn.Interactive.TidalT
-    ) where
 
+module Zwirn.Interactive
+  ( module Zwirn.Interactive.Prelude.Chords,
+    module Zwirn.Interactive.Prelude.Core,
+    module Zwirn.Interactive.Prelude.Control,
+    module Zwirn.Interactive.Prelude.Hydra,
+    module Zwirn.Interactive.Prelude.MiniPrelude,
+    module Zwirn.Interactive.Prelude.Params,
+    module Zwirn.Interactive.Generic,
+    module Zwirn.Interactive.Transform,
+    module Zwirn.Interactive.Types,
+    module Zwirn.Interactive.Convert,
+    module Zwirn.Interactive.HydraT,
+    module Zwirn.Interactive.TidalT,
+  )
+where
+
+import qualified Nested as Z
+import qualified Pattern as Z
+import qualified Time as Z
+import Zwirn.Interactive.Convert
+import Zwirn.Interactive.Generic
+import Zwirn.Interactive.HydraT
 import Zwirn.Interactive.Prelude.Chords
-import Zwirn.Interactive.Prelude.Core
 import Zwirn.Interactive.Prelude.Control
+import Zwirn.Interactive.Prelude.Core
 import Zwirn.Interactive.Prelude.Hydra
 import Zwirn.Interactive.Prelude.MiniPrelude
 import Zwirn.Interactive.Prelude.Params
-import Zwirn.Interactive.Generic
-import Zwirn.Interactive.Types
-import Zwirn.Interactive.Transform
-import Zwirn.Interactive.Convert
-import Zwirn.Interactive.HydraT
 import Zwirn.Interactive.TidalT
-
+import Zwirn.Interactive.Transform
+import Zwirn.Interactive.Types
 import qualified Prelude as P
-import qualified Sound.Tidal.Context as T
 
 {-
     Interactive.hs - re-exports of all modules that have to be

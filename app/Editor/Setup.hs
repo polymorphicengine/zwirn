@@ -37,6 +37,7 @@ import Zwirn.Interactive.Types (Text (..))
 import Zwirn.Language.Compiler
 import Zwirn.Language.Default
 import Zwirn.Language.Hint
+import Zwirn.Stream
 
 setup :: HintMode -> Window -> UI ()
 setup mode win = void $ do
@@ -61,7 +62,10 @@ setup mode win = void $ do
 -- setupToggleHydra hydBuf hyd envMV
 
 setupStream :: UI Stream
-setupStream = liftIO $ newMVar (pure 0)
+setupStream = do
+  str <- liftIO $ newMVar (pure 0)
+  _ <- liftIO $ forkIO $ startStream str
+  return str
 
 -- do
 --   target <- configureTarget

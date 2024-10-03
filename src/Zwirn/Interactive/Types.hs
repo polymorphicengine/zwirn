@@ -52,7 +52,7 @@ type Maybe = P.Maybe
 -- this is the only number type in the system to avoid type ambiguities
 newtype Number
   = Num Double
-  deriving (P.Eq, P.Num, P.Enum, P.Ord, P.Fractional)
+  deriving (P.Eq, P.Num, P.Enum, P.Ord, P.Fractional, P.Real, P.RealFrac)
 
 newtype Text
   = Text Text.Text
