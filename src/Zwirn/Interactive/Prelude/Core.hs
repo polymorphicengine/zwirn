@@ -18,7 +18,7 @@ module Zwirn.Interactive.Prelude.Core where
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 -}
 
-import qualified Pattern as Z
+import qualified Sound.Zwirn.Pattern as Z
 import Zwirn.Interactive.Convert
 import Zwirn.Interactive.Transform
 import Zwirn.Interactive.Types

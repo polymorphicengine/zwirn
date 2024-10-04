@@ -61,7 +61,7 @@ library
                  containers,
                  template-haskell,
                  tidal == 1.10.0,
-                 zwirn-core,
+                 zwirn-core == 0.1.0.1,
                  jack,
                  explicit-exception,
                  transformers

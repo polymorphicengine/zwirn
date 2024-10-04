@@ -19,7 +19,7 @@ module Zwirn.Interactive.TidalT where
 -}
 
 import qualified Data.Text as Text
-import qualified Pattern as Z
+import qualified Sound.Zwirn.Pattern as Z
 import Zwirn.Interactive.Types
 import qualified Prelude as P
 

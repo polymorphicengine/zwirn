@@ -27,8 +27,8 @@ module Zwirn.Interactive.Types where
 
 import qualified Data.Map as Map
 import qualified Data.Text as Text
-import qualified Pattern as Z
-import qualified Time as Z
+import qualified Sound.Zwirn.Pattern as Z
+import qualified Sound.Zwirn.Time as Z
 import qualified Prelude as P
 
 type Pattern = Z.Pattern

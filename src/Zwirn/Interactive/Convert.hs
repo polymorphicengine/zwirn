@@ -23,7 +23,7 @@ module Zwirn.Interactive.Convert where
 -}
 
 import qualified Data.Text as Text
-import qualified Time as Z
+import qualified Sound.Zwirn.Time as Z
 import Zwirn.Interactive.Types
 import qualified Prelude as P
 

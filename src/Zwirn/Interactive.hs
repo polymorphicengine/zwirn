@@ -16,9 +16,10 @@ module Zwirn.Interactive
   )
 where
 
-import qualified Nested as Z
-import qualified Pattern as Z
-import qualified Time as Z
+import qualified Sound.Zwirn.Nested as Z
+import qualified Sound.Zwirn.Pattern as Z
+import qualified Sound.Zwirn.Query as Z
+import qualified Sound.Zwirn.Time as Z
 import Zwirn.Interactive.Convert
 import Zwirn.Interactive.Generic
 import Zwirn.Interactive.HydraT

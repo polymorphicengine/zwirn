@@ -6,10 +6,10 @@ import qualified Control.Monad.Trans.Class as Trans
 import Data.Array.Storable (writeArray)
 import Data.IORef
 import Data.Word
-import Nested
 import qualified Sound.JACK as Jack
 import Sound.JACK.Audio
 import qualified Sound.JACK.Exception as JackExc
+import Sound.Zwirn.Nested
 import Zwirn.Interactive.Types (NumberPattern)
 
 type Stream = MVar NumberPattern
