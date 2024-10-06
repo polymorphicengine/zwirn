@@ -95,3 +95,9 @@ infixl 0 $$
 
 ($$) :: (a -> b) -> a -> b
 ($$) = (P.$)
+
+_fromText :: Text -> P.String
+_fromText (Text t) = Text.unpack t
+
+append :: Text -> Text -> Text
+append (Text a) (Text b) = Text (Text.append a b)

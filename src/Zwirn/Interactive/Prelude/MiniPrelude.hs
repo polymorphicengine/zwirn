@@ -24,6 +24,7 @@ module Zwirn.Interactive.Prelude.MiniPrelude where
 
 -- import qualified Sound.Tidal.Context as T hiding (fromList)
 
+import qualified Sound.Zwirn.Classes as Z
 import Zwirn.Interactive.Convert
 import Zwirn.Interactive.TidalT
 import Zwirn.Interactive.Transform
@@ -56,13 +57,13 @@ tick = _toPat (P.flip _apply)
   where
     compose = (P..) :: ((Pattern b -> Pattern d) -> (Pattern a -> Pattern b) -> Pattern a -> Pattern d)
 
--- (++) :: P (TextPattern -> TextPattern -> TextPattern)
--- (++) = _toPat $$ _lift2 (_toTarget ((P.++) :: P.String -> P.String -> P.String))
+(++) :: P (TextPattern -> TextPattern -> TextPattern)
+(++) = _toPat (P.liftA2 @Pattern append)
 
 -- arithmetic
 
--- (+) :: (Pat a, P.Num a) => P (Pattern a -> Pattern a -> Pattern a)
--- (+) = _toPat ((P.+) :: (P.Num a) => Pattern a -> Pattern a -> Pattern a)
+(+) :: (Pat a, P.Num a) => P (Pattern a -> Pattern a -> Pattern a)
+(+) = _toPat ((P.+) :: (P.Num a) => Pattern a -> Pattern a -> Pattern a)
 
 -- (+|) :: (Pat a, P.Num a) => P (Pattern a -> Pattern a -> Pattern a)
 -- (+|) = _toPat ((T.+|) :: (P.Num a) => Pattern a -> Pattern a -> Pattern a)
@@ -70,8 +71,8 @@ tick = _toPat (P.flip _apply)
 -- (|+) :: (Pat a, P.Num a) => P (Pattern a -> Pattern a -> Pattern a)
 -- (|+) = _toPat ((T.|+) :: (P.Num a) => Pattern a -> Pattern a -> Pattern a)
 
--- (-) :: (Pat a, P.Num a) => P (Pattern a -> Pattern a -> Pattern a)
--- (-) = _toPat ((P.-) :: (P.Num a) => Pattern a -> Pattern a -> Pattern a)
+(-) :: (Pat a, P.Num a) => P (Pattern a -> Pattern a -> Pattern a)
+(-) = _toPat ((P.-) :: (P.Num a) => Pattern a -> Pattern a -> Pattern a)
 
 -- (-|) :: (Pat a, P.Num a) => P (Pattern a -> Pattern a -> Pattern a)
 -- (-|) = _toPat ((T.-|) :: (P.Num a) => Pattern a -> Pattern a -> Pattern a)
@@ -98,7 +99,7 @@ tick = _toPat (P.flip _apply)
 -- (|/) = _toPat ((T.|/) :: (P.Fractional a) => Pattern a -> Pattern a -> Pattern a)
 
 -- round :: P (NumberPattern -> NumberPattern)
--- round = _toPat $$ _toTarget (_lift (P.round :: Double -> Int))
+-- round = _toPat $$ _toTarget ((P.round) :: Pattern Double -> Pattern Int)
 
 -- floor :: P (NumberPattern -> NumberPattern)
 -- floor = _toPat $$ _toTarget (_lift (P.floor :: Double -> Int))
@@ -116,31 +117,17 @@ sn = P.pure $$ Text "sn"
 
 --- comparisons
 
--- (>=) :: P (NumberPattern -> NumberPattern -> NumberPattern)
--- (>=) = _toPat $$ _toTarget _geq
+(>=) :: P (NumberPattern -> NumberPattern -> NumberPattern)
+(>=) = _toPat $$ _toTarget ((Z.>=) :: (Pattern Double -> Pattern Double -> Pattern Bool))
 
--- (<=) :: P (NumberPattern -> NumberPattern -> NumberPattern)
--- (<=) = _toPat $$ _toTarget _leq
+(<=) :: P (NumberPattern -> NumberPattern -> NumberPattern)
+(<=) = _toPat $$ _toTarget ((Z.<=) :: (Pattern Double -> Pattern Double -> Pattern Bool))
 
--- (==) :: P (NumberPattern -> NumberPattern -> NumberPattern)
--- (==) = _toPat $$ _toTarget _eq
+(==) :: P (NumberPattern -> NumberPattern -> NumberPattern)
+(==) = _toPat $$ _toTarget ((Z.==) :: (Pattern Double -> Pattern Double -> Pattern Bool))
 
 -- (&&) :: P (NumberPattern -> NumberPattern -> NumberPattern)
 -- (&&) = _toPat $$ _toTarget _and
 
 -- (||) :: P (NumberPattern -> NumberPattern -> NumberPattern)
 -- (||) = _toPat $$ _toTarget _or
-
--- -- list stuff
-
--- head :: (Pat a) => P (Pattern a -> Pattern a)
--- head = _toPat $$ _transformStackSafe P.head
-
--- at :: (Pat a) => P (NumberPattern -> Pattern a -> Pattern a)
--- at = _toPat $$ (\x -> _at (_fromTarget x))
-
--- over :: (Pat a) => P (NumberPattern -> (Pattern a -> Pattern a) -> Pattern a -> Pattern a)
--- over = _toPat $$ (\x -> _at (_fromTarget x))
-
--- layer :: (Pat b) => P ((Pattern a -> Pattern b) -> Pattern a -> Pattern b)
--- layer = _toPat _layer

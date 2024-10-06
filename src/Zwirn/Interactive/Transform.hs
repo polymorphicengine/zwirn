@@ -22,6 +22,7 @@ module Zwirn.Interactive.Transform where
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 -}
 
+import qualified Data.Text as Text
 import Zwirn.Interactive.TidalT
 import Zwirn.Interactive.Types
 import qualified Prelude as P
@@ -38,7 +39,7 @@ instance (Pat b) => Pat (Pattern a -> b) where
 instance (Pat b, Pat c) => Pat ((Pattern a -> Pattern b) -> c) where
   _toPat g = P.pure (\x -> _toPat (g $$ _apply x))
 
-instance Pat ([Pattern a]) where
+instance Pat [Pattern a] where
   _toPat = P.pure
 
 instance Pat Number where
@@ -46,3 +47,6 @@ instance Pat Number where
 
 instance Pat Text where
   _toPat = P.pure
+
+instance Pat String where
+  _toPat s = P.pure (Text (Text.pack s))

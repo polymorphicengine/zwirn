@@ -18,11 +18,13 @@ module Zwirn.Interactive.Prelude.Core where
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 -}
 
+import qualified Sound.Zwirn.Classes as Z
 import qualified Sound.Zwirn.Pattern as Z
+import qualified Sound.Zwirn.Random as Z
 import Zwirn.Interactive.Convert
 import Zwirn.Interactive.Transform
 import Zwirn.Interactive.Types
-import qualified Prelude as P ()
+import qualified Prelude as P
 
 ---------------------------------------------
 -------------manipulating time---------------
@@ -49,17 +51,17 @@ rev = _toPat Z.rev
 -- plyWith :: (Pat a) => P (NumberPattern -> (Pattern a -> Pattern a) -> Pattern a -> Pattern a)
 -- plyWith = _toPat ((T.plyWith :: Pattern Double -> (Pattern a -> Pattern a) -> Pattern a -> Pattern a) . _fromTarget)
 
--- rotL :: (Pat a) => P (NumberPattern -> Pattern a -> Pattern a)
--- rotL = _toPat (Z.shift . _fromTarget)
+rotR :: (Pat a) => P (NumberPattern -> Pattern a -> Pattern a)
+rotR = _toPat (\n -> Z.shift (_fromTarget n))
 
--- (<~) :: (Pat a) => P (NumberPattern -> Pattern a -> Pattern a)
--- (<~) = rotL
+(~>) :: (Pat a) => P (NumberPattern -> Pattern a -> Pattern a)
+(~>) = rotR
 
--- rotR :: (Pat a) => P (NumberPattern -> Pattern a -> Pattern a)
--- rotR = _toPat (\x y -> (_fromTarget x) T.~> y)
+(<~) :: (Pat a) => P (NumberPattern -> Pattern a -> Pattern a)
+(<~) = rotL
 
--- (~>) :: (Pat a) => P (NumberPattern -> Pattern a -> Pattern a)
--- (~>) = rotR
+rotL :: (Pat a) => P (NumberPattern -> Pattern a -> Pattern a)
+rotL = _toPat (\n -> Z.shift (_fromTarget $$ (P.-) 0 n))
 
 -- slowSqueeze :: (Pat a) => P (NumberPattern -> Pattern a -> Pattern a)
 -- slowSqueeze = _toPat (\x -> T.slowSqueeze (_fromTarget x))
@@ -70,11 +72,11 @@ rev = _toPat Z.rev
 -- repeatCycles :: (Pat a) => P (NumberPattern -> Pattern a -> Pattern a)
 -- repeatCycles = _toPat (\x -> T.repeatCycles (_fromTarget x))
 
--- timeLoop :: (Pat a) => P (NumberPattern -> Pattern a -> Pattern a)
--- timeLoop = _toPat (\tm -> T.timeLoop $$ _fromTarget tm)
+zoom :: (Pat a) => P (NumberPattern -> NumberPattern -> Pattern a -> Pattern a)
+zoom = _toPat (\tst tend -> Z.zoom (_fromTarget tst) (_fromTarget tend))
 
--- loop :: (Pat a) => P (NumberPattern -> Pattern a -> Pattern a)
--- loop = timeLoop
+timeloop :: (Pat a) => P (NumberPattern -> NumberPattern -> Pattern a -> Pattern a)
+timeloop = _toPat (\tst tend -> Z.timeloop (_fromTarget tst) (_fromTarget tend))
 
 -- loopFirst :: (Pat a) => P (Pattern a -> Pattern a)
 -- loopFirst = _toPat T.loopFirst
@@ -153,17 +155,14 @@ rev = _toPat Z.rev
 -----------------randomness------------------
 ---------------------------------------------
 
--- rand :: P NumberPattern
--- rand = _toTarget (T.rand :: Pattern Double)
-
--- brand :: P NumberPattern
--- brand = _toTarget T.brand
+rand :: P NumberPattern
+rand = _toTarget (Z.rand :: Pattern Double)
 
 -- brandBy :: P (NumberPattern -> NumberPattern)
 -- brandBy = _toPat $$ _toTarget T.brandBy
 
--- irand :: P (NumberPattern -> NumberPattern)
--- irand = _toPat $$ _toTarget (T.irand :: Pattern Int -> Pattern Double)
+irand :: P (NumberPattern -> NumberPattern)
+irand = _toPat $$ _toTarget Z.irand
 
 -- perlin :: P NumberPattern
 -- perlin = _toTarget (T.perlin :: Pattern Double)
@@ -189,11 +188,11 @@ rev = _toPat Z.rev
 -- unDegradeBy :: (Pat a) => P (NumberPattern -> Pattern a -> Pattern a)
 -- unDegradeBy = _toPat (\x -> T.unDegradeBy $$ _fromTarget x)
 
--- sometimesBy :: (Pat a) => P (NumberPattern -> (Pattern a -> Pattern a) -> Pattern a -> Pattern a)
--- sometimesBy = _toPat (\x -> T.sometimesBy (_fromTarget x))
+sometimesBy :: (Pat a) => P (NumberPattern -> (Pattern a -> Pattern a) -> Pattern a -> Pattern a)
+sometimesBy = _toPat (\x -> Z.sometimesBy (_fromTarget x))
 
--- sometimes :: (Pat a) => P ((Pattern a -> Pattern a) -> Pattern a -> Pattern a)
--- sometimes = _toPat T.sometimes
+sometimes :: (Pat a) => P ((Pattern a -> Pattern a) -> Pattern a -> Pattern a)
+sometimes = _toPat Z.sometimes
 
 -- rarely :: (Pat a) => P ((Pattern a -> Pattern a) -> Pattern a -> Pattern a)
 -- rarely = _toPat T.rarely
@@ -213,24 +212,24 @@ rev = _toPat Z.rev
 -- always :: (Pat a) => P ((Pattern a -> Pattern a) -> Pattern a -> Pattern a)
 -- always = _toPat T.always
 
--- someCyclesBy :: (Pat a) => P (NumberPattern -> (Pattern a -> Pattern a) -> Pattern a -> Pattern a)
--- someCyclesBy = _toPat (\x -> T.someCyclesBy (_fromTarget x))
+somecyclesBy :: (Pat a) => P (NumberPattern -> (Pattern a -> Pattern a) -> Pattern a -> Pattern a)
+somecyclesBy = _toPat (\x -> Z.somecyclesBy (_fromTarget x))
 
--- someCycles :: (Pat a) => P ((Pattern a -> Pattern a) -> Pattern a -> Pattern a)
--- someCycles = _toPat T.always
+somecycles :: (Pat a) => P ((Pattern a -> Pattern a) -> Pattern a -> Pattern a)
+somecycles = _toPat Z.somecycles
 
 ---------------------------------------------
 ----------------conditional------------------
 ---------------------------------------------
 
 -- every :: (Pat a) => P (NumberPattern -> (Pattern a -> Pattern a) -> Pattern a -> Pattern a)
--- every = _toPat (\x -> T.every $$ _fromTarget x)
+-- every = _toPat (\x -> Z.every (_fromTarget x))
 
 -- whenmod :: (Pat a) => P (NumberPattern -> NumberPattern -> (Pattern a -> Pattern a) -> Pattern a -> Pattern a)
 -- whenmod = _toPat (\x y -> T.whenmod (_fromTarget x) (_fromTarget y))
 
--- while :: (Pat a) => P (NumberPattern -> (Pattern a -> Pattern a) -> Pattern a -> Pattern a)
--- while = _toPat (\x -> T.while $$ _fromTarget x)
+while :: (Pat a) => P (NumberPattern -> (Pattern a -> Pattern a) -> Pattern a -> Pattern a)
+while = _toPat (\x -> Z.while $$ _fromTarget x)
 
 ---------------------------------------------
 ------------------structure------------------

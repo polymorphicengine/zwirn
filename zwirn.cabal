@@ -1,20 +1,12 @@
 cabal-version:      3.0
 name:               zwirn
-
--- The package version.
--- See the Haskell package versioning policy (PVP) for standards
--- guiding when and how versions should be incremented.
--- https://pvp.haskell.org
--- PVP summary:     +-+------- breaking API changes
---                  | | +----- non-breaking API additions
---                  | | | +--- code changes with no API change
 version:            0.1.0.0
 license:            GPL-3.0-or-later
 license-file:       LICENSE
 author:             Martin Gius
 maintainer:         gius_martin@yahoo.de
 build-type:         Simple
-extra-doc-files:    CHANGELOG.md, README.md
+extra-doc-files:    README.md
 
 
 library
@@ -50,7 +42,7 @@ library
                    Zwirn.Language.Default
                    Zwirn.Language
                    Zwirn.Stream
-  build-depends: base,
+  build-depends: base >= 4.19,
                  array,
                  text,
                  pretty,
@@ -79,7 +71,7 @@ executable zwirn-interpreter
                       Editor.Highlight
                       Editor.Hydra
                       Editor.CommandLine
-    build-depends:    base,
+    build-depends:    base >= 4.19,
                       text,
                       containers,
                       tidal == 1.10.0,
@@ -101,7 +93,7 @@ executable zwirn-interpreter
 
 executable generate-default
    main-is:          Main.hs
-   build-depends:    base,
+   build-depends:    base >= 4.19,
                      zwirn,
                      text,
                      process
