@@ -21,6 +21,7 @@ module Zwirn.Interactive.TidalT where
 import qualified Data.Text as Text
 import qualified Sound.Zwirn.Pattern as Z
 import Zwirn.Interactive.Types
+import Zwirn.Interactive.Convert
 import qualified Prelude as P
 
 -- the following functions are needed for converting the AST to a haskell expression
@@ -40,3 +41,6 @@ _pat = P.pure
 -- SApp
 _apply :: Pattern (Pattern a -> Pattern b) -> Pattern a -> Pattern b
 _apply fp p = Z.innerJoin $$ P.fmap (\f -> f p) fp
+
+_euclid :: NumberPattern -> NumberPattern -> Pattern a -> Pattern a
+_euclid a b = Z.euclid (_fromTarget a) (_fromTarget b)

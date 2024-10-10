@@ -43,7 +43,7 @@ processBeat output ref str nframes = Trans.lift $ do
   mapM_
     ( \i -> do
         n <- getSampleNumber ref
-        be <- convert <$> readMVar str
-        writeArray outArr (Jack.nframesIndices nframes !! i) (fromIntegral (be $ floor $ fromIntegral n / 6) / 127 - 1)
+        p <- readMVar str
+        writeArray outArr (Jack.nframesIndices nframes !! i) (realToFrac $ sVal $ zwirnAt p (fromIntegral n / 48000))
     )
     [0 .. length (Jack.nframesIndices nframes) - 1]

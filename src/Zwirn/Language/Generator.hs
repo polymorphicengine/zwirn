@@ -39,8 +39,8 @@ generate (SElong t _) = "(" ++ generate t ++ ")"
 generate (SSeq ts) = "(Z.timecat " ++ "[" ++ intercalate "," ss ++ "])"
   where
     ss = map (\(n, m) -> "(" ++ show n ++ "," ++ generate m ++ ")") $ resolveSize $ ts
-generate (SStack ts) = "(Z.stack [" ++ intercalate "," (map generate ts) ++ "])"
-generate (SChoice seed ts) = "(_choiceBy " ++ show seed ++ " [" ++ intercalate "," (map generate ts) ++ "])"
+generate (SStack ts) = "(stack [" ++ intercalate "," (map generate ts) ++ "])"
+generate (SChoice seed ts) = "(Z.chooseWithSeed " ++ show seed ++ " [" ++ intercalate "," (map generate ts) ++ "])"
 generate (SEuclid s n m (Just k)) = "(_euclidOff " ++ generate n ++ " " ++ generate m ++ " " ++ generate k ++ " " ++ generate s ++ ")"
 generate (SEuclid s n m Nothing) = "(_euclid " ++ generate n ++ " " ++ generate m ++ " " ++ generate s ++ ")"
 generate (SApp x y) = "(_apply " ++ generate x ++ " " ++ generate y ++ ")"

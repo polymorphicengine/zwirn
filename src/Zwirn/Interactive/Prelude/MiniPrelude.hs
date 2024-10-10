@@ -25,6 +25,7 @@ module Zwirn.Interactive.Prelude.MiniPrelude where
 -- import qualified Sound.Tidal.Context as T hiding (fromList)
 
 import qualified Sound.Zwirn.Classes as Z
+import qualified Sound.Zwirn.Pattern as Z
 import Zwirn.Interactive.Convert
 import Zwirn.Interactive.TidalT
 import Zwirn.Interactive.Transform
@@ -80,8 +81,8 @@ tick = _toPat (P.flip _apply)
 -- (|-) :: (Pat a, P.Num a) => P (Pattern a -> Pattern a -> Pattern a)
 -- (|-) = _toPat ((T.|-) :: (P.Num a) => Pattern a -> Pattern a -> Pattern a)
 
--- (|*|) :: (Pat a, P.Num a) => P (Pattern a -> Pattern a -> Pattern a)
--- (|*|) = _toPat ((T.|*|) :: (P.Num a) => Pattern a -> Pattern a -> Pattern a)
+(|*) :: (Pat a, P.Num a) => P (Pattern a -> Pattern a -> Pattern a)
+(|*) = _toPat ((P.*) :: (P.Num a) => Pattern a -> Pattern a -> Pattern a)
 
 -- (*|) :: (Pat a, P.Num a) => P (Pattern a -> Pattern a -> Pattern a)
 -- (*|) = _toPat ((T.*|) :: (P.Num a) => Pattern a -> Pattern a -> Pattern a)
@@ -89,8 +90,8 @@ tick = _toPat (P.flip _apply)
 -- (|*) :: (Pat a, P.Num a) => P (Pattern a -> Pattern a -> Pattern a)
 -- (|*) = _toPat ((T.|*) :: (P.Num a) => Pattern a -> Pattern a -> Pattern a)
 
--- (//) :: (Pat a, P.Fractional a) => P (Pattern a -> Pattern a -> Pattern a)
--- (//) = _toPat ((P./) :: (P.Fractional a) => Pattern a -> Pattern a -> Pattern a)
+(//) :: (Pat a, P.Fractional a) => P (Pattern a -> Pattern a -> Pattern a)
+(//) = _toPat ((P./) :: (P.Fractional a) => Pattern a -> Pattern a -> Pattern a)
 
 -- (/|) :: (Pat a, P.Fractional a) => P (Pattern a -> Pattern a -> Pattern a)
 -- (/|) = _toPat ((T./|) :: (P.Fractional a) => Pattern a -> Pattern a -> Pattern a)
@@ -131,3 +132,6 @@ sn = P.pure $$ Text "sn"
 
 -- (||) :: P (NumberPattern -> NumberPattern -> NumberPattern)
 -- (||) = _toPat $$ _toTarget _or
+
+ascii :: P (TextPattern -> NumberPattern)
+ascii = _toPat (_toTarget Z.ascii)

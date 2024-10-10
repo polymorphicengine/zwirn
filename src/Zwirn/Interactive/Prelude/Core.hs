@@ -91,8 +91,8 @@ timeloop = _toPat (\tst tend -> Z.timeloop (_fromTarget tst) (_fromTarget tend))
 --------------------signals------------------
 ---------------------------------------------
 
--- sine :: P NumberPattern
--- sine = _toTarget (T.sine :: Pattern Double)
+sine :: P NumberPattern
+sine = _toTarget Z.sine
 
 -- sine2 :: P NumberPattern
 -- sine2 = _toTarget (T.sine2 :: Pattern Double)
@@ -103,8 +103,8 @@ timeloop = _toPat (\tst tend -> Z.timeloop (_fromTarget tst) (_fromTarget tend))
 -- cosine2 :: P NumberPattern
 -- cosine2 = _toTarget (T.cosine2 :: Pattern Double)
 
--- saw :: P NumberPattern
--- saw = _toTarget (T.saw :: Pattern Double)
+saw :: P NumberPattern
+saw = _toTarget Z.saw
 
 -- saw2 :: P NumberPattern
 -- saw2 = _toTarget (T.saw2 :: Pattern Double)
@@ -121,8 +121,8 @@ timeloop = _toPat (\tst tend -> Z.timeloop (_fromTarget tst) (_fromTarget tend))
 -- tri2 :: P NumberPattern
 -- tri2 = _toTarget (T.tri2 :: Pattern Double)
 
--- square :: P NumberPattern
--- square = _toTarget (T.square :: Pattern Double)
+square :: P NumberPattern
+square = _toTarget Z.sq
 
 -- square2 :: P NumberPattern
 -- square2 = _toTarget (T.square2 :: Pattern Double)
@@ -142,11 +142,11 @@ timeloop = _toPat (\tst tend -> Z.timeloop (_fromTarget tst) (_fromTarget tend))
 -- smooth :: P (NumberPattern -> NumberPattern)
 -- smooth = _toPat $$ _toTarget (T.smooth :: Pattern Double -> Pattern Double)
 
--- segment :: (Pat a) => P (NumberPattern -> Pattern a -> Pattern a)
--- segment = _toPat $$ (\x -> T.segment $$ _fromTarget x)
+segment :: (Pat a) => P (NumberPattern -> Pattern a -> Pattern a)
+segment = _toPat $$ (\x -> Z.segment $$ _fromTarget x)
 
--- range :: P (NumberPattern -> NumberPattern -> NumberPattern -> NumberPattern)
--- range = _toPat $$ _toTarget (T.range :: Pattern Double -> Pattern Double -> Pattern Double -> Pattern Double)
+range :: P (NumberPattern -> NumberPattern -> NumberPattern -> NumberPattern)
+range = _toPat $$ _toTarget (Z.range :: Pattern Double -> Pattern Double -> Pattern Double -> Pattern Double)
 
 -- rangex :: P (NumberPattern -> NumberPattern -> NumberPattern -> NumberPattern)
 -- rangex = _toPat $$ _toTarget ((T.tParam2 T.rangex) :: Pattern Double -> Pattern Double -> Pattern Double -> Pattern Double)
@@ -224,6 +224,9 @@ somecycles = _toPat Z.somecycles
 
 -- every :: (Pat a) => P (NumberPattern -> (Pattern a -> Pattern a) -> Pattern a -> Pattern a)
 -- every = _toPat (\x -> Z.every (_fromTarget x))
+
+-- everyFor :: (Pat a) => P (NumberPattern -> NumberPattern -> (Pattern a -> Pattern a) -> Pattern a -> Pattern a)
+-- everyFor = _toPat (\x y -> Z.everyFor (_fromTarget x) (_fromTarget y))
 
 -- whenmod :: (Pat a) => P (NumberPattern -> NumberPattern -> (Pattern a -> Pattern a) -> Pattern a -> Pattern a)
 -- whenmod = _toPat (\x y -> T.whenmod (_fromTarget x) (_fromTarget y))

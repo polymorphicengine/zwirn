@@ -36,8 +36,8 @@ where
 
 import Control.Concurrent.MVar (MVar, modifyMVar_, putMVar, readMVar, takeMVar)
 import Control.Exception (SomeException, try)
--- import Sound.Tidal.Context (ControlPattern, Stream, State (..), ArcF (..), streamReplace, streamSet, streamOnce, cps, (#), orbit, query, sStateMV)
--- import Sound.Tidal.ID (ID(..))
+
+import Sound.Zwirn.Query
 
 import Control.Monad
 import Control.Monad.Except
@@ -253,10 +253,20 @@ defAction b d = do
 
 showAction :: Term -> CI String
 showAction t = do
-  s <- runSimplify t
-  rot <- runRotate s
-  _ <- runTypeCheck rot
-  runGenerator True rot
+    s <- runSimplify t
+    rot <- runRotate s
+    ty <- runTypeCheck rot
+    (Environment {tStream = str}) <- get
+    case ty of
+        (Forall [] (Qual [] (TypeCon "Number"))) -> do
+                    gen <- runGenerator True rot
+                    cp <- interpret @NumberPattern AsNum gen
+                    return $ show cp
+        (Forall [] (Qual [] (TypeCon "Text"))) -> do
+                    gen <- runGenerator True rot
+                    cp <- interpret @TextPattern AsText gen
+                    return $ show cp
+        _ -> throw $ "Can't show terms of type " ++ ppscheme ty
 
 typeAction :: Term -> CI String
 typeAction t = do
