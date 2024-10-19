@@ -21,10 +21,10 @@ module Zwirn.Interactive.Generic where
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 -}
 
-import Language.Haskell.TH
-import Zwirn.Interactive.Convert (_toTarget)
-import Zwirn.Interactive.Types (NumberPattern, P)
-import qualified Prelude as P
+-- import Language.Haskell.TH
+-- import Zwirn.Interactive.Convert (_toTarget)
+-- import Zwirn.Interactive.Types (NumberPattern, P)
+-- import qualified Prelude as P
 
 -- import qualified Prelude as P
 

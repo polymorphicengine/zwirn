@@ -8,5 +8,6 @@
 /src/Zwirn/Language/Parser.info
 /browse.txt
 /output.txt
+.ghc.environment.*
 
 out/

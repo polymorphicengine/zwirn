@@ -23,7 +23,7 @@ module Zwirn.Interactive.Prelude.Params where
 -}
 
 -- import Zwirn.Interactive.Generic (_mkNumParams, _mkStringParams, _numParams, _stringParams)
-import qualified Prelude as P ()
+-- import qualified Prelude as P ()
 
 -- import qualified Sound.Tidal.Context as T hiding (fromList)
 

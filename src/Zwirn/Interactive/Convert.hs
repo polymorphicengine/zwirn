@@ -23,6 +23,7 @@ module Zwirn.Interactive.Convert where
 -}
 
 import qualified Data.Text as Text
+import qualified Data.Word as Word
 import qualified Sound.Zwirn.Time as Z
 import Zwirn.Interactive.Types
 import qualified Prelude as P
@@ -56,6 +57,11 @@ instance Convertible Time where
 
 instance Convertible Int where
   type Target Int = Number
+  _toTarget i = Num $$ P.fromIntegral i
+  _fromTarget (Num n) = P.floor n
+
+instance Convertible Word.Word8 where
+  type Target Word.Word8 = Number
   _toTarget i = Num $$ P.fromIntegral i
   _fromTarget (Num n) = P.floor n
 

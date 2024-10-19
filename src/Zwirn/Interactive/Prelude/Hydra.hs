@@ -18,11 +18,11 @@ module Zwirn.Interactive.Prelude.Hydra where
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 -}
 
-import Zwirn.Interactive.Convert
-import Zwirn.Interactive.HydraT
-import Zwirn.Interactive.Transform
-import Zwirn.Interactive.Types
-import qualified Prelude as P ()
+-- import Zwirn.Interactive.Convert
+-- import Zwirn.Interactive.HydraT
+-- import Zwirn.Interactive.Transform
+-- import Zwirn.Interactive.Types
+-- import qualified Prelude as P ()
 
 -- sources
 

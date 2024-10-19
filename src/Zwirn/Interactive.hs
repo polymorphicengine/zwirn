@@ -12,7 +12,7 @@ module Zwirn.Interactive
     module Zwirn.Interactive.Types,
     module Zwirn.Interactive.Convert,
     module Zwirn.Interactive.HydraT,
-    module Zwirn.Interactive.TidalT,
+    module Zwirn.Interactive.AST,
   )
 where
 
@@ -21,6 +21,7 @@ import qualified Sound.Zwirn.Pattern as Z
 import qualified Sound.Zwirn.Query as Z
 import qualified Sound.Zwirn.Random as Z
 import qualified Sound.Zwirn.Time as Z
+import Zwirn.Interactive.AST
 import Zwirn.Interactive.Convert
 import Zwirn.Interactive.Generic
 import Zwirn.Interactive.HydraT
@@ -30,7 +31,6 @@ import Zwirn.Interactive.Prelude.Core
 import Zwirn.Interactive.Prelude.Hydra
 import Zwirn.Interactive.Prelude.MiniPrelude
 import Zwirn.Interactive.Prelude.Params
-import Zwirn.Interactive.TidalT
 import Zwirn.Interactive.Transform
 import Zwirn.Interactive.Types
 import qualified Prelude as P

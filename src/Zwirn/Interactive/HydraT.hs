@@ -19,9 +19,9 @@ module Zwirn.Interactive.HydraT where
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 -}
 
-import Zwirn.Interactive.TidalT
-import Zwirn.Interactive.Types
-import qualified Prelude as P
+-- import Zwirn.Interactive.TidalT
+-- import Zwirn.Interactive.Types
+-- import qualified Prelude as P
 
 -- _insert :: String -> [String] -> String
 -- _insert code args = go code

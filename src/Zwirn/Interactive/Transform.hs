@@ -23,7 +23,7 @@ module Zwirn.Interactive.Transform where
 -}
 
 import qualified Data.Text as Text
-import Zwirn.Interactive.TidalT
+import Zwirn.Interactive.AST
 import Zwirn.Interactive.Types
 import qualified Prelude as P
 

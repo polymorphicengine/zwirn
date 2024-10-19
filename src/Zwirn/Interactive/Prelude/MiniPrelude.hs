@@ -24,10 +24,11 @@ module Zwirn.Interactive.Prelude.MiniPrelude where
 
 -- import qualified Sound.Tidal.Context as T hiding (fromList)
 
+import qualified Sound.Zwirn.Bits as Z
 import qualified Sound.Zwirn.Classes as Z
 import qualified Sound.Zwirn.Pattern as Z
+import Zwirn.Interactive.AST
 import Zwirn.Interactive.Convert
-import Zwirn.Interactive.TidalT
 import Zwirn.Interactive.Transform
 import Zwirn.Interactive.Types
 import qualified Prelude as P
@@ -100,10 +101,10 @@ tick = _toPat (P.flip _apply)
 -- (|/) = _toPat ((T.|/) :: (P.Fractional a) => Pattern a -> Pattern a -> Pattern a)
 
 -- round :: P (NumberPattern -> NumberPattern)
--- round = _toPat $$ _toTarget ((P.round) :: Pattern Double -> Pattern Int)
+-- round = _toPat $$ _toTarget (P.round :: Pattern Double -> Pattern Int)
 
--- floor :: P (NumberPattern -> NumberPattern)
--- floor = _toPat $$ _toTarget (_lift (P.floor :: Double -> Int))
+floor :: P (NumberPattern -> NumberPattern)
+floor = _toPat $$ _toTarget (P.fmap @Pattern (P.floor :: Double -> Int))
 
 show :: (Show a) => P (Pattern a -> TextPattern)
 show = _toPat _show
@@ -135,3 +136,29 @@ sn = P.pure $$ Text "sn"
 
 ascii :: P (TextPattern -> NumberPattern)
 ascii = _toPat (_toTarget Z.ascii)
+
+-- bytebeat
+
+(&) :: P (NumberPattern -> NumberPattern -> NumberPattern)
+(&) = _toPat $$ _toTarget (Z.&)
+
+(.|.) :: P (NumberPattern -> NumberPattern -> NumberPattern)
+(.|.) = _toPat $$ _toTarget (Z..|.)
+
+(<<) :: P (NumberPattern -> NumberPattern -> NumberPattern)
+(<<) = _toPat $$ _toTarget (Z.<<)
+
+(>>) :: P (NumberPattern -> NumberPattern -> NumberPattern)
+(>>) = _toPat $$ _toTarget (Z.>>)
+
+bytebeat :: P (NumberPattern -> NumberPattern)
+bytebeat = _toPat $$ _toTarget Z.bytebeat
+
+time :: P NumberPattern
+time = _toTarget Z.time
+
+now :: P NumberPattern
+now = _toTarget Z.now
+
+cyc :: P NumberPattern
+cyc = _toTarget Z.cyc

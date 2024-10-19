@@ -23,7 +23,7 @@ library
                    Zwirn.Interactive.Prelude
                    Zwirn.Interactive.Types
                    Zwirn.Interactive.HydraT
-                   Zwirn.Interactive.TidalT
+                   Zwirn.Interactive.AST
                    Zwirn.Interactive
                    Zwirn.Language.TypeCheck.Types
                    Zwirn.Language.TypeCheck.Env
@@ -52,7 +52,6 @@ library
                  filepath,
                  containers,
                  template-haskell,
-                 tidal == 1.10.0,
                  zwirn-core == 0.1.0.1,
                  jack,
                  explicit-exception,
@@ -74,7 +73,6 @@ executable zwirn-interpreter
     build-depends:    base >= 4.19,
                       text,
                       containers,
-                      tidal == 1.10.0,
                       tidal-link,
                       deepseq,
                       zwirn,

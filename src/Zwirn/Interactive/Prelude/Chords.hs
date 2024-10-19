@@ -7,7 +7,7 @@ module Zwirn.Interactive.Prelude.Chords where
 -- import Zwirn.Interactive.TidalT
 -- import Zwirn.Interactive.Transform
 -- import Zwirn.Interactive.Types
-import qualified Prelude as P ()
+-- import qualified Prelude as P ()
 
 -- $(_mkChords _chords)
 

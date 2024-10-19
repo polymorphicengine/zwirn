@@ -1,4 +1,4 @@
-module Zwirn.Interactive.TidalT where
+module Zwirn.Interactive.AST where
 
 {-
     TidalT.hs - provides some non standard tidal functions
@@ -20,8 +20,8 @@ module Zwirn.Interactive.TidalT where
 
 import qualified Data.Text as Text
 import qualified Sound.Zwirn.Pattern as Z
-import Zwirn.Interactive.Types
 import Zwirn.Interactive.Convert
+import Zwirn.Interactive.Types
 import qualified Prelude as P
 
 -- the following functions are needed for converting the AST to a haskell expression

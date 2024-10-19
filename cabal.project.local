@@ -6,7 +6,4 @@ source-repository-package
 source-repository-package
      type: git
      location: /home/martin/git/Tidal
-source-repository-package
-     type: git
-     location: /home/martin/git/Tidal
      subdir: tidal-link

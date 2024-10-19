@@ -62,6 +62,8 @@ type TextPattern = Pattern Text
 
 type NumberPattern = Pattern Number
 
+type ControlPattern = Pattern (Map Text Number)
+
 -- this is a helper that transforms some types to types that are useful in the system
 -- basically this can be thought of as a transformation given as follows
 -- ToPat a == (Pattern a); for any basic type a (like Bool, String, Number etc.)

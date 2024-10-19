@@ -32,14 +32,12 @@ import Data.Text (Text, pack, unpack)
 import Foreign.JavaScript (JSObject)
 import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core as C hiding (get, text, value)
-import Sound.Tidal.Context hiding ((#))
 import System.Directory (doesDirectoryExist, doesFileExist, listDirectory)
-import qualified Zwirn.Interactive.Types as Z (Text (..))
+import qualified Zwirn.Interactive.Types as Z (TextPattern)
+import Zwirn.Stream
 
-hush :: Stream -> (MVar (Pattern Z.Text)) -> IO ()
-hush str hyd = do
-  modifyMVar_ (sPMapMV str) (\_ -> return Map.empty)
-  modifyMVar_ hyd (const $ pure $ pure $ Z.Text $ pack "solid().out()")
+hush :: Stream -> (MVar Z.TextPattern) -> IO ()
+hush _ _ = return ()
 
 getOutputEl :: UI Element
 getOutputEl = do
@@ -147,11 +145,11 @@ setConfig win key v = runUI win $ runFunction $ ffi ("window.electronAPI.putInSt
 clearConfig :: Window -> IO ()
 clearConfig win = runUI win $ runFunction $ ffi "window.electronAPI.clearStore()"
 
-configureTarget :: UI Target
-configureTarget = do
-  dirtport <- callFunction $ ffi "fullSettings.tidal.dirtport"
-  latency <- callFunction $ ffi "fullSettings.tidal.latency"
-  return $ superdirtTarget {oLatency = latency, oAddress = "127.0.0.1", oPort = dirtport}
+-- configureTarget :: UI Target
+-- configureTarget = do
+--   dirtport <- callFunction $ ffi "fullSettings.tidal.dirtport"
+--   latency <- callFunction $ ffi "fullSettings.tidal.latency"
+--   return $ superdirtTarget {oLatency = latency, oAddress = "127.0.0.1", oPort = dirtport}
 
 -- configureStream :: UI Conf.Config
 -- configureStream = do

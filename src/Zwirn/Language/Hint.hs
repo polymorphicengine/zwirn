@@ -38,10 +38,9 @@ import Control.Monad.Catch (catch)
 import Data.List (intercalate)
 import Language.Haskell.Interpreter as Hint
 import Language.Haskell.Interpreter.Unsafe as Hint
-import Sound.Tidal.Context (ControlPattern)
 import System.Environment (getExecutablePath)
 import System.FilePath (dropFileName)
-import Zwirn.Interactive.Types (NumberPattern, TextPattern)
+import Zwirn.Interactive.Types (ControlPattern, NumberPattern, TextPattern)
 
 data HintMode = GHC | NoGHC deriving (Eq, Show)
 
@@ -93,7 +92,7 @@ modulePaths path =
       "src/Zwirn/Interactive/Types.hs",
       "src/Zwirn/Interactive/Convert.hs",
       "src/Zwirn/Interactive/HydraT.hs",
-      "src/Zwirn/Interactive/TidalT.hs",
+      "src/Zwirn/Interactive/AST.hs",
       "src/Zwirn/Interactive/Transform.hs",
       "src/Zwirn/Interactive/Generic.hs",
       "src/Zwirn/Interactive/Prelude.hs",
