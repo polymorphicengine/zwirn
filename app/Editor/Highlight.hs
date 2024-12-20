@@ -1,8 +1,3 @@
-{-# LANGUAGE BangPatterns #-}
-{-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE StandaloneDeriving #-}
-
 module Editor.Highlight where
 
 {-
@@ -26,12 +21,8 @@ module Editor.Highlight where
 -- import Sound.Tidal.Context hiding (end, start)
 -- import Sound.Tidal.Link as Link
 
-import Control.Concurrent (threadDelay)
-import Control.Concurrent.MVar (MVar, putMVar, readMVar, takeMVar)
-import Data.Coerce (coerce)
+import Control.Concurrent.MVar (MVar, putMVar, takeMVar)
 import Data.List ((\\))
-import Data.Map as Map (elems)
-import Foreign.C.Types
 import Foreign.JavaScript (JSObject)
 import Graphics.UI.Threepenny.Core as C hiding (text)
 
@@ -54,8 +45,7 @@ unHighlight :: JSObject -> UI ()
 unHighlight mark = runFunction $ ffi "if (typeof %1 !== 'undefined'){%1.clear()};" mark
 
 unhighlightMany :: [JSObject] -> UI ()
-unhighlightMany [] = return ()
-unhighlightMany (x : xs) = unHighlight x >> unhighlightMany xs
+unhighlightMany = foldr ((>>) . unHighlight) (return ())
 
 -- queries the pattern at time t and gets the locations of active events
 -- locs :: ValueMap -> Double -> ControlPattern -> [Location]
@@ -71,11 +61,11 @@ updateBuf :: Buffer -> [Location] -> UI Buffer
 updateBuf buf ls = do
   marks <- highlightMany newLocs
   unhighlightMany unmark
-  return $ newBuf ++ (zip newLocs marks)
+  return $ newBuf ++ zip newLocs marks
   where
-    newLocs = ls \\ (map fst buf) -- locations that are not marked yet, but should be marked now
-    unmark = [x | (l, x) <- buf, not (elem l ls)] -- locations that are marked but should be unmarked now
-    newBuf = [(l, x) | (l, x) <- buf, elem l ls]
+    newLocs = ls \\ map fst buf -- locations that are not marked yet, but should be marked now
+    unmark = [x | (l, x) <- buf, l `notElem` ls] -- locations that are marked but should be unmarked now
+    newBuf = [(l, x) | (l, x) <- buf, l `elem` ls]
 
 -- getPats :: Stream -> IO [ControlPattern]
 -- getPats stream = do
@@ -124,7 +114,5 @@ highlightOn buffMV = putMVar buffMV []
 toggleHighlight :: MVar Bool -> MVar Buffer -> UI ()
 toggleHighlight boolMV buffMV = do
   bool <- liftIO $ takeMVar boolMV
-  case bool of
-    True -> highlightOff buffMV
-    False -> liftIO $ highlightOn buffMV
+  (if bool then highlightOff buffMV else liftIO $ highlightOn buffMV)
   liftIO $ putMVar boolMV (not bool)

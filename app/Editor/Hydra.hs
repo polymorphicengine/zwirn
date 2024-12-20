@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module Editor.Hydra where
 
 {-
@@ -20,36 +18,30 @@ module Editor.Hydra where
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 -}
 
-import Control.Concurrent (threadDelay)
-import Control.Concurrent.MVar (MVar, modifyMVar_, putMVar, readMVar, takeMVar)
--- import Sound.Tidal.Context hiding ((#), empty)-- (Stream, sPMapMV, Pattern, queryArc, Arc(..))
+-- import Control.Concurrent.MVar (MVar, putMVar, takeMVar)
+-- import Data.Text (empty)
+-- import Graphics.UI.Threepenny.Core as C hiding (empty, text, value)
+-- import System.Environment (getExecutablePath)
+-- import System.FilePath (dropFileName)
 
-import Data.Text (empty)
-import Graphics.UI.Threepenny.Core as C hiding (empty, text, value)
-import System.Environment (getExecutablePath)
-import System.FilePath (dropFileName)
-import Zwirn.Interactive.Convert (_fromTarget)
-import Zwirn.Interactive.Types (Text (..))
-import Zwirn.Language.Compiler (Environment (..))
+-- -- import Editor.Highlight (streamGetnow')
 
--- import Editor.Highlight (streamGetnow')
+-- startHydra :: UI ()
+-- startHydra = do
+--   runFunction $ ffi "hydra = new Hydra({canvas: document.getElementById(\"hydraCanvas\"),detectAudio: false})"
+--   hijackScreen
 
-startHydra :: UI ()
-startHydra = do
-  runFunction $ ffi "hydra = new Hydra({canvas: document.getElementById(\"hydraCanvas\"),detectAudio: false})"
-  hijackScreen
+-- hijackScreen :: UI ()
+-- hijackScreen = do
+--   execPath <- liftIO $ dropFileName <$> getExecutablePath
+--   h <- liftIO $ readFile $ execPath ++ "static/hijackScreen.js"
+--   runFunction $ ffi h
 
-hijackScreen :: UI ()
-hijackScreen = do
-  execPath <- liftIO $ dropFileName <$> getExecutablePath
-  h <- liftIO $ readFile $ execPath ++ "static/hijackScreen.js"
-  runFunction $ ffi h
+-- getWindowWidth :: UI Double
+-- getWindowWidth = callFunction $ ffi "window.innerWidth"
 
-getWindowWidth :: UI Double
-getWindowWidth = callFunction $ ffi "window.innerWidth"
-
-getWindowHeight :: UI Double
-getWindowHeight = callFunction $ ffi "window.innerHeight"
+-- getWindowHeight :: UI Double
+-- getWindowHeight = callFunction $ ffi "window.innerHeight"
 
 -- hydraLoop :: Window -> Stream -> MVar (Pattern Text) -> MVar Text -> IO ()
 -- hydraLoop win str pM bufM = do
@@ -73,21 +65,21 @@ getWindowHeight = callFunction $ ffi "window.innerHeight"
 --         hydraLoop win str pM bufM
 --       True -> threadDelay 100000 >> hydraLoop win str pM bufM
 
-wrapCatchErr :: String -> String
-wrapCatchErr st = "try {" ++ st ++ "} catch (err) {}"
+-- wrapCatchErr :: String -> String
+-- wrapCatchErr st = "try {" ++ st ++ "} catch (err) {}"
 
-wrapAsync :: String -> String
-wrapAsync st = "(async() => {" ++ st ++ "})().catch(err=>log(err.message,\"log-error\"))"
+-- wrapAsync :: String -> String
+-- wrapAsync st = "(async() => {" ++ st ++ "})().catch(err=>log(err.message,\"log-error\"))"
 
 -- toggle hydra
 
-hydraOff :: MVar Text -> UI ()
-hydraOff buffMV = do
-  _ <- liftIO $ takeMVar buffMV
-  runFunction $ ffi $ "solid().out()"
+-- hydraOff :: MVar Text -> UI ()
+-- hydraOff buffMV = do
+--   _ <- liftIO $ takeMVar buffMV
+--   runFunction $ ffi $ "solid().out()"
 
-hydraOn :: MVar Text -> IO ()
-hydraOn buffMV = putMVar buffMV (Text empty)
+-- hydraOn :: MVar Text -> IO ()
+-- hydraOn buffMV = putMVar buffMV (Text empty)
 
 -- toggleHydra :: MVar Bool -> MVar Environment -> MVar Text -> MVar (Pattern Text) -> UI ()
 -- toggleHydra boolMV envMV buffMV hydMV = do

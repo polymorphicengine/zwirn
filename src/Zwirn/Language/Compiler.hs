@@ -1,8 +1,13 @@
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
+{-# OPTIONS_GHC -Wno-incomplete-uni-patterns #-}
+{-# OPTIONS_GHC -Wno-unused-top-binds #-}
 
 module Zwirn.Language.Compiler
-  ( HintEnv (..),
+  ( EvalEnv,
     ConfigEnv (..),
     Environment (..),
     CIError (..),
@@ -34,23 +39,17 @@ where
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 -}
 
-import Control.Concurrent.MVar (MVar, modifyMVar_, putMVar, readMVar, takeMVar)
+import Control.Concurrent.MVar (MVar)
 import Control.Exception (SomeException, try)
-
-import Sound.Zwirn.Query
-
 import Control.Monad
 import Control.Monad.Except
 import Control.Monad.State
-import Data.List (intercalate, sortOn)
+import Data.List (sortOn)
 import Data.Text (Text, unpack)
 import Data.Text.IO (readFile)
-import Text.Read (readMaybe)
-import Zwirn.Interactive.Convert (_fromTarget)
-import Zwirn.Interactive.Types (NumberPattern, TextPattern)
+import Sound.Zwirn.Core.Cord (Cord)
 import Zwirn.Language.Block
-import Zwirn.Language.Generator
-import Zwirn.Language.Hint
+import Zwirn.Language.Evaluate
 import Zwirn.Language.Parser
 import Zwirn.Language.Pretty
 import qualified Zwirn.Language.Rotate as R
@@ -70,12 +69,7 @@ data CurrentBlock
   = CurrentBlock Int Int
   deriving (Eq, Show)
 
-data HintEnv
-  = HintEnv
-  { hMode :: HintMode,
-    hM :: MVar InterpreterMessage,
-    hR :: MVar InterpreterResponse
-  }
+type EvalEnv = ExpressionMap Int
 
 data ConfigEnv
   = ConfigEnv
@@ -86,9 +80,9 @@ data ConfigEnv
 data Environment
   = Environment
   { tStream :: Stream,
-    jsMV :: Maybe (MVar TextPattern),
+    jsMV :: Maybe (MVar (Cord Int Text)),
     typeEnv :: TypeEnv,
-    hintEnv :: HintEnv,
+    evalEnv :: EvalEnv,
     confEnv :: Maybe ConfigEnv,
     currBlock :: Maybe CurrentBlock
   }
@@ -211,31 +205,13 @@ runTypeCheck s = do
     Right t -> return t
 
 -----------------------------------------------------
--------------- Generate Haskell Code ----------------
+-------------------- Interpreter --------------------
 -----------------------------------------------------
 
--- | True runs the generator with inserting context, False without
-runGenerator :: Bool -> SimpleTerm -> CI String
-runGenerator True s = return $ generate s
-runGenerator False s = return $ generateWithoutContext s
-
--- | True runs the generator with inserting context, False without
-runGeneratorDef :: Bool -> SimpleDef -> CI String
-runGeneratorDef True s = return $ generateDef s
-runGeneratorDef False s = return $ generateDefWithoutContext s
-
------------------------------------------------------
----------------- Haskell interpreter ----------------
------------------------------------------------------
-
-interpret :: (FromResponse a) => MessageType -> String -> CI a
-interpret typ input = do
-  (Environment {hintEnv = (HintEnv _ hMV hRV)}) <- get
-  liftIO $ putMVar hMV $ Message typ input
-  res <- liftIO $ takeMVar hRV
-  case fromResponse res of
-    Left err -> throw $ "GHC Error: " ++ err
-    Right a -> return a
+interpret :: SimpleTerm -> CI (Expression Int)
+interpret input = do
+  env <- gets evalEnv
+  return $ eval env input
 
 -----------------------------------------------------
 ----------------- Compiling Actions -----------------
@@ -243,30 +219,26 @@ interpret typ input = do
 
 defAction :: Bool -> Def -> CI ()
 defAction b d = do
-  sd@(LetS x st) <- runSimplifyDef d
+  (LetS x st) <- runSimplifyDef d
   rot <- runRotate st
   ty <- runTypeCheck rot
   modify (\env -> env {typeEnv = extend (typeEnv env) (x, ty)})
-  gd <- runGeneratorDef b sd
-  interpret @() AsDef gd
-  return ()
+  ex <- interpret rot
+  modify (\env -> env {evalEnv = insert (x, ex) (evalEnv env)})
 
 showAction :: Term -> CI String
 showAction t = do
-    s <- runSimplify t
-    rot <- runRotate s
-    ty <- runTypeCheck rot
-    (Environment {tStream = str}) <- get
-    case ty of
-        (Forall [] (Qual [] (TypeCon "Number"))) -> do
-                    gen <- runGenerator True rot
-                    cp <- interpret @NumberPattern AsNum gen
-                    return $ show cp
-        (Forall [] (Qual [] (TypeCon "Text"))) -> do
-                    gen <- runGenerator True rot
-                    cp <- interpret @TextPattern AsText gen
-                    return $ show cp
-        _ -> throw $ "Can't show terms of type " ++ ppscheme ty
+  s <- runSimplify t
+  rot <- runRotate s
+  ty <- runTypeCheck rot
+  case ty of
+    (Forall [] (Qual [] (TypeCon "Number"))) -> do
+      ex <- interpret rot
+      return $ show ex
+    (Forall [] (Qual [] (TypeCon "Text"))) -> do
+      ex <- interpret rot
+      return $ show ex
+    _ -> throw $ "Can't show terms of type " ++ ppscheme ty
 
 typeAction :: Term -> CI String
 typeAction t = do
@@ -291,11 +263,10 @@ streamAction ctx _ t = do
   s <- runSimplify t
   rot <- runRotate s
   ty <- runTypeCheck rot
-  gen <- runGenerator ctx rot
+  p <- interpret rot
   when (isNumberT ty) $ do
     (Environment {tStream = str}) <- get
-    p <- interpret @NumberPattern AsNum gen
-    liftIO $ streamReplace str p
+    liftIO $ streamReplace str $ toCord p
 
 streamSetAction :: Bool -> Text -> Term -> CI ()
 streamSetAction _ _ _ = throw "not implemented"
@@ -307,25 +278,7 @@ streamSetTempoAction :: Bool -> Tempo -> Term -> CI ()
 streamSetTempoAction _ _ _ = throw "not implemented"
 
 jsAction :: Bool -> Term -> CI ()
-jsAction ctx t = do
-  s <- runSimplify t
-  rot <- runRotate s
-  ty <- runTypeCheck rot
-  gen <- runGenerator ctx rot
-  case ty of
-    (Forall [] (Qual [] (TypeCon "Text"))) -> do
-      p <- interpret @TextPattern AsText gen
-      (Environment {jsMV = maybemv}) <- get
-      case maybemv of
-        Just mv -> liftIO $ modifyMVar_ mv (const $ pure p)
-        Nothing -> throw $ "No JavaScript Interpreter available"
-    (Forall _ (Qual [] (TypeVar _))) -> do
-      p <- interpret @TextPattern AsText gen
-      (Environment {jsMV = maybemv}) <- get
-      case maybemv of
-        Just mv -> liftIO $ modifyMVar_ mv (const $ pure p)
-        Nothing -> throw "No JavaScript Interpreter available"
-    _ -> throw "Type Error: can only accept text"
+jsAction _ _ = throw "not implemented"
 
 resetConfigAction :: CI String
 resetConfigAction = do

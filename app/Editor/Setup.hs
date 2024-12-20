@@ -20,27 +20,21 @@ module Editor.Setup (setup) where
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 -}
 
--- import Sound.Tidal.Context hiding (mute,solo,(#),s)
-
-import Control.Concurrent (forkIO)
-import Control.Concurrent.MVar (MVar, newEmptyMVar, newMVar, putMVar, takeMVar)
+import Control.Concurrent.MVar (newMVar)
 import Control.Monad (void)
 import Data.IORef (newIORef)
 import Editor.Backend
 import Editor.Frontend
-import Editor.Highlight
-import Editor.Hydra
 import Editor.UI
 import Graphics.UI.Threepenny.Core as C hiding (defaultConfig, text)
-import qualified Graphics.UI.Threepenny.Core as C
-import Zwirn.Interactive.Types (Text (..))
+import Sound.Zwirn.Core.Core
 import Zwirn.Language.Compiler
 import Zwirn.Language.Default
-import Zwirn.Language.Hint
+import Zwirn.Language.Evaluate
 import Zwirn.Stream
 
-setup :: HintMode -> Window -> UI ()
-setup mode win = void $ do
+setup :: Window -> UI ()
+setup win = void $ do
   editor <- frontend win
   setupEditors editor
 
@@ -48,96 +42,32 @@ setup mode win = void $ do
 
   str <- setupStream
 
-  -- setupHighlighter str
-  -- (hyd, hydBuf) <- setupHydra str
-  (mMV, rMV) <- setupHint mode
-
-  createHaskellFunction "hush" (liftIO $ return () :: IO ())
-  createHaskellFunction "toggleHighlight" (liftIO $ return () :: IO ())
-  envMV <- setupBackend str mode mMV rMV
+  setupBackend str
   addFileInputAndSettings
   makeEditor "editor0"
-  loadBootDefs envMV
-
--- setupToggleHydra hydBuf hyd envMV
 
 setupStream :: UI Stream
 setupStream = do
-  str <- liftIO $ newMVar (pure 0)
-  _ <- liftIO $ forkIO $ startStream str
+  str <- liftIO $ newMVar (fastcat [pure 0, pure 1, fastcat [pure 2, pure 3], pure 4])
+  _ <- liftIO $ startStream str
   return str
 
--- do
---   target <- configureTarget
--- conf <- configureStream
--- liftIO $ startTidal target conf
-
--- setupHighlighter :: Stream -> UI ()
--- setupHighlighter str = do
---   win <- askWindow
---   buf <- liftIO $ newMVar []
---   high <- liftIO $ newMVar True
---   createHaskellFunction "toggleHighlight" (runUI win $ toggleHighlight high buf)
---   void $ liftIO $ forkIO $ highlightLoop win str buf
---   bool <- getHighlight
---   case bool of
---     True -> return ()
---     False -> toggleHighlight high buf
-
--- setupHydra :: Stream -> UI ((MVar (Pattern Text)), MVar Text)
--- setupHydra str = do
---   startHydra
---   win <- askWindow
---   hydBuf <- liftIO $ newMVar (Text "")
---   hyd <- liftIO $ newMVar (pure $ Text "solid().out()")
---   void $ liftIO $ forkIO $ hydraLoop win str hyd hydBuf
---   return (hyd, hydBuf)
-
--- setupToggleHydra :: MVar Text -> MVar (Pattern Text) -> MVar Environment -> UI ()
--- setupToggleHydra hydBuf hydMV envMV = do
---   toggle <- liftIO $ newMVar True
---   bool <- getHydra
---   case bool of
---     True -> return ()
---     False -> toggleHydra toggle envMV hydBuf hydMV
-
-setupHint :: HintMode -> UI (MVar InterpreterMessage, MVar InterpreterResponse)
-setupHint mode = do
-  mMV <- liftIO newEmptyMVar
-  rMV <- liftIO newEmptyMVar
-  void $ liftIO $ forkIO $ hintJob mode mMV rMV
-  return (mMV, rMV)
-
-setupBackend :: Stream -> HintMode -> MVar InterpreterMessage -> MVar InterpreterResponse -> UI (MVar Environment)
-setupBackend str mode mMV rMV = do
+setupBackend :: Stream -> UI ()
+setupBackend str = do
   win <- askWindow
-  let env = Environment str Nothing defaultTypeEnv (HintEnv mode mMV rMV) (Just $ ConfigEnv (setConfig win) (clearConfig win)) Nothing
+  let env = Environment str Nothing defaultTypeEnv primitives (Just $ ConfigEnv (setConfig win) (clearConfig win)) Nothing
 
   envMV <- liftIO $ newMVar env
 
-  createHaskellFunction "evalBlockAtCursor" (\cm -> (runUI win $ evalContentAtCursor EvalBlock cm envMV))
-  createHaskellFunction "evalLineAtCursor" (\cm -> (runUI win $ evalContentAtCursor EvalLine cm envMV))
-  createHaskellFunction "evalWhole" (\cm -> (runUI win $ evalContentAtCursor EvalWhole cm envMV))
+  createHaskellFunction "evalBlockAtCursor" (\cm -> runUI win $ evalContentAtCursor EvalBlock cm envMV)
+  createHaskellFunction "evalLineAtCursor" (\cm -> runUI win $ evalContentAtCursor EvalLine cm envMV)
+  createHaskellFunction "evalWhole" (\cm -> runUI win $ evalContentAtCursor EvalWhole cm envMV)
 
-  createHaskellFunction "evalBlockAtLine" (\cm l -> (runUI win $ evalContentAtLine EvalBlock cm l envMV))
-  createHaskellFunction "evalLineAtLine" (\cm l -> (runUI win $ evalContentAtLine EvalLine cm l envMV))
-  return envMV
+  createHaskellFunction "evalBlockAtLine" (\cm l -> runUI win $ evalContentAtLine EvalBlock cm l envMV)
+  createHaskellFunction "evalLineAtLine" (\cm l -> runUI win $ evalContentAtLine EvalLine cm l envMV)
 
-loadBootDefs :: MVar Environment -> UI ()
-loadBootDefs envMV = do
-  env <- liftIO $ takeMVar envMV
-  mps <- getBootPaths
-  case mps of
-    Just ps -> do
-      x <- liftIO $ runCI env $ compilerInterpreterBoot ps
-      case x of
-        Left (CIError err _) -> do
-          _ <- (getOutputEl # set C.text err)
-          liftIO $ putMVar envMV env
-        Right env' -> do
-          _ <- (getOutputEl # set C.text "successfully loaded boot file(s)!")
-          liftIO $ putMVar envMV env'
-    Nothing -> liftIO $ putMVar envMV env
+  createHaskellFunction "hush" (liftIO $ return () :: IO ())
+  createHaskellFunction "toggleHighlight" (liftIO $ return () :: IO ())
 
 setupEditors :: Element -> UI ()
 setupEditors mainEditor = do
@@ -151,7 +81,7 @@ addFileInputAndSettings = do
   win <- askWindow
   body <- getBody win
   void $
-    (element body)
+    element body
       #+ [ fileInput,
            tidalSettings
          ]

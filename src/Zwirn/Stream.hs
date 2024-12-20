@@ -1,49 +1,54 @@
+{-# OPTIONS_GHC -Wno-type-defaults #-}
+
 module Zwirn.Stream where
 
-import Control.Concurrent
-import qualified Control.Monad.Exception.Synchronous as Sync
-import qualified Control.Monad.Trans.Class as Trans
-import Data.Array.Storable (writeArray)
-import Data.IORef
-import Data.Word
-import qualified Sound.JACK as Jack
-import Sound.JACK.Audio
-import qualified Sound.JACK.Exception as JackExc
-import Sound.Zwirn.Nested
-import Zwirn.Interactive.Types (NumberPattern)
+import Control.Concurrent.MVar (MVar, modifyMVar_, readMVar)
+import qualified Network.Socket as N
+import qualified Sound.Osc.Fd as O
+import Sound.Tidal.Clock
+import Sound.Tidal.Link
+import Sound.Zwirn.Core.Cord
+import Sound.Zwirn.Core.Query
+import qualified Sound.Zwirn.Time as Z
 
-type Stream = MVar NumberPattern
+type Stream = MVar (Cord Int Double)
 
-type JackPort = Jack.Port Sample
+type RemoteAddress = N.SockAddr
 
-type ByteBeat = Int -> Word8
-
-streamReplace :: Stream -> NumberPattern -> IO ()
+streamReplace :: Stream -> Cord Int Double -> IO ()
 streamReplace str p = modifyMVar_ str (const $ pure p)
 
-convert :: NumberPattern -> ByteBeat
-convert p i = floor $ sVal $ zwirnAt p (fromIntegral i / 8000)
-
-getSampleNumber :: IORef Int -> IO Int
-getSampleNumber ref = modifyIORef' ref (+ 1) >> readIORef ref
+send :: RemoteAddress -> O.Udp -> Double -> Double -> IO ()
+send remote local c x = O.sendTo local (O.p_message "/zwirn" [O.float c, O.float x]) remote
 
 startStream :: Stream -> IO ()
 startStream str = do
-  ref <- newIORef (0 :: Int)
-  Jack.handleExceptions $
-    Jack.withClientDefault "zwirn" $ \client -> do
-      Jack.withPort client "output" $ \output ->
-        Jack.withProcess client (processBeat output ref str) $
-          Jack.withActivation client $
-            Trans.lift Jack.waitForBreak
+  let target_address = "127.0.0.1"
+      target_port = 2323
+  remote <- resolve target_address (show target_port)
+  local <-
+    O.udp_socket
+      ( \sock sockaddr -> do
+          N.setSocketOption sock N.Broadcast 1
+          N.connect sock sockaddr
+      )
+      target_address
+      target_port
 
-processBeat :: (JackExc.ThrowsErrno e) => JackPort Jack.Output -> IORef Int -> Stream -> Jack.NFrames -> Sync.ExceptionalT e IO ()
-processBeat output ref str nframes = Trans.lift $ do
-  outArr <- getBufferArray output nframes
-  mapM_
-    ( \i -> do
-        n <- getSampleNumber ref
-        p <- readMVar str
-        writeArray outArr (Jack.nframesIndices nframes !! i) (realToFrac $ sVal $ zwirnAt p (fromIntegral n / 48000))
-    )
-    [0 .. length (Jack.nframesIndices nframes) - 1]
+  _ <- clocked defaultConfig (tickAction str (N.addrAddress remote) local)
+  return ()
+
+tickAction :: Stream -> RemoteAddress -> O.Udp -> (Time, Time) -> Double -> ClockConfig -> ClockRef -> (SessionState, SessionState) -> IO ()
+tickAction str remote local (star, end) _ _ _ _ = do
+  p <- readMVar str
+  let vs = map snd $ findAllValuesWithTime (Z.Time (align star) 1, Z.Time (align end) 1) 0 p
+  mapM_ (send remote local (fromIntegral $ floor star)) vs
+
+resolve :: String -> String -> IO N.AddrInfo
+resolve host port = do
+  let hints = N.defaultHints {N.addrSocketType = N.Stream}
+  addr : _ <- N.getAddrInfo (Just hints) (Just host) (Just port)
+  return addr
+
+align :: Time -> Time
+align t = fromIntegral (floor $ t / 0.001) * 0.001

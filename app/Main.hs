@@ -24,7 +24,6 @@ import Graphics.UI.Threepenny.Core as C hiding (text)
 import Options.Applicative (execParser)
 import System.Environment (getExecutablePath)
 import System.FilePath (dropFileName)
-import Zwirn.Language.Hint
 
 main :: IO ()
 main = do
@@ -37,4 +36,4 @@ main = do
         jsCustomHTML = Just "tidal.html",
         jsPort = Just (tpPort config)
       }
-    $ setup GHC
+    setup

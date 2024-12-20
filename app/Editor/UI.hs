@@ -24,19 +24,16 @@ module Editor.UI where
 -- import Sound.Tidal.Config as Conf
 
 import Control.Concurrent (threadDelay)
-import Control.Concurrent.MVar (MVar, modifyMVar_)
-import Control.Monad (void)
+import Control.Monad (unless, void)
 import Data.IORef (IORef, modifyIORef, readIORef)
-import Data.Map as Map (empty)
 import Data.Text (Text, pack, unpack)
 import Foreign.JavaScript (JSObject)
 import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core as C hiding (get, text, value)
 import System.Directory (doesDirectoryExist, doesFileExist, listDirectory)
-import qualified Zwirn.Interactive.Types as Z (TextPattern)
 import Zwirn.Stream
 
-hush :: Stream -> (MVar Z.TextPattern) -> IO ()
+hush :: Stream -> x -> IO ()
 hush _ _ = return ()
 
 getOutputEl :: UI Element
@@ -93,11 +90,12 @@ addEditor ref = do
 removeEditor :: IORef [Element] -> UI ()
 removeEditor ref = do
   xs <- liftIO $ readIORef ref
-  case length xs == 1 of
-    True -> return ()
-    False -> do
-      liftIO $ modifyIORef ref (\ys -> take (length xs - 1) ys)
-      redoEditorLayout ref
+  unless
+    (length xs == 1)
+    ( do
+        liftIO $ modifyIORef ref (take (length xs - 1))
+        redoEditorLayout ref
+    )
 
 redoEditorLayout :: IORef [Element] -> UI ()
 redoEditorLayout ref = do
@@ -177,13 +175,14 @@ getBootPaths :: UI (Maybe [Text])
 getBootPaths = do
   p <- callFunction $ ffi "fullSettings.bootPath"
   b <- liftIO $ doesDirectoryExist p
-  case b of
-    False -> do
-      bb <- liftIO $ doesFileExist p
-      case bb of
-        False -> (getOutputEl # set UI.text (show p)) >> return Nothing
-        True -> return $ Just [pack p]
-    True -> fmap (\xs -> Just $ map (\x -> pack $ p ++ "/" ++ x) xs) $ liftIO $ listDirectory $ p
+  ( if b
+      then fmap (Just . map (\x -> pack $ p ++ "/" ++ x)) $ liftIO $ listDirectory p
+      else
+        ( do
+            bb <- liftIO $ doesFileExist p
+            (if bb then return $ Just [pack p] else (getOutputEl # set UI.text (show p)) >> return Nothing)
+        )
+    )
 
 getHighlight :: UI Bool
 getHighlight = do

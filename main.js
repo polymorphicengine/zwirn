@@ -39,7 +39,7 @@ freeport((err, port) => {
   // browser windows. Some APIs can only be used after this event occurs. We
   // start the child process and wait before loading the web page.
   app.on("ready", () => {
-    child = spawn(path.join(__dirname, relBin), ["-p", port, "--no-ghc"]); //child = spawn(path.join(__dirname, relBin), [8023]);
+    child = spawn(path.join(__dirname, relBin), ["-p", port]); //child = spawn(path.join(__dirname, relBin), [8023]);
     child.stdout.setEncoding("utf8");
     child.stderr.setEncoding("utf8");
     child.stdout.on("data", console.log);

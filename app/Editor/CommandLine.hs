@@ -19,33 +19,32 @@ module Editor.CommandLine where
 -}
 
 import Options.Applicative
-import Zwirn.Language.Hint
 
-data Config = Config {tpPort :: Int
-                     ,hintMode :: HintMode
-                     } deriving (Eq,Show)
-
+newtype Config = Config
+  { tpPort :: Int
+  }
+  deriving (Eq, Show)
 
 conf :: ParserInfo Config
-conf = info (configParser <**> helper)
-  ( fullDesc
-  <> progDesc "An interactive interpreter for zwirn"
-  <> header "zwirn" )
+conf =
+  info
+    (configParser <**> helper)
+    ( fullDesc
+        <> progDesc "An interactive interpreter for zwirn"
+        <> header "zwirn"
+    )
 
 configParser :: Parser Config
 configParser = Config <$> tpPortParser
-                      <*> noGhcParser
 
 tpPortParser :: Parser Int
-tpPortParser = option auto
-                     ( long "tp-port"
-                    <> short 'p'
-                    <> help "Specify the threepenny port"
-                    <> showDefault
-                    <> value 8023
-                    <> metavar "INT")
-
-noGhcParser :: Parser HintMode
-noGhcParser =  flag GHC NoGHC
-          ( long "no-ghc"
-         <> help "If this flag is active, the interpreter will assume that GHC is not installed on the system" )
+tpPortParser =
+  option
+    auto
+    ( long "tp-port"
+        <> short 'p'
+        <> help "Specify the threepenny port"
+        <> showDefault
+        <> value 8023
+        <> metavar "INT"
+    )
