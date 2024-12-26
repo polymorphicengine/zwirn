@@ -23,6 +23,7 @@ module Editor.Setup (setup) where
 import Control.Concurrent.MVar (newMVar)
 import Control.Monad (void)
 import Data.IORef (newIORef)
+import qualified Data.Map as Map
 import Editor.Backend
 import Editor.Frontend
 import Editor.UI
@@ -30,7 +31,6 @@ import Graphics.UI.Threepenny.Core as C hiding (defaultConfig, text)
 import Sound.Zwirn.Core.Core
 import Zwirn.Language.Compiler
 import Zwirn.Language.Default
-import Zwirn.Language.Evaluate
 import Zwirn.Stream
 
 setup :: Window -> UI ()
@@ -48,7 +48,9 @@ setup win = void $ do
 
 setupStream :: UI Stream
 setupStream = do
-  str <- liftIO $ newMVar (fastcat [pure 0, pure 1, fastcat [pure 2, pure 3], pure 4])
+  mv <- liftIO $ newMVar (fastcat [pure 0, pure 1, fastcat [pure 2, pure 3], pure 4])
+  m <- liftIO $ newMVar Map.empty
+  let str = Stream mv m
   _ <- liftIO $ startStream str
   return str
 

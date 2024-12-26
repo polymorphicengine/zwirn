@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+
 module Zwirn.Language.TypeCheck.Types where
 
 {-
@@ -23,6 +24,7 @@ module Zwirn.Language.TypeCheck.Types where
 import Data.Text (Text)
 
 type Name = Text
+
 type TypeVar = Text
 
 data Type
@@ -36,12 +38,12 @@ data Predicate
   deriving (Show, Eq, Ord)
 
 data Qualified t
- = Qual [Predicate] t
- deriving (Show, Eq, Ord)
+  = Qual [Predicate] t
+  deriving (Show, Eq, Ord)
 
 data Scheme
- = Forall [TypeVar] (Qualified Type)
- deriving (Show, Eq)
+  = Forall [TypeVar] (Qualified Type)
+  deriving (Show, Eq)
 
 type Instance = Predicate
 
@@ -51,15 +53,26 @@ numberT = TypeCon "Number"
 textT :: Type
 textT = TypeCon "Text"
 
-valMapT :: Type
-valMapT = TypeCon "ValueMap"
+mapT :: Type
+mapT = TypeCon "Map"
+
+varA :: Type
+varA = TypeVar "a"
+
+varB :: Type
+varB = TypeVar "b"
+
+varC :: Type
+varC = TypeVar "c"
 
 isBasicType :: Scheme -> Bool
 isBasicType (Forall [] (Qual [] (TypeCon _))) = True
 isBasicType _ = False
 
-filterPatClass :: Scheme -> Scheme
-filterPatClass (Forall xs (Qual ps t)) = Forall xs (Qual fs t)
-                                       where fs = filter isNotPatClass ps
-                                             isNotPatClass (IsIn "Pat" _) = False
-                                             isNotPatClass _ = True
+infixr 1 -->
+
+(-->) :: Type -> Type -> Type
+(-->) = TypeArr
+
+unqual :: Type -> Qualified Type
+unqual = Qual []

@@ -1,13 +1,14 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeApplications #-}
 
 module Zwirn.Language.Default
   ( defaultTypeEnv,
+    primitives,
   )
 where
 
 {-
-    Default.hs - provides the default type environment,
-    automatically generated
+    Default.hs - provides the default type environment and expression map
     Copyright (C) 2023, Martin Gius
 
     This library is free software: you can redistribute it and/or modify
@@ -24,31 +25,84 @@ where
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 -}
 
-import Data.Map as Map
+import qualified Data.Map as Map
 import Data.Text (Text)
+import Sound.Zwirn.Core.Cord
+import Sound.Zwirn.Core.Core
+import Sound.Zwirn.Core.Types hiding (Zwirn)
+import Sound.Zwirn.Time
+import Zwirn.Language.Evaluate
 import Zwirn.Language.TypeCheck.Env
 import Zwirn.Language.TypeCheck.Types
 
 defaultTypeEnv :: TypeEnv
-defaultTypeEnv = TypeEnv (Map.fromList $ others ++ typeList) defaultInstances
+defaultTypeEnv = TypeEnv (Map.fromList primitiveTypes) defaultInstances
 
 defaultInstances :: [Instance]
 defaultInstances =
   [ IsIn "Num" numberT,
-    IsIn "Num" valMapT,
-    IsIn "Fractional" numberT,
-    IsIn "Fractional" valMapT,
-    IsIn "Ord" numberT,
-    IsIn "Ord" valMapT,
-    IsIn "Show" numberT,
-    IsIn "Show" valMapT,
-    IsIn "show" textT
+    IsIn "Num" mapT,
+    IsIn "Eq" numberT,
+    IsIn "Eq" mapT,
+    IsIn "Eq" textT
   ]
 
-others :: [(Text, Scheme)]
-others =
-  [ ("\'", Forall ["a", "b"] (Qual [] (TypeArr (TypeVar "a") (TypeArr (TypeArr (TypeVar "a") (TypeVar "b")) (TypeVar "b")))))
+primitiveTypes :: [(Text, Scheme)]
+primitiveTypes =
+  [ ("id", Forall ["a"] $ unqual $ varA --> varA),
+    ("const", Forall ["a", "b"] $ unqual $ varA --> varB --> varA),
+    ("scomb", Forall ["a", "b"] $ unqual $ (varA --> varB --> varC) --> (varA --> varB) --> varA --> varC),
+    ("\'", Forall ["a", "b"] $ unqual $ varA --> (varA --> varB) --> varB),
+    ("$", Forall ["a", "b"] $ unqual $ (varA --> varB) --> varA --> varB),
+    ("|$", Forall ["a", "b"] $ unqual $ (varA --> varB) --> varA --> varB),
+    ("$|", Forall ["a", "b"] $ unqual $ (varA --> varB) --> varA --> varB),
+    ("map", Forall ["a", "b"] $ unqual $ (varA --> varB) --> varA --> varB),
+    ("layer", Forall ["a", "b"] $ unqual $ (varA --> varB) --> varA --> varB),
+    ("|+", Forall ["a"] $ Qual [IsIn "Num" varA] $ varA --> varA --> varA),
+    ("+|", Forall ["a"] $ Qual [IsIn "Num" varA] $ varA --> varA --> varA),
+    ("|*", Forall ["a"] $ Qual [IsIn "Num" varA] $ varA --> varA --> varA),
+    ("*|", Forall ["a"] $ Qual [IsIn "Num" varA] $ varA --> varA --> varA),
+    (">=", Forall ["a"] $ Qual [IsIn "Num" varA] $ varA --> varA --> varA),
+    ("not", Forall ["a"] $ Qual [IsIn "Num" varA] $ varA --> varA),
+    ("==", Forall ["a"] $ Qual [IsIn "Eq" varA] $ varA --> varA --> numberT),
+    ("paramN", Forall [] $ unqual $ textT --> numberT --> mapT),
+    ("paramT", Forall [] $ unqual $ textT --> textT --> mapT),
+    ("#", Forall [] $ unqual $ mapT --> mapT --> mapT),
+    ("getN", Forall [] $ unqual $ textT --> numberT),
+    ("getT", Forall [] $ unqual $ textT --> textT),
+    ("getM", Forall [] $ unqual $ textT --> numberT),
+    ("lookupN", Forall [] $ unqual $ textT --> mapT --> numberT),
+    ("lookupT", Forall [] $ unqual $ textT --> mapT --> textT)
   ]
 
-typeList :: [(Text, Scheme)]
-typeList = [("$", Forall ["a", "b"] (Qual [] (TypeArr (TypeArr (TypeVar "a") (TypeVar "b")) (TypeArr (TypeVar "a") (TypeVar "b"))))), ("&", Forall [] (Qual [] (TypeArr (TypeCon "Number") (TypeArr (TypeCon "Number") (TypeCon "Number"))))), ("*", Forall ["a"] (Qual [] (TypeArr (TypeVar "a") (TypeArr (TypeCon "Number") (TypeVar "a"))))), ("+", Forall ["a"] (Qual [IsIn "Num" (TypeVar "a")] (TypeArr (TypeVar "a") (TypeArr (TypeVar "a") (TypeVar "a"))))), ("++", Forall [] (Qual [] (TypeArr (TypeCon "Text") (TypeArr (TypeCon "Text") (TypeCon "Text"))))), ("-", Forall ["a"] (Qual [IsIn "Num" (TypeVar "a")] (TypeArr (TypeVar "a") (TypeArr (TypeVar "a") (TypeVar "a"))))), (".", Forall ["a", "b", "d"] (Qual [] (TypeArr (TypeArr (TypeVar "b") (TypeVar "d")) (TypeArr (TypeArr (TypeVar "a") (TypeVar "b")) (TypeArr (TypeVar "a") (TypeVar "d")))))), (".|.", Forall [] (Qual [] (TypeArr (TypeCon "Number") (TypeArr (TypeCon "Number") (TypeCon "Number"))))), ("/", Forall ["a"] (Qual [] (TypeArr (TypeVar "a") (TypeArr (TypeCon "Number") (TypeVar "a"))))), ("//", Forall ["a"] (Qual [IsIn "Fractional" (TypeVar "a")] (TypeArr (TypeVar "a") (TypeArr (TypeVar "a") (TypeVar "a"))))), ("<<", Forall [] (Qual [] (TypeArr (TypeCon "Number") (TypeArr (TypeCon "Number") (TypeCon "Number"))))), ("<=", Forall [] (Qual [] (TypeArr (TypeCon "Number") (TypeArr (TypeCon "Number") (TypeCon "Number"))))), ("<~", Forall ["a"] (Qual [] (TypeArr (TypeCon "Number") (TypeArr (TypeVar "a") (TypeVar "a"))))), ("==", Forall [] (Qual [] (TypeArr (TypeCon "Number") (TypeArr (TypeCon "Number") (TypeCon "Number"))))), (">=", Forall [] (Qual [] (TypeArr (TypeCon "Number") (TypeArr (TypeCon "Number") (TypeCon "Number"))))), (">>", Forall [] (Qual [] (TypeArr (TypeCon "Number") (TypeArr (TypeCon "Number") (TypeCon "Number"))))), ("ascii", Forall [] (Qual [] (TypeArr (TypeCon "Text") (TypeCon "Number")))), ("bd", Forall [] (Qual [] (TypeCon "Text"))), ("bytebeat", Forall [] (Qual [] (TypeArr (TypeCon "Number") (TypeCon "Number")))), ("const", Forall ["a", "b"] (Qual [] (TypeArr (TypeVar "a") (TypeArr (TypeVar "b") (TypeVar "a"))))), ("cyc", Forall [] (Qual [] (TypeCon "Number"))), ("false", Forall [] (Qual [] (TypeCon "Number"))), ("fast", Forall ["a"] (Qual [] (TypeArr (TypeCon "Number") (TypeArr (TypeVar "a") (TypeVar "a"))))), ("floor", Forall [] (Qual [] (TypeArr (TypeCon "Number") (TypeCon "Number")))), ("id", Forall ["a"] (Qual [] (TypeArr (TypeVar "a") (TypeVar "a")))), ("irand", Forall [] (Qual [] (TypeArr (TypeCon "Number") (TypeCon "Number")))), ("now", Forall [] (Qual [] (TypeCon "Number"))), ("ply", Forall ["a"] (Qual [] (TypeArr (TypeCon "Number") (TypeArr (TypeVar "a") (TypeVar "a"))))), ("rand", Forall [] (Qual [] (TypeCon "Number"))), ("range", Forall [] (Qual [] (TypeArr (TypeCon "Number") (TypeArr (TypeCon "Number") (TypeArr (TypeCon "Number") (TypeCon "Number")))))), ("rev", Forall ["a"] (Qual [] (TypeArr (TypeVar "a") (TypeVar "a")))), ("rotL", Forall ["a"] (Qual [] (TypeArr (TypeCon "Number") (TypeArr (TypeVar "a") (TypeVar "a"))))), ("rotR", Forall ["a"] (Qual [] (TypeArr (TypeCon "Number") (TypeArr (TypeVar "a") (TypeVar "a"))))), ("saw", Forall [] (Qual [] (TypeCon "Number"))), ("segment", Forall ["a"] (Qual [] (TypeArr (TypeCon "Number") (TypeArr (TypeVar "a") (TypeVar "a"))))), ("show", Forall ["a"] (Qual [IsIn "Show" (TypeVar "a")] (TypeArr (TypeVar "a") (TypeCon "Text")))), ("sine", Forall [] (Qual [] (TypeCon "Number"))), ("slow", Forall ["a"] (Qual [] (TypeArr (TypeCon "Number") (TypeArr (TypeVar "a") (TypeVar "a"))))), ("sn", Forall [] (Qual [] (TypeCon "Text"))), ("somecycles", Forall ["a"] (Qual [] (TypeArr (TypeArr (TypeVar "a") (TypeVar "a")) (TypeArr (TypeVar "a") (TypeVar "a"))))), ("somecyclesBy", Forall ["a"] (Qual [] (TypeArr (TypeCon "Number") (TypeArr (TypeArr (TypeVar "a") (TypeVar "a")) (TypeArr (TypeVar "a") (TypeVar "a")))))), ("sometimes", Forall ["a"] (Qual [] (TypeArr (TypeArr (TypeVar "a") (TypeVar "a")) (TypeArr (TypeVar "a") (TypeVar "a"))))), ("sometimesBy", Forall ["a"] (Qual [] (TypeArr (TypeCon "Number") (TypeArr (TypeArr (TypeVar "a") (TypeVar "a")) (TypeArr (TypeVar "a") (TypeVar "a")))))), ("square", Forall [] (Qual [] (TypeCon "Number"))), ("tick", Forall ["a", "b"] (Qual [] (TypeArr (TypeVar "a") (TypeArr (TypeArr (TypeVar "a") (TypeVar "b")) (TypeVar "b"))))), ("time", Forall [] (Qual [] (TypeCon "Number"))), ("timeloop", Forall ["a"] (Qual [] (TypeArr (TypeCon "Number") (TypeArr (TypeCon "Number") (TypeArr (TypeVar "a") (TypeVar "a")))))), ("true", Forall [] (Qual [] (TypeCon "Number"))), ("while", Forall ["a"] (Qual [] (TypeArr (TypeCon "Number") (TypeArr (TypeArr (TypeVar "a") (TypeVar "a")) (TypeArr (TypeVar "a") (TypeVar "a")))))), ("zoom", Forall ["a"] (Qual [] (TypeArr (TypeCon "Number") (TypeArr (TypeCon "Number") (TypeArr (TypeVar "a") (TypeVar "a")))))), ("|*", Forall ["a"] (Qual [IsIn "Num" (TypeVar "a")] (TypeArr (TypeVar "a") (TypeArr (TypeVar "a") (TypeVar "a"))))), ("~>", Forall ["a"] (Qual [] (TypeArr (TypeCon "Number") (TypeArr (TypeVar "a") (TypeVar "a")))))]
+primitives :: ExpressionMap
+primitives =
+  Map.fromList
+    [ ("id", lambda id),
+      ("const", lambda $ \x -> lambda $ const x),
+      ("scomb", lambda $ \f -> lambda $ \g -> lambda $ \x -> f ! x ! (g ! x)),
+      ("\'", toExp (flip squeezeApply :: Zwirn Expression -> Zwirn (Zwirn Expression -> Zwirn Expression) -> Zwirn Expression)),
+      ("$", toExp (squeezeApply :: Zwirn (Zwirn Expression -> Zwirn Expression) -> Zwirn Expression -> Zwirn Expression)),
+      ("|$", toExp (leftApply :: Zwirn (Zwirn Expression -> Zwirn Expression) -> Zwirn Expression -> Zwirn Expression)),
+      ("$|", toExp (rightApply :: Zwirn (Zwirn Expression -> Zwirn Expression) -> Zwirn Expression -> Zwirn Expression)),
+      ("map", toExp (cordMap :: Zwirn (Zwirn Expression -> Zwirn Expression) -> Zwirn Expression -> Zwirn Expression)),
+      ("layer", toExp (layer :: Zwirn (Zwirn Expression -> Zwirn Expression) -> Zwirn Expression -> Zwirn Expression)),
+      ("|+", toExp (liftA2Left (+) :: Zwirn Expression -> Zwirn Expression -> Zwirn Expression)),
+      ("+|", toExp (liftA2Right (+) :: Zwirn Expression -> Zwirn Expression -> Zwirn Expression)),
+      ("|*", toExp (liftA2Left (*) :: Zwirn Expression -> Zwirn Expression -> Zwirn Expression)),
+      ("*|", toExp (liftA2Right (*) :: Zwirn Expression -> Zwirn Expression -> Zwirn Expression)),
+      ("fast", toExp (lift fast :: Zwirn Time -> Zwirn Expression -> Zwirn Expression)),
+      ("rev", toExp (rev :: Zwirn Expression -> Zwirn Expression)),
+      ("paramN", toExp singMap),
+      ("paramT", toExp singMap),
+      ("#", toExp (liftA2 Map.union :: Zwirn ExpressionMap -> Zwirn ExpressionMap -> Zwirn ExpressionMap)),
+      (">=", toExp (liftA2 (pervasive2 @Double (\d e -> if d >= e then 1 else 0)) :: Zwirn Expression -> Zwirn Expression -> Zwirn Expression)),
+      ("not", toExp (fmap $ pervasive not :: Zwirn Expression -> Zwirn Expression)),
+      ("&&", toExp (liftA2 (pervasive2 (&&)) :: Zwirn Expression -> Zwirn Expression -> Zwirn Expression)),
+      ("||", toExp (liftA2 (pervasive2 (||)) :: Zwirn Expression -> Zwirn Expression -> Zwirn Expression)),
+      ("getN", toExp getStateN),
+      ("getT", toExp getStateT),
+      ("getM", toExp getStateM),
+      ("lookupN", toExp lookN),
+      ("lookupT", toExp lookT)
+    ]

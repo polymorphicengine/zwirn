@@ -225,8 +225,8 @@ defs :: { [Def] }
   : sepBy(def, ';')        {$1}
 
 action :: { Action }
-  : string     '<-' term              { Stream (unTok $1) $3 }
-  | number     '<-' term              { Stream (unTok $1) $3 }
+  : string     '<-' term              { StreamAction (unTok $1) $3 }
+  | number     '<-' term              { StreamAction (unTok $1) $3 }
   | identifier '<-' term              { StreamSet (unTok $1) $3 }
   | ':cps' term                       { StreamSetTempo CPS $2 }
   | ':bpm' term                       { StreamSetTempo BPM $2 }
@@ -293,7 +293,7 @@ typeDecl :: { (Text,Scheme) }
   | '(' specop ')' '::' scheme                      {(unTok $2, $5)}
 
 typeDecls :: { [(Text,Scheme)] }
-  : some(typeDecl)                                  {map (\(x,y) -> (x, filterPatClass y)) $1}
+  : some(typeDecl)                                  {map (\(x,y) -> (x, y)) $1}
 
 {
 parseError :: (L.RangedToken, [String]) -> L.Alex a

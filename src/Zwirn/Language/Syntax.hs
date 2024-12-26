@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+
 module Zwirn.Language.Syntax where
 
 {-
@@ -26,11 +27,13 @@ type Var = Text
 
 type OperatorSymbol = Text
 
-data Position = Pos { pLine :: Int
-                    , pStart :: Int
-                    , pEnd :: Int
-                    , pEditor :: Int
-                    } deriving (Eq, Show)
+data Position = Pos
+  { pLine :: Int,
+    pStart :: Int,
+    pEnd :: Int,
+    pEditor :: Int
+  }
+  deriving (Eq, Show)
 
 -- sugary representation of patterns
 data Term
@@ -62,7 +65,7 @@ data Tempo
   deriving (Eq, Show)
 
 data Action
-  = Stream Text Term
+  = StreamAction Text Term
   | StreamSet Text Term
   | StreamOnce Term
   | StreamSetTempo Tempo Term

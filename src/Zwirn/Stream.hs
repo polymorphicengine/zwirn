@@ -3,6 +3,8 @@
 module Zwirn.Stream where
 
 import Control.Concurrent.MVar (MVar, modifyMVar_, readMVar)
+import qualified Data.Map as Map
+import qualified Data.Text as T
 import qualified Network.Socket as N
 import qualified Sound.Osc.Fd as O
 import Sound.Tidal.Clock
@@ -10,13 +12,17 @@ import Sound.Tidal.Link
 import Sound.Zwirn.Core.Cord
 import Sound.Zwirn.Core.Query
 import qualified Sound.Zwirn.Time as Z
+import Zwirn.Language.Evaluate
 
-type Stream = MVar (Cord Int Double)
+data Stream = Stream {sCord :: MVar (Cord ExpressionMap Double), sState :: MVar ExpressionMap}
 
 type RemoteAddress = N.SockAddr
 
-streamReplace :: Stream -> Cord Int Double -> IO ()
-streamReplace str p = modifyMVar_ str (const $ pure p)
+streamReplace :: Stream -> Cord ExpressionMap Double -> IO ()
+streamReplace str p = modifyMVar_ (sCord str) (const $ pure p)
+
+streamSet :: Stream -> T.Text -> Expression -> IO ()
+streamSet str x ex = modifyMVar_ (sState str) (return . Map.insert x ex)
 
 send :: RemoteAddress -> O.Udp -> Double -> Double -> IO ()
 send remote local c x = O.sendTo local (O.p_message "/zwirn" [O.float c, O.float x]) remote
@@ -40,8 +46,9 @@ startStream str = do
 
 tickAction :: Stream -> RemoteAddress -> O.Udp -> (Time, Time) -> Double -> ClockConfig -> ClockRef -> (SessionState, SessionState) -> IO ()
 tickAction str remote local (star, end) _ _ _ _ = do
-  p <- readMVar str
-  let vs = map snd $ findAllValuesWithTime (Z.Time (align star) 1, Z.Time (align end) 1) 0 p
+  p <- readMVar (sCord str)
+  st <- readMVar (sState str)
+  let vs = map snd $ findAllValuesWithTime (Z.Time (align star) 1, Z.Time (align end) 1) st p
   mapM_ (send remote local (fromIntegral $ floor star)) vs
 
 resolve :: String -> String -> IO N.AddrInfo

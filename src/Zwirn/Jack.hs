@@ -11,14 +11,15 @@ import Sound.JACK.Audio
 import qualified Sound.JACK.Exception as JackExc
 import Sound.Zwirn.Core.Cord
 import Sound.Zwirn.Core.Types
+import Zwirn.Language.Evaluate
 import Zwirn.Stream
 
 type JackPort = Jack.Port Sample
 
 type ByteBeat = Int -> Word8
 
-convert :: Cord Int Double -> Int -> Double
-convert p n = average $ map (value . fst) $ asList $ zwirn p (fromIntegral n / 48000) 0
+convert :: ExpressionMap -> Cord ExpressionMap Double -> Int -> Double
+convert st p n = average $ map (value . fst) $ asList $ zwirn p (fromIntegral n / 48000) st
 
 getSampleNumber :: IORef Int -> IO Int
 getSampleNumber ref = modifyIORef' ref (+ 1) >> readIORef ref
@@ -39,8 +40,9 @@ processBeat output ref str nframes = Trans.lift $ do
   mapM_
     ( \i -> do
         n <- getSampleNumber ref
-        p <- readMVar str
-        writeArray outArr (Jack.nframesIndices nframes !! i) (realToFrac $ convert p n)
+        p <- readMVar (sCord str)
+        st <- readMVar (sState str)
+        writeArray outArr (Jack.nframesIndices nframes !! i) (realToFrac $ convert st p n)
     )
     [0 .. length (Jack.nframesIndices nframes) - 1]
 

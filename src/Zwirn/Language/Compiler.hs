@@ -2,7 +2,6 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications #-}
 {-# OPTIONS_GHC -Wno-incomplete-uni-patterns #-}
 {-# OPTIONS_GHC -Wno-unused-top-binds #-}
 
@@ -39,6 +38,7 @@ where
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 -}
 
+import Control.Concurrent (readMVar)
 import Control.Concurrent.MVar (MVar)
 import Control.Exception (SomeException, try)
 import Control.Monad
@@ -47,7 +47,7 @@ import Control.Monad.State
 import Data.List (sortOn)
 import Data.Text (Text, unpack)
 import Data.Text.IO (readFile)
-import Sound.Zwirn.Core.Cord (Cord)
+import Sound.Zwirn.Core.Cord (Cord, silence)
 import Zwirn.Language.Block
 import Zwirn.Language.Evaluate
 import Zwirn.Language.Parser
@@ -69,7 +69,7 @@ data CurrentBlock
   = CurrentBlock Int Int
   deriving (Eq, Show)
 
-type EvalEnv = ExpressionMap Int
+type EvalEnv = ExpressionMap
 
 data ConfigEnv
   = ConfigEnv
@@ -208,10 +208,18 @@ runTypeCheck s = do
 -------------------- Interpreter --------------------
 -----------------------------------------------------
 
-interpret :: SimpleTerm -> CI (Expression Int)
+interpret :: SimpleTerm -> CI Expression
 interpret input = do
   env <- gets evalEnv
-  return $ eval env input
+  return $ evaluate env input
+
+termToExpressionType :: Term -> CI (Expression, Scheme)
+termToExpressionType t = do
+  s <- runSimplify t
+  rot <- runRotate s
+  ty <- runTypeCheck rot
+  ex <- interpret rot
+  return (ex, ty)
 
 -----------------------------------------------------
 ----------------- Compiling Actions -----------------
@@ -231,14 +239,11 @@ showAction t = do
   s <- runSimplify t
   rot <- runRotate s
   ty <- runTypeCheck rot
-  case ty of
-    (Forall [] (Qual [] (TypeCon "Number"))) -> do
-      ex <- interpret rot
-      return $ show ex
-    (Forall [] (Qual [] (TypeCon "Text"))) -> do
-      ex <- interpret rot
-      return $ show ex
-    _ -> throw $ "Can't show terms of type " ++ ppscheme ty
+  do
+    ex <- interpret rot
+    stmv <- gets (sState . tStream)
+    st <- liftIO $ readMVar stmv
+    return $ showWithState st ex
 
 typeAction :: Term -> CI String
 typeAction t = do
@@ -265,11 +270,34 @@ streamAction ctx _ t = do
   ty <- runTypeCheck rot
   p <- interpret rot
   when (isNumberT ty) $ do
-    (Environment {tStream = str}) <- get
-    liftIO $ streamReplace str $ toCord p
+    str <- gets tStream
+    liftIO $ streamReplace str $ fromExp p
 
 streamSetAction :: Bool -> Text -> Term -> CI ()
-streamSetAction _ _ _ = throw "not implemented"
+streamSetAction _ x t = do
+  s <- runSimplify t
+  rot <- runRotate s
+  ty <- runTypeCheck rot
+  ex <- interpret rot
+
+  ( if isBasicType ty
+      then
+        ( do
+            modify (\env -> env {typeEnv = extend (typeEnv env) (x, ty)})
+
+            let newEx
+                  | isNumberT ty = EZwirn $ getStateN (pure x)
+                  | isTextT ty = EZwirn $ getStateT (pure x)
+                  | isMapT ty = EZwirn $ getStateM (pure x)
+                  | otherwise = EZwirn silence
+            modify (\env -> env {evalEnv = insert (x, newEx) (evalEnv env)})
+
+            -- put expression into state
+            str <- gets tStream
+            liftIO $ streamSet str x ex
+        )
+      else throw "Can only set basic types!"
+    )
 
 streamOnceAction :: Bool -> Term -> CI ()
 streamOnceAction _ _ = throw "not implemented"
@@ -291,7 +319,7 @@ setConfigAction :: Text -> Text -> CI String
 setConfigAction key v = do
   (Environment {confEnv = mayEnv}) <- get
   case mayEnv of
-    Nothing -> throw $ "set config not available"
+    Nothing -> throw "set config not available"
     Just (ConfigEnv setC _) ->
       ( if key `elem` tidalKeys
           then liftIO $ setC ("tidal." <> key) v >> return "configuration set! please restart for it to have an effect!"
@@ -307,7 +335,7 @@ setConfigAction key v = do
     otherKeys = ["bootPath", "highlight", "hydra"]
 
 runAction :: Bool -> Action -> CI String
-runAction b (Stream i t) = streamAction b i t >> return ""
+runAction b (StreamAction i t) = streamAction b i t >> return ""
 runAction b (StreamSet i t) = streamSetAction b i t >> return ""
 runAction b (StreamOnce t) = streamOnceAction b t >> return ""
 runAction b (StreamSetTempo mode t) = streamSetTempoAction b mode t >> return ""
@@ -324,5 +352,12 @@ runActions b as = last <$> mapM (runAction b) as
 
 isNumberT :: Scheme -> Bool
 isNumberT (Forall _ (Qual _ (TypeCon "Number"))) = True
-isNumberT (Forall _ (Qual [] (TypeVar _))) = True
 isNumberT _ = False
+
+isTextT :: Scheme -> Bool
+isTextT (Forall _ (Qual _ (TypeCon "Text"))) = True
+isTextT _ = False
+
+isMapT :: Scheme -> Bool
+isMapT (Forall _ (Qual _ (TypeCon "Map"))) = True
+isMapT _ = False
