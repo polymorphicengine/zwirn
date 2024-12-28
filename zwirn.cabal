@@ -25,6 +25,10 @@ library
                    Zwirn.Language.Block
                    Zwirn.Language.Default
                    Zwirn.Language.Evaluate
+                   Zwirn.Language.Evaluate.Convert
+                   Zwirn.Language.Evaluate.Expression
+                   Zwirn.Language.Evaluate.SKI
+                   Zwirn.Language.Evaluate.Internal
                    Zwirn.Language
                    Zwirn.Stream
                    Zwirn.Jack
