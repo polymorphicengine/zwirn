@@ -9,8 +9,7 @@ import Data.Word
 import qualified Sound.JACK as Jack
 import Sound.JACK.Audio
 import qualified Sound.JACK.Exception as JackExc
-import Sound.Zwirn.Core.Cord
-import Sound.Zwirn.Core.Types
+import Sound.Zwirn.Core.Types hiding (Zwirn)
 import Zwirn.Language.Evaluate
 import Zwirn.Stream
 
@@ -18,8 +17,8 @@ type JackPort = Jack.Port Sample
 
 type ByteBeat = Int -> Word8
 
-convert :: ExpressionMap -> Cord ExpressionMap Double -> Int -> Double
-convert st p n = average $ map (value . fst) $ asList $ zwirn p (fromIntegral n / 48000) st
+convert :: ExpressionMap -> Zwirn Expression -> Int -> Double
+convert st p n = average $ map (value . fst) $ asList $ zwirn (fmap (\(ENum n) -> n) p) (fromIntegral n / 48000) st
 
 getSampleNumber :: IORef Int -> IO Int
 getSampleNumber ref = modifyIORef' ref (+ 1) >> readIORef ref

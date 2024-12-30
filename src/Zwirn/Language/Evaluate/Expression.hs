@@ -38,5 +38,8 @@ showWithState _ (EText x) = unpack x
 showWithState st (EMap m) = show $ Map.toList $ showWithState st <$> m
 showWithState _ _ = "can't show"
 
+instance Show Expression where
+  show = showWithState Map.empty
+
 lambda :: (Expression -> Expression) -> Expression
 lambda f = EZwirn $ pure $ ELam f

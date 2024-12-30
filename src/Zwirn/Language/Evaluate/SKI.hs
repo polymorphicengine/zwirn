@@ -38,7 +38,7 @@ abstract x (EStack xs) = EStack $ map (abstract x) xs
 abstract _ k = combK k
 
 combS :: Expression -> Expression -> Expression
-combS f = EApp (EApp (EVar "app") f)
+combS f = EApp (EApp (EVar "scomb") f)
 
 combK :: Expression -> Expression
 combK = EApp (EVar "const")

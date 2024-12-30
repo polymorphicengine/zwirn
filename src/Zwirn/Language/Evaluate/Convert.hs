@@ -35,6 +35,10 @@ instance FromExpression Double where
   fromExp (EZwirn tz) = fmap (\(ENum t) -> t) tz
   fromExp _ = silence
 
+instance FromExpression Int where
+  fromExp (EZwirn tz) = fmap (\(ENum t) -> floor t) tz
+  fromExp _ = silence
+
 instance FromExpression Expression where
   fromExp (EZwirn z) = z
   fromExp _ = silence
@@ -51,8 +55,8 @@ instance FromExpression ExpressionMap where
   fromExp (EZwirn z) = fmap (\(EMap m) -> m) z
   fromExp _ = silence
 
-instance FromExpression (Zwirn Expression -> Zwirn Expression) where
-  fromExp (EZwirn z) = fmap (\(ELam f) -> toZwirn . f . fromZwirn) z
+instance (ToExpression a, FromExpression b) => FromExpression (Zwirn a -> Zwirn b) where
+  fromExp (EZwirn z) = fmap (\(ELam f) -> fromExp . f . toExp) z
   fromExp _ = silence
 
 instance (FromExpression a) => FromExpression (Zwirn a) where
@@ -67,6 +71,12 @@ instance ToExpression ExpressionMap where
 
 instance ToExpression Double where
   toExp = ENum
+
+instance ToExpression Time where
+  toExp (Time t _) = ENum $ fromRational t
+
+instance ToExpression Int where
+  toExp i = ENum $ fromIntegral i
 
 instance ToExpression Bool where
   toExp True = ENum 1
@@ -85,6 +95,10 @@ instance Num Expression where
   signum = pervasive (signum @Double)
   fromInteger i = ENum $ fromInteger i
   negate = pervasive (negate @Double)
+
+instance Fractional Expression where
+  fromRational r = ENum $ fromRational r
+  (/) = pervasive2 ((/) @Double)
 
 class Pervasive a where
   pervasive :: (a -> a) -> Expression -> Expression

@@ -213,14 +213,6 @@ interpret input = do
   env <- gets evalEnv
   return $ evaluate env input
 
-termToExpressionType :: Term -> CI (Expression, Scheme)
-termToExpressionType t = do
-  s <- runSimplify t
-  rot <- runRotate s
-  ty <- runTypeCheck rot
-  ex <- interpret rot
-  return (ex, ty)
-
 -----------------------------------------------------
 ----------------- Compiling Actions -----------------
 -----------------------------------------------------
@@ -269,9 +261,13 @@ streamAction ctx _ t = do
   rot <- runRotate s
   ty <- runTypeCheck rot
   p <- interpret rot
-  when (isNumberT ty) $ do
-    str <- gets tStream
-    liftIO $ streamReplace str $ fromExp p
+  if isBasicType ty
+    then
+      ( do
+          str <- gets tStream
+          liftIO $ streamReplace str $ fromExp p
+      )
+    else throw "Can only stream basic types!"
 
 streamSetAction :: Bool -> Text -> Term -> CI ()
 streamSetAction _ x t = do
