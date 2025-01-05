@@ -152,7 +152,7 @@ primitives =
       (">=", toExp (liftA2 (pervasive2 @Double (\d e -> if d >= e then 1 else 0)) :: Zwirn Expression -> Zwirn Expression -> Zwirn Expression)),
       -- boolean opeartions
       ("not", toExp (fmap $ pervasive not :: Zwirn Expression -> Zwirn Expression)),
-      ("iff", toExp (liftA3 (\b x y -> if b then x else y) :: Zwirn Bool -> Zwirn Expression -> Zwirn Expression -> Zwirn Expression)),
+      ("iff", toExp iff),
       ("&&", toExp (liftA2 (pervasive2 (&&)) :: Zwirn Expression -> Zwirn Expression -> Zwirn Expression)),
       ("||", toExp (liftA2 (pervasive2 (||)) :: Zwirn Expression -> Zwirn Expression -> Zwirn Expression)),
       -- operations on state

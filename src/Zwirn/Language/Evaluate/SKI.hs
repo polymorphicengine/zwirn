@@ -12,6 +12,7 @@ import Data.Maybe (fromJust)
 import Data.Text (unpack)
 import Sound.Zwirn.Core.Cord
 import Sound.Zwirn.Core.Core
+import Sound.Zwirn.Core.Random (chooseWithSeed)
 import Zwirn.Language.Evaluate.Convert
 import Zwirn.Language.Evaluate.Expression
 import Zwirn.Language.Simple
@@ -25,6 +26,7 @@ compile (SNum _ x) = EZwirn $ pure $ ENum $ read $ unpack x
 compile (SText _ x) = EZwirn $ pure $ EText x
 compile (SSeq xs) = ESeq $ map compile xs
 compile (SStack xs) = EStack $ map compile xs
+compile (SChoice i xs) = EChoice i $ map compile xs
 compile (SInfix s1 n s2) = EApp (EApp (EVar n) (compile s1)) (compile s2)
 compile (SBracket s) = compile s
 compile SRest = EZwirn silence
@@ -35,6 +37,7 @@ abstract x (EVar n) | x == n = combI
 abstract x (EApp fun arg) = combS (abstract x fun) (abstract x arg)
 abstract x (ESeq xs) = ESeq $ map (abstract x) xs
 abstract x (EStack xs) = EStack $ map (abstract x) xs
+abstract x (EChoice i xs) = EChoice i $ map (abstract x) xs
 abstract _ k = combK k
 
 combS :: Expression -> Expression -> Expression
@@ -57,6 +60,7 @@ link bs (EVar n) = fromJust (Map.lookup n bs)
 link bs (EApp f x) = link bs f ! link bs x
 link bs (ESeq xs) = EZwirn $ fastcat $ map (toZwirn . link bs) xs
 link bs (EStack xs) = EZwirn $ stack $ map (toZwirn . link bs) xs
+link bs (EChoice i xs) = EZwirn $ chooseWithSeed i $ map (toZwirn . link bs) xs
 link _ e = e
 
 evaluate :: ExpressionMap -> SimpleTerm -> Expression

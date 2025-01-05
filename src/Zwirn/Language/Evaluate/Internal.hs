@@ -6,6 +6,7 @@
 
 module Zwirn.Language.Evaluate.Internal where
 
+import Data.Bifunctor (first)
 import qualified Data.Map as Map
 import Data.Text (Text, pack)
 import Sound.Zwirn.Core.Cord
@@ -73,3 +74,11 @@ lookT tz xz = outerJoin $ liftA2Right (\t x -> fromLookup $ Map.lookup t x) tz x
 
 modTimeExp :: Zwirn (Zwirn Time -> Zwirn Time) -> Zwirn Expression -> Zwirn Expression
 modTimeExp fz x = innerJoin $ fmap (`modTime` x) fz
+
+iff :: Zwirn Bool -> Zwirn Expression -> Zwirn Expression -> Zwirn Expression
+iff bz xz yz = innerJoin $ newZwirn q
+  where
+    q t st = first (fmap f) <$> zwirn bz t st
+      where
+        f True = xz
+        f False = yz

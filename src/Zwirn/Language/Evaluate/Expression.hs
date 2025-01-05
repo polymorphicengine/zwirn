@@ -29,6 +29,7 @@ data Expression
   | EMap ExpressionMap
   | ESeq [Expression]
   | EStack [Expression]
+  | EChoice Int [Expression]
   | EZwirn (Zwirn Expression)
 
 showWithState :: ExpressionMap -> Expression -> String

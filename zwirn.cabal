@@ -45,7 +45,7 @@ library
                  explicit-exception,
                  transformers,
                  tidal-link,
-                 hosc,
+                 hosc == 0.21,
                  network,
                  bytestring
   build-tool-depends: alex:alex, happy:happy
