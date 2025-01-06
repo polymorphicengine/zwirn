@@ -32,7 +32,7 @@ import Zwirn.Language.Syntax
 
 -- simple representation of patterns
 data SimpleTerm
-  = SVar Position Var
+  = SVar (Maybe Position) Var
   | SText Position Text
   | SNum (Maybe Position) Text
   | SRest
@@ -52,7 +52,7 @@ data SimpleDef
   deriving (Eq, Show)
 
 simplify :: Term -> SimpleTerm
-simplify (TVar p x) = SVar p x
+simplify (TVar p x) = SVar (Just p) x
 simplify (TText p x) = SText p $ stripText x
   where
     stripText = Text.filter (/= '\"')
@@ -79,6 +79,8 @@ simplify (TLambda [] t) = simplify t
 simplify (TLambda (x : xs) t) = SLambda x (simplify $ TLambda xs t)
 simplify (TApp x y) = SApp (simplify x) (simplify y)
 simplify (TInfix x op y) = SInfix (simplify x) op (simplify y)
+simplify (TSectionR op y) = SLambda "_x" (SInfix (SVar Nothing "_x") op (simplify y))
+simplify (TSectionL x op) = SLambda "_x" (SInfix (simplify x) op (SVar Nothing "_x"))
 simplify (TBracket x) = SBracket (simplify x)
 
 simplifyDef :: Def -> SimpleDef

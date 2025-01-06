@@ -52,6 +52,8 @@ data Term
   | TLambda [Text] Term
   | TApp Term Term
   | TInfix Term Text Term
+  | TSectionR Text Term
+  | TSectionL Term Text
   | TBracket Term
   deriving (Eq, Show)
 

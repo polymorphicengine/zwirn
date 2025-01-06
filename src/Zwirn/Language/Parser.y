@@ -211,9 +211,17 @@ app :: { Term }
   : app specialinfix              %shift { TApp $1 $2 }
   | specialinfix                  %shift {$1}
 
+sectionR :: { Term }
+  : operator app            %shift { TSectionR (unTok $1) $2 }
+
+sectionL :: { Term }
+  : app operator            %shift { TSectionL $1 (unTok $2) }
+
 -- operators outside of sequences have the weakest binding
 term :: { Term }
   : app operator term       %shift { TInfix  $1 (unTok $2) $3 }
+  | sectionR                %shift { $1 }
+  | sectionL                %shift { $1 }
   | app                     %shift {$1}
 
 -- parsing definitions
