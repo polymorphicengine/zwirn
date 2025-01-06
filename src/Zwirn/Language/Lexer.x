@@ -143,7 +143,10 @@ tokens :-
 <0> ":js"                             { tok JSA }
 
 -- Identifiers
-<0> @id     { tokText Identifier }
+<0> @id             { tokText Identifier }
+
+-- Operator Identifier
+<0> \( @op \)       { tokText (Identifier . rmFirstLast) }
 
 -- Constants
 <0> @num            { tokText Number }
@@ -325,6 +328,9 @@ mkLine inp@(_, _, _, str) len = case Text.all (\c -> elem c ("\n\t " :: String))
 replaceTab :: Char  -> Char
 replaceTab '\t' = ' '
 replaceTab x = x
+
+rmFirstLast :: Text -> Text
+rmFirstLast t = Text.init (Text.tail t)
 
 tok :: Token -> AlexAction RangedToken
 tok ctor inp len =
