@@ -25,13 +25,12 @@ where
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 -}
 
-import Control.Applicative (liftA3)
 import qualified Data.Map as Map
 import Data.Text (Text)
-import Sound.Zwirn.Core.Cord
-import Sound.Zwirn.Core.Core
-import Sound.Zwirn.Core.Types hiding (Zwirn)
-import Sound.Zwirn.Time
+import Zwirn.Core.Cord
+import Zwirn.Core.Core
+import Zwirn.Core.Time
+import Zwirn.Core.Types
 import Zwirn.Language.Evaluate
 import Zwirn.Language.TypeCheck.Env
 import Zwirn.Language.TypeCheck.Types

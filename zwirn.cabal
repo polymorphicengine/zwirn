@@ -39,7 +39,7 @@ library
                  exceptions,
                  filepath,
                  containers,
-                 zwirn-core == 0.1.0.2,
+                 zwirn-core == 0.1.1.0,
                  tidal-link,
                  hosc == 0.21,
                  network,

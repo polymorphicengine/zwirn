@@ -11,9 +11,9 @@ module Zwirn.Language.Evaluate.Expression where
 import Data.List
 import qualified Data.Map as Map
 import Data.Text (Text, unpack)
-import Sound.Zwirn.Core.Cord
-import Sound.Zwirn.Core.Query
-import Sound.Zwirn.Time (Time (..))
+import Zwirn.Core.Cord
+import Zwirn.Core.Query
+import Zwirn.Core.Time (Time (..))
 import Zwirn.Language.TypeCheck.Types
 
 type ExpressionMap = Map.Map Text Expression

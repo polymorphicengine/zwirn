@@ -47,7 +47,7 @@ import Control.Monad.State
 import Data.List (sortOn)
 import Data.Text (Text, unpack)
 import Data.Text.IO (readFile)
-import Sound.Zwirn.Core.Cord (Cord, silence)
+import Zwirn.Core.Cord (Cord, silence)
 import Zwirn.Language.Block
 import Zwirn.Language.Evaluate
 import Zwirn.Language.Parser

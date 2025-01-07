@@ -28,7 +28,7 @@ import Editor.Backend
 import Editor.Frontend
 import Editor.UI
 import Graphics.UI.Threepenny.Core as C hiding (defaultConfig, text)
-import Sound.Zwirn.Core.Core
+import Zwirn.Core.Core
 import Zwirn.Language.Compiler
 import Zwirn.Language.Default
 import Zwirn.Stream

@@ -10,9 +10,9 @@ module Zwirn.Language.Evaluate.SKI (evaluate, (!)) where
 import qualified Data.Map as Map
 import Data.Maybe (fromJust)
 import Data.Text (unpack)
-import Sound.Zwirn.Core.Cord
-import Sound.Zwirn.Core.Core
-import Sound.Zwirn.Core.Random (chooseWithSeed)
+import Zwirn.Core.Cord
+import Zwirn.Core.Core
+import Zwirn.Core.Random (chooseWithSeed)
 import Zwirn.Language.Evaluate.Convert
 import Zwirn.Language.Evaluate.Expression
 import Zwirn.Language.Simple

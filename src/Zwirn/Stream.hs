@@ -11,8 +11,8 @@ import qualified Sound.Osc.Transport.Fd.Udp as O
 import Sound.Tidal.Clock
 import qualified Sound.Tidal.Clock as Clock
 import Sound.Tidal.Link
-import Sound.Zwirn.Core.Query
-import qualified Sound.Zwirn.Time as Z
+import Zwirn.Core.Query
+import qualified Zwirn.Core.Time as Z
 import Zwirn.Language.Evaluate
 
 data Stream = Stream {sCord :: MVar (Zwirn Expression), sState :: MVar ExpressionMap}

@@ -9,11 +9,11 @@ module Zwirn.Language.Evaluate.Internal where
 import Data.Bifunctor (first)
 import qualified Data.Map as Map
 import Data.Text (Text, pack)
-import Sound.Zwirn.Core.Cord
-import Sound.Zwirn.Core.Core (lift2, modTime, withState)
-import Sound.Zwirn.Core.State
-import Sound.Zwirn.Core.Types hiding (Zwirn)
-import Sound.Zwirn.Time (Time)
+import Zwirn.Core.Cord
+import Zwirn.Core.Core (lift2, modTime, withState)
+import Zwirn.Core.State
+import Zwirn.Core.Time (Time)
+import Zwirn.Core.Types
 import Zwirn.Language.Evaluate.Convert
 import Zwirn.Language.Evaluate.Expression
 
