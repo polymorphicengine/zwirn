@@ -31,7 +31,6 @@ library
                    Zwirn.Language.Evaluate.Internal
                    Zwirn.Language
                    Zwirn.Stream
-                   Zwirn.Jack
   build-depends: base >= 4.19,
                  array,
                  text,
@@ -41,9 +40,6 @@ library
                  filepath,
                  containers,
                  zwirn-core == 0.1.0.2,
-                 jack,
-                 explicit-exception,
-                 transformers,
                  tidal-link,
                  hosc == 0.21,
                  network,
