@@ -21,20 +21,24 @@ module Editor.Highlight where
 -- import Sound.Tidal.Context hiding (end, start)
 -- import Sound.Tidal.Link as Link
 
+import Control.Concurrent (readMVar, threadDelay)
 import Control.Concurrent.MVar (MVar, putMVar, takeMVar)
 import Data.List ((\\))
 import Foreign.JavaScript (JSObject)
 import Graphics.UI.Threepenny.Core as C hiding (text)
+import Sound.Tidal.Clock
+import Zwirn.Core.Time (Time (..))
+import Zwirn.Core.Types
+import Zwirn.Language.Evaluate.Expression
+import Zwirn.Language.Syntax
+import Zwirn.Stream
 
--- location of a value in the code specified by line, start, end and editor number
-type Location = (Int, Int, Int, Int)
+type Buffer = [(Position, JSObject)]
 
-type Buffer = [(Location, JSObject)]
+highlight :: Position -> UI JSObject
+highlight (Pos line strt end editorNum) = callFunction $ ffi ("(editor" ++ show editorNum ++ "cm.markText({line: %1, ch: %2}, {line: %1, ch: %3}, {css: \"outline: 2px solid blue;\"}))") line strt end
 
-highlight :: Location -> UI JSObject
-highlight (line, start, end, editorNum) = callFunction $ ffi ("(editor" ++ show editorNum ++ "cm.markText({line: %1, ch: %2}, {line: %1, ch: %3}, {css: \"outline: 2px solid blue;\"}))") line start end
-
-highlightMany :: [Location] -> UI [JSObject]
+highlightMany :: [Position] -> UI [JSObject]
 highlightMany [] = return []
 highlightMany (x : xs) = do
   mark <- highlight x
@@ -48,16 +52,15 @@ unhighlightMany :: [JSObject] -> UI ()
 unhighlightMany = foldr ((>>) . unHighlight) (return ())
 
 -- queries the pattern at time t and gets the locations of active events
--- locs :: ValueMap -> Double -> ControlPattern -> [Location]
--- locs vm t pat = concatMap evToLocs $ query pat (State (Arc (toRational t) (toRational t)) vm)
---         where evToLocs (Event {context = Context xs}) = map toLoc xs
---               -- assume an event doesn't span more than one line
---               toLoc ((by, bx), (editorNum, ex)) = (by,bx-1,ex-1,editorNum)
+locs :: ExpressionMap -> Double -> Zwirn Expression -> [Position]
+locs st t z = concatMap (fixLocs . info . fst) $ toList $ unzwirn z (Time (toRational t) 1) st
+  where
+    fixLocs = map (\(Pos l xst xen xed) -> Pos l (xst - 1) (xen - 1) xed)
 
--- locsMany :: ValueMap -> Double -> [ControlPattern] -> [Location]
--- locsMany vm t = concatMap (locs vm t)
+locsMany :: ExpressionMap -> Double -> [Zwirn Expression] -> [Position]
+locsMany st t = concatMap (locs st t)
 
-updateBuf :: Buffer -> [Location] -> UI Buffer
+updateBuf :: Buffer -> [Position] -> UI Buffer
 updateBuf buf ls = do
   marks <- highlightMany newLocs
   unhighlightMany unmark
@@ -67,39 +70,21 @@ updateBuf buf ls = do
     unmark = [x | (l, x) <- buf, l `notElem` ls] -- locations that are marked but should be unmarked now
     newBuf = [(l, x) | (l, x) <- buf, l `elem` ls]
 
--- getPats :: Stream -> IO [ControlPattern]
--- getPats stream = do
---               pMap <- readMVar $ sPMapMV stream
---               let pStates = Map.elems pMap
---               return $ concatMap filterPS pStates
---               where filterPS (PlayState _ True _ _) = []
---                     filterPS (PlayState p False _ _) = [p]
+highlightOnce :: Stream -> ClockConfig -> ClockRef -> MVar Buffer -> UI ()
+highlightOnce stream cc cref buffMV = do
+  z <- liftIO $ readMVar $ sCord stream
+  t <- liftIO $ getCycleTime cc cref
+  sMap <- liftIO $ readMVar $ sState stream
+  buffer <- liftIO $ takeMVar buffMV
+  let ls = locs sMap (realToFrac t) z
+  newBuf <- updateBuf buffer ls
+  liftIO $ threadDelay 10000
+  liftIO $ putMVar buffMV newBuf
 
--- highlightOnce :: Stream -> MVar Buffer -> UI ()
--- highlightOnce stream buffMV = do
---                 ps <- liftIO $ getPats stream
---                 c <- liftIO $ streamGetnow' stream
---                 sMap <- liftIO $ readMVar $ sStateMV stream
---                 buffer <- liftIO $ takeMVar buffMV
---                 newBuf <- updateBuf buffer (locsMany sMap c ps)
---                 liftIO $ threadDelay 10000
---                 liftIO $ putMVar buffMV newBuf
-
--- highlightLoop :: Window -> Stream -> MVar Buffer -> IO ()
--- highlightLoop win stream buf = do
---                             runUI win $ highlightOnce stream buf
---                             highlightLoop win stream buf--runUI win $ runFunction $ ffi "requestAnimationFrame(highlightLoop)"
-
--- processAhead :: Stream -> Link.Micros
--- processAhead str = round $ (cProcessAhead $ sConfig str) * 1000000
-
--- streamGetnow' :: Stream -> IO Double
--- streamGetnow' str = do
---   ss <- createAndCaptureAppSessionState (sLink str)
---   now <- Link.clock (sLink str)
---   beat <- Link.beatAtTime ss (now + (processAhead str)) (cQuantum $! sConfig str)
---   Link.destroySessionState ss
---   return $ coerce $! beat / (cBeatsPerCycle $! sConfig str)
+highlightLoop :: Window -> Stream -> ClockConfig -> ClockRef -> MVar Buffer -> IO ()
+highlightLoop win stream cc cref buf = do
+  runUI win $ highlightOnce stream cc cref buf
+  highlightLoop win stream cc cref buf -- runUI win $ runFunction $ ffi "requestAnimationFrame(highlightLoop)"
 
 -- to turn highlighting on/off
 

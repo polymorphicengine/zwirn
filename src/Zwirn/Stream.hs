@@ -25,8 +25,8 @@ streamReplace str p = modifyMVar_ (sCord str) (const $ pure p)
 streamSet :: Stream -> T.Text -> Expression -> IO ()
 streamSet str x ex = modifyMVar_ (sState str) (return . Map.insert x ex)
 
-startStream :: Stream -> IO ()
-startStream str = do
+startStream :: Stream -> ClockConfig -> IO ClockRef
+startStream str conf = do
   let target_address = "127.0.0.1"
       target_port = 57120
   remote <- resolve target_address (show target_port)
@@ -39,8 +39,7 @@ startStream str = do
       target_address
       target_port
 
-  _ <- clocked defaultConfig (tickAction str (N.addrAddress remote) local)
-  return ()
+  clocked conf (tickAction str (N.addrAddress remote) local)
 
 tickAction :: Stream -> RemoteAddress -> O.Udp -> (Time, Time) -> Double -> ClockConfig -> ClockRef -> (SessionState, SessionState) -> IO ()
 tickAction str remote local (star, end) nudge cconf cref (ss, _) = do

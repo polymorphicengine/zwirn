@@ -12,28 +12,31 @@ import Data.Maybe (fromJust)
 import Data.Text (unpack)
 import Zwirn.Core.Cord
 import Zwirn.Core.Core
+import Zwirn.Core.Modulate
 import Zwirn.Core.Random (chooseWithSeed)
+import Zwirn.Core.Types
 import Zwirn.Language.Evaluate.Convert
 import Zwirn.Language.Evaluate.Expression
 import Zwirn.Language.Simple
 import Zwirn.Language.TypeCheck.Types
 
 compile :: SimpleTerm -> Expression
-compile (SVar _ n) = EVar n
+compile (SVar p n) = EVar p n
 compile (SApp fun arg) = EApp (compile fun) (compile arg)
 compile (SLambda x body) = abstract x (compile body)
-compile (SNum _ x) = EZwirn $ pure $ ENum $ read $ unpack x
-compile (SText _ x) = EZwirn $ pure $ EText x
+compile (SNum (Just p) x) = EZwirn $ addInfo p $ pure $ ENum $ read $ unpack x
+compile (SNum Nothing x) = EZwirn $ pure $ ENum $ read $ unpack x
+compile (SText p x) = EZwirn $ addInfo p $ pure $ EText x
 compile (SSeq xs) = ESeq $ map compile xs
 compile (SStack xs) = EStack $ map compile xs
 compile (SChoice i xs) = EChoice i $ map compile xs
-compile (SInfix s1 n s2) = EApp (EApp (EVar n) (compile s1)) (compile s2)
+compile (SInfix s1 n s2) = EApp (EApp (EVar Nothing n) (compile s1)) (compile s2)
 compile (SBracket s) = compile s
 compile SRest = EZwirn silence
 compile _ = error "not yet implemented"
 
 abstract :: Name -> Expression -> Expression
-abstract x (EVar n) | x == n = combI
+abstract x (EVar _ n) | x == n = combI
 abstract x (EApp fun arg) = combS (abstract x fun) (abstract x arg)
 abstract x (ESeq xs) = ESeq $ map (abstract x) xs
 abstract x (EStack xs) = EStack $ map (abstract x) xs
@@ -41,13 +44,13 @@ abstract x (EChoice i xs) = EChoice i $ map (abstract x) xs
 abstract _ k = combK k
 
 combS :: Expression -> Expression -> Expression
-combS f = EApp (EApp (EVar "scomb") f)
+combS f = EApp (EApp (EVar Nothing "scomb") f)
 
 combK :: Expression -> Expression
-combK = EApp (EVar "const")
+combK = EApp (EVar Nothing "const")
 
 combI :: Expression
-combI = EVar "id"
+combI = EVar Nothing "id"
 
 infixl 0 !
 
@@ -56,7 +59,8 @@ infixl 0 !
 _ ! _ = error "Error in (!)"
 
 link :: ExpressionMap -> Expression -> Expression
-link bs (EVar n) = fromJust (Map.lookup n bs)
+link bs (EVar (Just p) n) = addPosExp p $ fromJust (Map.lookup n bs)
+link bs (EVar Nothing n) = fromJust (Map.lookup n bs)
 link bs (EApp f x) = link bs f ! link bs x
 link bs (ESeq xs) = EZwirn $ fastcat $ map (toZwirn . link bs) xs
 link bs (EStack xs) = EZwirn $ stack $ map (toZwirn . link bs) xs
@@ -65,3 +69,7 @@ link _ e = e
 
 evaluate :: ExpressionMap -> SimpleTerm -> Expression
 evaluate bs = link bs . compile
+
+addPosExp :: Position -> Expression -> Expression
+addPosExp p (EZwirn x) = EZwirn $ withInfos (p :) x
+addPosExp _ x = x

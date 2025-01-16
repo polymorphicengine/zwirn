@@ -10,8 +10,8 @@ module Zwirn.Language.Evaluate.Convert where
 
 import qualified Data.Map as Map
 import Data.Text (Text)
-import Zwirn.Core.Cord
 import Zwirn.Core.Time (Time (..))
+import Zwirn.Core.Types
 import Zwirn.Language.Evaluate.Expression
 
 fromZwirn :: Zwirn Expression -> Expression

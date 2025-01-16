@@ -27,8 +27,12 @@ where
 
 import qualified Data.Map as Map
 import Data.Text (Text)
+import Zwirn.Core.Conditional as Z
 import Zwirn.Core.Cord
 import Zwirn.Core.Core
+import Zwirn.Core.Modulate
+import Zwirn.Core.Number
+import Zwirn.Core.Structure
 import Zwirn.Core.Time
 import Zwirn.Core.Types
 import Zwirn.Language.Evaluate
@@ -114,8 +118,8 @@ primitives =
       -- variations of apply
       ("\'", toExp (flip squeezeApply :: Zwirn Expression -> Zwirn (Zwirn Expression -> Zwirn Expression) -> Zwirn Expression)),
       ("$", toExp (squeezeApply :: Zwirn (Zwirn Expression -> Zwirn Expression) -> Zwirn Expression -> Zwirn Expression)),
-      ("|$", toExp (leftApply :: Zwirn (Zwirn Expression -> Zwirn Expression) -> Zwirn Expression -> Zwirn Expression)),
-      ("$|", toExp (rightApply :: Zwirn (Zwirn Expression -> Zwirn Expression) -> Zwirn Expression -> Zwirn Expression)),
+      ("|$", toExp (outerApply :: Zwirn (Zwirn Expression -> Zwirn Expression) -> Zwirn Expression -> Zwirn Expression)),
+      ("$|", toExp (innerApply :: Zwirn (Zwirn Expression -> Zwirn Expression) -> Zwirn Expression -> Zwirn Expression)),
       ("map", toExp (mapZ :: Zwirn (Zwirn Expression -> Zwirn Expression) -> Zwirn Expression -> Zwirn Expression)),
       ("layer", toExp (layer :: Zwirn (Zwirn Expression -> Zwirn Expression) -> Zwirn Expression -> Zwirn Expression)),
       -- number functions
@@ -150,8 +154,8 @@ primitives =
       -- ord operations
       (">=", toExp (liftA2 (pervasive2 @Double (\d e -> if d >= e then 1 else 0)) :: Zwirn Expression -> Zwirn Expression -> Zwirn Expression)),
       -- boolean opeartions
-      ("not", toExp (fmap $ pervasive not :: Zwirn Expression -> Zwirn Expression)),
-      ("iff", toExp iff),
+      ("not", toExp (Z.not :: Zwirn Bool -> Zwirn Bool)),
+      ("ifthen", toExp (ifthen :: Zwirn Bool -> Zwirn Expression -> Zwirn Expression -> Zwirn Expression)),
       ("&&", toExp (liftA2 (pervasive2 (&&)) :: Zwirn Expression -> Zwirn Expression -> Zwirn Expression)),
       ("||", toExp (liftA2 (pervasive2 (||)) :: Zwirn Expression -> Zwirn Expression -> Zwirn Expression)),
       -- operations on state

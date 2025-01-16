@@ -20,15 +20,18 @@ module Editor.Setup (setup) where
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 -}
 
+import Control.Concurrent (forkIO)
 import Control.Concurrent.MVar (newMVar)
 import Control.Monad (void)
 import Data.IORef (newIORef)
 import qualified Data.Map as Map
 import Editor.Backend
 import Editor.Frontend
+import Editor.Highlight (highlightLoop)
 import Editor.UI
 import Graphics.UI.Threepenny.Core as C hiding (defaultConfig, text)
-import Zwirn.Core.Core
+import Sound.Tidal.Clock (defaultConfig)
+import Zwirn.Core.Types (silence)
 import Zwirn.Language.Compiler
 import Zwirn.Language.Default
 import Zwirn.Stream
@@ -48,10 +51,14 @@ setup win = void $ do
 
 setupStream :: UI Stream
 setupStream = do
-  mv <- liftIO $ newMVar (fastcat [pure 0, pure 1, fastcat [pure 2, pure 3], pure 4])
+  mv <- liftIO $ newMVar silence
   m <- liftIO $ newMVar Map.empty
   let str = Stream mv m
-  _ <- liftIO $ startStream str
+      conf = defaultConfig
+  ref <- liftIO $ startStream str conf
+  win <- askWindow
+  bufMV <- liftIO $ newMVar []
+  _ <- liftIO $ forkIO $ highlightLoop win str conf ref bufMV
   return str
 
 setupBackend :: Stream -> UI ()

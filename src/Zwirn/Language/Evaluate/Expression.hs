@@ -14,14 +14,15 @@ import Data.Text (Text, unpack)
 import Zwirn.Core.Cord
 import Zwirn.Core.Query
 import Zwirn.Core.Time (Time (..))
+import Zwirn.Language.Syntax
 import Zwirn.Language.TypeCheck.Types
 
 type ExpressionMap = Map.Map Text Expression
 
-type Zwirn = Cord ExpressionMap
+type Zwirn = Cord ExpressionMap Position
 
 data Expression
-  = EVar Name
+  = EVar (Maybe Position) Name
   | EApp Expression Expression
   | ELam (Expression -> Expression)
   | ENum Double

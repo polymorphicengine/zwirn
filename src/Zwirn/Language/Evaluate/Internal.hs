@@ -9,8 +9,8 @@ module Zwirn.Language.Evaluate.Internal where
 import Data.Bifunctor (first)
 import qualified Data.Map as Map
 import Data.Text (Text, pack)
-import Zwirn.Core.Cord
-import Zwirn.Core.Core (lift2, modTime, withState)
+import Zwirn.Core.Core (withState, (<$$>))
+import Zwirn.Core.Modulate
 import Zwirn.Core.State
 import Zwirn.Core.Time (Time)
 import Zwirn.Core.Types
@@ -47,7 +47,10 @@ getStateM xc = innerJoin $ liftA2 (\k l -> fromLookup $ Map.lookup k l) xc (get 
     fromMap _ = silence
 
 modifyStateN :: Zwirn Text -> Zwirn (Zwirn Expression -> Zwirn Expression) -> Zwirn Expression -> Zwirn Expression
-modifyStateN = lift2 $ \key f -> withState (Map.update (Just . toExp . f . fromExp) key)
+modifyStateN kz fz xz = modifyStateN' <$> kz <*> fz <$$> xz
+  where
+    modifyStateN' :: Text -> (Zwirn Expression -> Zwirn Expression) -> Zwirn Expression -> Zwirn Expression
+    modifyStateN' key f = withState (Map.update (Just . toExp . f . fromExp) key)
 
 setState :: Zwirn Text -> Zwirn Expression -> Zwirn Expression -> Zwirn Expression
 setState t x = setMap t (pure $ EZwirn x)
@@ -74,11 +77,3 @@ lookT tz xz = outerJoin $ liftA2Right (\t x -> fromLookup $ Map.lookup t x) tz x
 
 modTimeExp :: Zwirn (Zwirn Time -> Zwirn Time) -> Zwirn Expression -> Zwirn Expression
 modTimeExp fz x = innerJoin $ fmap (`modTime` x) fz
-
-iff :: Zwirn Bool -> Zwirn Expression -> Zwirn Expression -> Zwirn Expression
-iff bz xz yz = innerJoin $ newZwirn q
-  where
-    q t st = first (fmap f) <$> zwirn bz t st
-      where
-        f True = xz
-        f False = yz
