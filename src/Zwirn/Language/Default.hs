@@ -1,5 +1,4 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TypeApplications #-}
 
 module Zwirn.Language.Default
   ( defaultTypeEnv,
@@ -35,8 +34,8 @@ import Zwirn.Core.Number
 import Zwirn.Core.Structure
 import Zwirn.Core.Time
 import Zwirn.Core.Types
-import Zwirn.Language.Evaluate
-import Zwirn.Language.TypeCheck.Env
+import Zwirn.Language.Evaluate hiding (insert)
+import Zwirn.Language.TypeCheck.Env hiding (remove)
 import Zwirn.Language.TypeCheck.Types
 
 defaultTypeEnv :: TypeEnv
@@ -91,9 +90,17 @@ primitiveTypes =
     ("struct", Forall ["a", "b"] $ unqual $ varA --> varB --> varB),
     ("run", Forall [] $ unqual $ numberT --> numberT),
     -- ord operations
-    (">=", Forall ["a"] $ Qual [IsIn "Num" varA] $ varA --> varA --> varA),
-    ("not", Forall ["a"] $ Qual [IsIn "Num" varA] $ varA --> varA),
-    ("iff", Forall ["a"] $ Qual [] $ numberT --> varA --> varA --> varA),
+    ("==", Forall ["a"] $ Qual [IsIn "Eq" varA] $ varA --> varA --> numberT),
+    (">=", Forall ["a"] $ unqual $ numberT --> numberT --> numberT),
+    (">", Forall ["a"] $ unqual $ numberT --> numberT --> numberT),
+    ("<=", Forall ["a"] $ unqual $ numberT --> numberT --> numberT),
+    ("<", Forall ["a"] $ unqual $ numberT --> numberT --> numberT),
+    -- boolean
+    ("not", Forall ["a"] $ unqual $ numberT --> numberT),
+    ("ifthen", Forall ["a"] $ unqual $ numberT --> varA --> varA --> varA),
+    ("if", Forall ["a"] $ unqual $ numberT --> varA --> varA),
+    ("&&", Forall ["a"] $ unqual $ numberT --> numberT --> numberT),
+    ("||", Forall ["a"] $ unqual $ numberT --> numberT --> numberT),
     -- ("==", Forall ["a"] $ Qual [IsIn "Eq" varA] $ varA --> varA --> numberT),
     ("getN", Forall [] $ unqual $ textT --> numberT),
     ("getT", Forall [] $ unqual $ textT --> textT),
@@ -105,7 +112,12 @@ primitiveTypes =
     ("paramT", Forall [] $ unqual $ textT --> textT --> mapT),
     ("#", Forall [] $ unqual $ mapT --> mapT --> mapT),
     ("lookupN", Forall [] $ unqual $ textT --> mapT --> numberT),
-    ("lookupT", Forall [] $ unqual $ textT --> mapT --> textT)
+    ("lookupT", Forall [] $ unqual $ textT --> mapT --> textT),
+    -- working on cords
+    ("project", Forall ["a"] $ unqual $ numberT --> varA --> varA),
+    ("insert", Forall ["a"] $ unqual $ numberT --> varA --> varA --> varA),
+    ("remove", Forall ["a"] $ unqual $ numberT --> varA --> varA),
+    ("at", Forall ["a"] $ unqual $ numberT --> (varA --> varA) --> varA --> varA)
   ]
 
 primitives :: ExpressionMap
@@ -152,12 +164,17 @@ primitives =
       ("struct", toExp (struct :: Zwirn Expression -> Zwirn Expression -> Zwirn Expression)),
       ("run", toExp (run :: Zwirn Int -> Zwirn Int)),
       -- ord operations
-      (">=", toExp (liftA2 (pervasive2 @Double (\d e -> if d >= e then 1 else 0)) :: Zwirn Expression -> Zwirn Expression -> Zwirn Expression)),
+      ("==", toExp (eq :: Zwirn Expression -> Zwirn Expression -> Zwirn Bool)),
+      (">=", toExp (geq :: Zwirn Expression -> Zwirn Expression -> Zwirn Bool)),
+      ("<=", toExp (leq :: Zwirn Expression -> Zwirn Expression -> Zwirn Bool)),
+      ("<", toExp (le :: Zwirn Expression -> Zwirn Expression -> Zwirn Bool)),
+      (">", toExp (ge :: Zwirn Expression -> Zwirn Expression -> Zwirn Bool)),
       -- boolean opeartions
       ("not", toExp (Z.not :: Zwirn Bool -> Zwirn Bool)),
       ("ifthen", toExp (ifthen :: Zwirn Bool -> Zwirn Expression -> Zwirn Expression -> Zwirn Expression)),
-      ("&&", toExp (liftA2 (pervasive2 (&&)) :: Zwirn Expression -> Zwirn Expression -> Zwirn Expression)),
-      ("||", toExp (liftA2 (pervasive2 (||)) :: Zwirn Expression -> Zwirn Expression -> Zwirn Expression)),
+      ("if", toExp (iff :: Zwirn Bool -> Zwirn Expression -> Zwirn Expression)),
+      ("&&", toExp (Z.and :: Zwirn Bool -> Zwirn Bool -> Zwirn Bool)),
+      ("||", toExp (Z.or :: Zwirn Bool -> Zwirn Bool -> Zwirn Bool)),
       -- operations on state
       ("getN", toExp getStateN),
       ("getT", toExp getStateT),
@@ -169,5 +186,10 @@ primitives =
       ("paramT", toExp singMap),
       ("#", toExp (liftA2 Map.union :: Zwirn ExpressionMap -> Zwirn ExpressionMap -> Zwirn ExpressionMap)),
       ("lookupN", toExp lookN),
-      ("lookupT", toExp lookT)
+      ("lookupT", toExp lookT),
+      -- working on cords
+      ("project", toExp (project :: Zwirn Int -> Zwirn Expression -> Zwirn Expression)),
+      ("insert", toExp (insert :: Zwirn Int -> Zwirn Expression -> Zwirn Expression -> Zwirn Expression)),
+      ("remove", toExp (remove :: Zwirn Int -> Zwirn Expression -> Zwirn Expression)),
+      ("at", toExp (at :: Zwirn Int -> Zwirn (Zwirn Expression -> Zwirn Expression) -> Zwirn Expression -> Zwirn Expression))
     ]

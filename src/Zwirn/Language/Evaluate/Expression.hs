@@ -2,11 +2,28 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications #-}
 {-# OPTIONS_GHC -Wno-incomplete-uni-patterns #-}
 {-# OPTIONS_GHC -Wno-unused-top-binds #-}
 
 module Zwirn.Language.Evaluate.Expression where
+
+{-
+    Expression.hs - Abstract Expressions
+    Copyright (C) 2023, Martin Gius
+
+    This library is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This library is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this library.  If not, see <http://www.gnu.org/licenses/>.
+-}
 
 import Data.List
 import qualified Data.Map as Map
@@ -42,6 +59,16 @@ showWithState _ _ = "can't show"
 
 instance Show Expression where
   show = showWithState Map.empty
+
+instance Eq Expression where
+  (==) (ENum n) (ENum m) = n == m
+  (==) (EText n) (EText m) = n == m
+  (==) (EMap n) (EMap m) = n == m
+  (==) _ _ = False
+
+instance Ord Expression where
+  (<=) (ENum n) (ENum m) = n <= m
+  (<=) _ _ = False
 
 lambda :: (Expression -> Expression) -> Expression
 lambda f = EZwirn $ pure $ ELam f
