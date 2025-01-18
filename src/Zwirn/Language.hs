@@ -1,7 +1,7 @@
 module Zwirn.Language
   ( module Zwirn.Language.Block,
     module Zwirn.Language.Compiler,
-    module Zwirn.Language.Default,
+    module Zwirn.Language.Builtin,
     module Zwirn.Language.Lexer,
     module Zwirn.Language.Rotate,
     module Zwirn.Language.Parser,
@@ -9,15 +9,16 @@ module Zwirn.Language
     module Zwirn.Language.Simple,
     module Zwirn.Language.Syntax,
     module Zwirn.Language.TypeCheck.Constraint,
-    module Zwirn.Language.TypeCheck.Env,
+    module Zwirn.Language.Environment,
     module Zwirn.Language.TypeCheck.Infer,
     module Zwirn.Language.TypeCheck.Types,
   )
 where
 
 import Zwirn.Language.Block
+import Zwirn.Language.Builtin
 import Zwirn.Language.Compiler
-import Zwirn.Language.Default
+import Zwirn.Language.Environment
 import Zwirn.Language.Lexer
 import Zwirn.Language.Parser
 import Zwirn.Language.Pretty
@@ -25,7 +26,6 @@ import Zwirn.Language.Rotate
 import Zwirn.Language.Simple
 import Zwirn.Language.Syntax
 import Zwirn.Language.TypeCheck.Constraint
-import Zwirn.Language.TypeCheck.Env
 import Zwirn.Language.TypeCheck.Infer
 import Zwirn.Language.TypeCheck.Types
 

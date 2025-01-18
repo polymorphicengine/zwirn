@@ -34,6 +34,7 @@ import Zwirn.Core.Core
 import Zwirn.Core.Modulate
 import Zwirn.Core.Random (chooseWithSeed)
 import Zwirn.Core.Types
+import Zwirn.Language.Environment
 import Zwirn.Language.Evaluate.Convert
 import Zwirn.Language.Evaluate.Expression
 import Zwirn.Language.Simple
@@ -77,16 +78,16 @@ infixl 0 !
 (EZwirn fp) ! (EZwirn x) = EZwirn $ squeezeApply (fmap (\(ELam f) -> toZwirn . f . fromZwirn) fp) x
 _ ! _ = error "Error in (!)"
 
-link :: ExpressionMap -> Expression -> Expression
-link bs (EVar (Just p) n) = addPosExp p $ fromJust (Map.lookup n bs)
-link bs (EVar Nothing n) = fromJust (Map.lookup n bs)
+link :: InterpreterEnv -> Expression -> Expression
+link bs (EVar (Just p) n) = addPosExp p $ fromJust (lookupExp n bs)
+link bs (EVar Nothing n) = fromJust (lookupExp n bs)
 link bs (EApp f x) = link bs f ! link bs x
 link bs (ESeq xs) = EZwirn $ fastcat $ map (toZwirn . link bs) xs
 link bs (EStack xs) = EZwirn $ stack $ map (toZwirn . link bs) xs
 link bs (EChoice i xs) = EZwirn $ chooseWithSeed i $ map (toZwirn . link bs) xs
 link _ e = e
 
-evaluate :: ExpressionMap -> SimpleTerm -> Expression
+evaluate :: InterpreterEnv -> SimpleTerm -> Expression
 evaluate bs = link bs . compile
 
 addPosExp :: Position -> Expression -> Expression

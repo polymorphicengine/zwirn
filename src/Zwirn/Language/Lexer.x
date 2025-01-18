@@ -68,18 +68,16 @@ tokens :-
 
 <ty> $white+ ;
 <ty> $alpha+ "." ;
-<ty> "::"                          { tok DoubleColon }
-<ty> "P"                           { tok PTypeFam }
 <ty> "=>"                          { tok Context }
 <ty> "->"                          { tok Arrow }
 <ty> "("                           { tok LPar }
 <ty> ")"                           { tok RPar }
 <ty> ","                           { tok Comma }
-<ty> "TextPattern"                 { tok TextToken }
-<ty> "NumberPattern"               { tok NumberToken }
-<ty> "ControlPattern"              { tok ControlToken }
-<ty> "Pattern " [a-z]              { tokText (\t -> VarToken $ Text.drop 8 t) }
-<ty> $alpha+ " " [a-z]             { tokText (\t -> TypeClass (Text.take (Text.length t - 2) t) (Text.pack [Text.last t])) }
+<ty> "Text"                        { tok TextToken }
+<ty> "Number"                      { tok NumberToken }
+<ty> "Map"                         { tok MapToken }
+<ty> @id                           { tokText VarToken }
+<ty> [A-Z] $alphasmall+            { tokText TypeClass }
 <ty> @id                           { tokText Identifier }
 <ty> @op                           { tokText Operator }
 <ty> @specialop                    { tokText SpecialOp }
@@ -250,14 +248,12 @@ data Token
   | LineT Text
   | BlockSep
   -- Type Tokens
-  | DoubleColon
-  | PTypeFam
   | Context
   | TextToken
   | NumberToken
-  | ControlToken
+  | MapToken
   | VarToken Text
-  | TypeClass Text Text
+  | TypeClass Text
   -- EOF
   | EOF
   deriving (Eq)
@@ -298,14 +294,12 @@ instance Show Token where
  show JSA = quoted ":js"
  show (LineT t) = "line " <> show t
  show BlockSep = "block"
- show DoubleColon = "::"
- show PTypeFam = "P"
  show Context = "=>"
  show TextToken = "Text"
  show NumberToken = "Number"
- show ControlToken = "ValueMap"
+ show MapToken = "Map"
  show (VarToken t) = show t
- show (TypeClass c v) = show c ++ " " ++ show v
+ show (TypeClass c) = show c
  show EOF = "end of file"
 
 quoted :: String -> String

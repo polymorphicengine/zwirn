@@ -1,13 +1,14 @@
-{-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+
 module Zwirn.Language.TypeCheck.Constraint
-    ( Substitutable (..)
-    , Subst (..)
-    , TypeError (..)
-    , Constraint
-    , runSolve
-    ) where
+  ( Substitutable (..),
+    Subst (..),
+    TypeError (..),
+    Constraint,
+    runSolve,
+  )
+where
 
 {-
     Constraint.hs - unification constraint solver adapted from
@@ -28,17 +29,13 @@ module Zwirn.Language.TypeCheck.Constraint
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 -}
 
-import Zwirn.Language.TypeCheck.Types
-import Zwirn.Language.TypeCheck.Env as Env
-
-
 import Control.Monad.Except
 import Control.Monad.Identity
-
-import           Data.Text (Text)
-
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+import Data.Text (Text)
+import Zwirn.Language.Environment
+import Zwirn.Language.TypeCheck.Types
 
 data TypeError
   = UnificationFail Type Type
@@ -47,7 +44,7 @@ data TypeError
   | Ambigious [Constraint]
   | UnificationMismatch [Type] [Type]
   | NoInstance Predicate
-  deriving Eq
+  deriving (Eq)
 
 type Constraint = (Type, Type)
 
@@ -61,42 +58,46 @@ type Solve a = ExceptT TypeError Identity a
 
 class Substitutable a where
   apply :: Subst -> a -> a
-  ftv   :: a -> Set.Set TypeVar
+  ftv :: a -> Set.Set TypeVar
 
 instance Substitutable Type where
-  apply _ (TypeCon a)       = TypeCon a
+  apply _ (TypeCon a) = TypeCon a
   apply (Subst s) t@(TypeVar a) = Map.findWithDefault t a s
   apply s (t1 `TypeArr` t2) = apply s t1 `TypeArr` apply s t2
 
-  ftv TypeCon{}         = Set.empty
-  ftv (TypeVar a)       = Set.singleton a
+  ftv TypeCon {} = Set.empty
+  ftv (TypeVar a) = Set.singleton a
   ftv (t1 `TypeArr` t2) = ftv t1 `Set.union` ftv t2
 
 instance Substitutable Scheme where
-  apply (Subst s) (Forall as t)   = Forall as $ apply s' t
-                            where s' = Subst $ foldr Map.delete s as
+  apply (Subst s) (Forall as t) = Forall as $ apply s' t
+    where
+      s' = Subst $ foldr Map.delete s as
   ftv (Forall as t) = ftv t `Set.difference` Set.fromList as
 
 instance Substitutable Constraint where
-   apply s (t1, t2) = (apply s t1, apply s t2)
-   ftv (t1, t2) = ftv t1 `Set.union` ftv t2
+  apply s (t1, t2) = (apply s t1, apply s t2)
+  ftv (t1, t2) = ftv t1 `Set.union` ftv t2
 
-instance Substitutable a => Substitutable [a] where
+instance Substitutable AnnotatedExpression where
+  apply s (Annotated x sc d) = Annotated x (apply s sc) d
+  ftv (Annotated _ s _) = ftv s
+
+instance (Substitutable a) => Substitutable [a] where
   apply = map . apply
-  ftv   = foldr (Set.union . ftv) Set.empty
+  ftv = foldr (Set.union . ftv) Set.empty
 
-instance Substitutable TypeEnv where
-  apply s (TypeEnv ty cl) = TypeEnv (Map.map (apply s) ty) (apply s cl)
-  ftv (TypeEnv ty cl) = (ftv $ Map.elems ty) `Set.union` (ftv cl)
+instance Substitutable InterpreterEnv where
+  apply s (IEnv ty cl) = IEnv (Map.map (apply s) ty) (apply s cl)
+  ftv (IEnv ty cl) = ftv (Map.elems ty) `Set.union` ftv cl
 
 instance Substitutable Predicate where
   apply s (IsIn x t) = IsIn x (apply s t)
   ftv (IsIn _ t) = ftv t
 
-instance Substitutable t => Substitutable (Qualified t) where
+instance (Substitutable t) => Substitutable (Qualified t) where
   apply s (Qual ps t) = Qual (apply s ps) (apply s t)
-  ftv (Qual ps t) = ftv ps `Set.union`ftv t
-
+  ftv (Qual ps t) = ftv ps `Set.union` ftv t
 
 -------------------------------------------------------------------------------
 -- Constraint Solver
@@ -113,14 +114,16 @@ compose :: Subst -> Subst -> Subst
 -- | Run the constraint solver
 runSolve :: [Constraint] -> Either TypeError Subst
 runSolve cs = runIdentity $ runExceptT $ solver st
-  where st = (emptySubst, cs)
+  where
+    st = (emptySubst, cs)
 
 unifyMany :: [Type] -> [Type] -> Solve Subst
 unifyMany [] [] = return emptySubst
 unifyMany (t1 : ts1) (t2 : ts2) =
-  do su1 <- unifies t1 t2
-     su2 <- unifyMany (apply su1 ts1) (apply su1 ts2)
-     return (su2 `compose` su1)
+  do
+    su1 <- unifies t1 t2
+    su2 <- unifyMany (apply su1 ts1) (apply su1 ts2)
+    return (su2 `compose` su1)
 unifyMany t1 t2 = throwError $ UnificationMismatch t1 t2
 
 unifies :: Type -> Type -> Solve Subst
@@ -135,14 +138,15 @@ solver :: Unifier -> Solve Subst
 solver (su, cs) =
   case cs of
     [] -> return su
-    ((t1, t2): cs0) -> do
-      su1  <- unifies t1 t2
+    ((t1, t2) : cs0) -> do
+      su1 <- unifies t1 t2
       solver (su1 `compose` su, apply su1 cs0)
 
-bind ::  TypeVar -> Type -> Solve Subst
-bind a t | t == TypeVar a     = return emptySubst
-         | occursCheck a t = throwError $ InfiniteType a t
-         | otherwise       = return (Subst $ Map.singleton a t)
+bind :: TypeVar -> Type -> Solve Subst
+bind a t
+  | t == TypeVar a = return emptySubst
+  | occursCheck a t = throwError $ InfiniteType a t
+  | otherwise = return (Subst $ Map.singleton a t)
 
-occursCheck ::  Substitutable a => TypeVar -> a -> Bool
+occursCheck :: (Substitutable a) => TypeVar -> a -> Bool
 occursCheck a t = a `Set.member` ftv t

@@ -6,8 +6,7 @@
 {-# OPTIONS_GHC -Wno-unused-top-binds #-}
 
 module Zwirn.Language.Compiler
-  ( EvalEnv,
-    ConfigEnv (..),
+  ( ConfigEnv (..),
     Environment (..),
     CIError (..),
     CurrentBlock (..),
@@ -49,13 +48,13 @@ import Data.Text (Text, unpack)
 import Data.Text.IO (readFile)
 import Zwirn.Core.Types (silence)
 import Zwirn.Language.Block
+import Zwirn.Language.Environment
 import Zwirn.Language.Evaluate
 import Zwirn.Language.Parser
 import Zwirn.Language.Pretty
 import qualified Zwirn.Language.Rotate as R
 import Zwirn.Language.Simple
 import Zwirn.Language.Syntax
-import Zwirn.Language.TypeCheck.Env
 import Zwirn.Language.TypeCheck.Infer
 import Zwirn.Language.TypeCheck.Types
 import Zwirn.Stream
@@ -69,8 +68,6 @@ data CurrentBlock
   = CurrentBlock Int Int
   deriving (Eq, Show)
 
-type EvalEnv = ExpressionMap
-
 data ConfigEnv
   = ConfigEnv
   { cSetConfig :: Text -> Text -> IO (),
@@ -81,8 +78,7 @@ data Environment
   = Environment
   { tStream :: Stream,
     jsMV :: Maybe (MVar ()),
-    typeEnv :: TypeEnv,
-    evalEnv :: EvalEnv,
+    intEnv :: InterpreterEnv,
     confEnv :: Maybe ConfigEnv,
     currBlock :: Maybe CurrentBlock
   }
@@ -199,8 +195,8 @@ runRotate s = case R.runRotate s of
 
 runTypeCheck :: SimpleTerm -> CI Scheme
 runTypeCheck s = do
-  Environment {typeEnv = tenv} <- get
-  case inferTerm tenv s of
+  Environment {intEnv = env} <- get
+  case inferTerm env s of
     Left err -> throw $ show err
     Right t -> return t
 
@@ -210,7 +206,7 @@ runTypeCheck s = do
 
 interpret :: SimpleTerm -> CI Expression
 interpret input = do
-  env <- gets evalEnv
+  env <- gets intEnv
   return $ evaluate env input
 
 -----------------------------------------------------
@@ -222,9 +218,8 @@ defAction b d = do
   (LetS x st) <- runSimplifyDef d
   rot <- runRotate st
   ty <- runTypeCheck rot
-  modify (\env -> env {typeEnv = extend (typeEnv env) (x, ty)})
   ex <- interpret rot
-  modify (\env -> env {evalEnv = insert (x, ex) (evalEnv env)})
+  modify (\env -> env {intEnv = extend (x, ex, ty) (intEnv env)})
 
 showAction :: Term -> CI String
 showAction t = do
@@ -279,14 +274,12 @@ streamSetAction _ x t = do
   ( if isBasicType ty
       then
         ( do
-            modify (\env -> env {typeEnv = extend (typeEnv env) (x, ty)})
-
             let newEx
                   | isNumberT ty = EZwirn $ getStateN (pure x)
                   | isTextT ty = EZwirn $ getStateT (pure x)
                   | isMapT ty = EZwirn $ getStateM (pure x)
                   | otherwise = EZwirn silence
-            modify (\env -> env {evalEnv = insert (x, newEx) (evalEnv env)})
+            modify (\env -> env {intEnv = extend (x, newEx, ty) (intEnv env)})
 
             -- put expression into state
             str <- gets tStream

@@ -32,8 +32,8 @@ import Editor.UI
 import Graphics.UI.Threepenny.Core as C hiding (defaultConfig, text)
 import Sound.Tidal.Clock (defaultConfig)
 import Zwirn.Core.Types (silence)
+import Zwirn.Language.Builtin
 import Zwirn.Language.Compiler
-import Zwirn.Language.Default
 import Zwirn.Stream
 
 setup :: Window -> UI ()
@@ -64,7 +64,7 @@ setupStream = do
 setupBackend :: Stream -> UI ()
 setupBackend str = do
   win <- askWindow
-  let env = Environment str Nothing defaultTypeEnv primitives (Just $ ConfigEnv (setConfig win) (clearConfig win)) Nothing
+  let env = Environment str Nothing builtinEnvironment (Just $ ConfigEnv (setConfig win) (clearConfig win)) Nothing
 
   envMV <- liftIO $ newMVar env
 

@@ -33,15 +33,17 @@ import Data.List (nub)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.Text (Text, pack)
+-- import Zwirn.Language.TypeCheck.Env as Env
+
+import Zwirn.Language.Environment
 import Zwirn.Language.Simple
 import Zwirn.Language.TypeCheck.Constraint
-import Zwirn.Language.TypeCheck.Env as Env
 import Zwirn.Language.TypeCheck.Types
 
 -- | Inference monad
 type Infer a =
   ( ReaderT
-      TypeEnv -- Typing environment
+      InterpreterEnv -- Typing environment
       ( StateT -- Inference state
           InferState
           ( Except -- Inference errors
@@ -52,7 +54,7 @@ type Infer a =
   )
 
 -- | Inference state
-data InferState = InferState {count :: Int}
+newtype InferState = InferState {count :: Int}
 
 -- | Initial inference state
 initInfer :: InferState
@@ -63,11 +65,11 @@ initInfer = InferState {count = 0}
 -------------------------------------------------------------------------------
 
 -- | Run the inference monad
-runInfer :: TypeEnv -> Infer a -> Either TypeError a
+runInfer :: InterpreterEnv -> Infer a -> Either TypeError a
 runInfer env m = runExcept $ evalStateT (runReaderT m env) initInfer
 
 -- | Solve for the toplevel type of an expression in a given environment
-inferTerm :: TypeEnv -> SimpleTerm -> Either TypeError Scheme
+inferTerm :: InterpreterEnv -> SimpleTerm -> Either TypeError Scheme
 inferTerm env ex = case runInfer env (infer ex) of
   Left err -> Left err
   Right (ty, ps, cs) -> case runSolve cs of
@@ -90,21 +92,19 @@ inferTerm env ex = case runInfer env (infer ex) of
 closeOver :: [Predicate] -> Type -> Scheme
 closeOver ps t = normalize $ generalize ps t
 
--- | Extend type environment
+-- | modified environment where x :: sc
 inEnv :: (Name, Scheme) -> Infer a -> Infer a
 inEnv (x, sc) m = do
-  let scope e = (remove e x) `extend` (x, sc)
+  let scope = insertType x sc
   local scope m
 
 -- | Lookup type in the environment
 lookupEnv :: Name -> Infer (Type, [Predicate])
 lookupEnv x = do
-  (TypeEnv env _) <- ask
-  case Map.lookup x env of
+  env <- ask
+  case lookupType x env of
     Nothing -> throwError $ UnboundVariable x
-    Just s -> do
-      t <- instantiate s
-      return t
+    Just s -> instantiate s
 
 letters :: [Text]
 letters = map pack $ [1 ..] >>= flip replicateM ['a' .. 'z']
@@ -129,17 +129,15 @@ generalize ps t = Forall as (Qual ps t)
 filterAndCheck :: [Predicate] -> Type -> Infer [Predicate]
 filterAndCheck [] _ = return []
 filterAndCheck (p@(IsIn _ (TypeVar _)) : ps) t =
-  case or $ Set.map (\x -> elem x $ ftv p) (ftv t) of
-    True -> fmap (p :) $ filterAndCheck ps t
-    False -> filterAndCheck ps t
+  if or $ Set.map (\x -> elem x $ ftv p) (ftv t)
+    then (p :) <$> filterAndCheck ps t
+    else filterAndCheck ps t
 filterAndCheck (p : ps) t = checkInstance p >> filterAndCheck ps t
 
 checkInstance :: Predicate -> Infer ()
 checkInstance p = do
-  (TypeEnv _ is) <- ask
-  case elem p is of
-    True -> return ()
-    False -> throwError $ NoInstance p
+  (IEnv _ is) <- ask
+  (if p `elem` is then return () else throwError $ NoInstance p)
 
 infer :: SimpleTerm -> Infer (Type, [Predicate], [Constraint])
 infer expr = case expr of
@@ -170,15 +168,15 @@ infer expr = case expr of
     return (tv, ps1 ++ ps2 ++ p3, c1 ++ c2 ++ [(u1, u2)])
   SSeq (x : xs) -> do
     (t, ps, cs) <- infer x
-    infs <- sequence $ map infer xs
+    infs <- mapM infer xs
     return (t, ps, cs ++ concatMap (\(_, _, y) -> y) infs ++ [(t, t') | t' <- map (\(y, _, _) -> y) infs])
   SStack (x : xs) -> do
     (t, ps, cs) <- infer x
-    infs <- sequence $ map infer xs
+    infs <- mapM infer xs
     return (t, ps, cs ++ concatMap (\(_, _, y) -> y) infs ++ [(t, t') | t' <- map (\(y, _, _) -> y) infs])
   SChoice _ (x : xs) -> do
     (t, ps, cs) <- infer x
-    infs <- sequence $ map infer xs
+    infs <- mapM infer xs
     return (t, ps, cs ++ concatMap (\(_, _, y) -> y) infs ++ [(t, t') | t' <- map (\(y, _, _) -> y) infs])
   SElong x _ -> infer x
   (SEuclid e1 e2 e3 (Just e4)) -> do

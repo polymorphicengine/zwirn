@@ -4,7 +4,7 @@ module Zwirn.Language.Parser
     ( parseActionsWithPos
     , parseActions
     , parseBlocks
-    , parseTypeDecls
+    , parseScheme
     ) where
 
 import           Data.Text (Text)
@@ -44,7 +44,7 @@ import Zwirn.Language.Block
 %name parse term
 %name pActions actions
 %name pBlocks blocks
-%name pTypeDecls typeDecls
+%name pScheme scheme
 %tokentype { L.RangedToken }
 %errorhandlertype explist
 %error { parseError }
@@ -103,14 +103,12 @@ import Zwirn.Language.Block
   ':load'         { L.RangedToken (L.LoadA _ ) _}
   ':js'           { L.RangedToken L.JSA _ }
   -- Type Tokens
-  '::'       { L.RangedToken L.DoubleColon _ }
-  typefam    { L.RangedToken L.PTypeFam _ }
   '=>'       { L.RangedToken L.Context _ }
   textT      { L.RangedToken L.TextToken _ }
   numT       { L.RangedToken L.NumberToken _ }
-  controlT   { L.RangedToken L.ControlToken _ }
+  mapT       { L.RangedToken L.MapToken _ }
   varT       { L.RangedToken (L.VarToken _) _ }
-  classT     { L.RangedToken (L.TypeClass _ _) _ }
+  classT     { L.RangedToken (L.TypeClass _) _ }
 
 %%
 
@@ -276,7 +274,7 @@ blocks :: { [Block] }
 atomType :: { Type }
   : textT                                           { TypeCon "Text" }
   | numT                                            { TypeCon "Number" }
-  | controlT                                        { TypeCon "ValueMap" }
+  | mapT                                            { TypeCon "Map" }
   | varT                                            { TypeVar (unTok $1) }
 
 fullType :: { Type }
@@ -285,25 +283,18 @@ fullType :: { Type }
   | '(' fullType ')'                                { $2 }
 
 predicate :: { Predicate }
-  : classT                                          { mkPred $1 }
+  : classT varT                                     { IsIn (unTok $1) (TypeVar (unTok $2))}
 
 predicates :: { [Predicate] }
-  : '(' sepBy(predicate, ',') ')' '=>'              {$2}
-  | predicate '=>'                                  {[$1]}
-  |                                                 {[]}
+  : predicate '=>'                                 {[$1]}
+  |                                                {[]}
 
 scheme :: { Scheme }
-  : predicates typefam fullType                     {generalize $1 $3}
+  : predicates fullType              %shift              {generalize $1 $2}
 
-typeDecl :: { (Text,Scheme) }
-  : identifier '::' scheme                          {(unTok $1, $3)}
-  | '(' operator ')' '::' scheme                    {(unTok $2, $5)}
-  | '(' specop ')' '::' scheme                      {(unTok $2, $5)}
-
-typeDecls :: { [(Text,Scheme)] }
-  : some(typeDecl)                                  {map (\(x,y) -> (x, y)) $1}
 
 {
+
 parseError :: (L.RangedToken, [String]) -> L.Alex a
 parseError (L.RangedToken t _,poss) = do
   (L.AlexPn _ ln column, _, _, _) <- L.alexGetInput
@@ -323,12 +314,10 @@ unTok (L.RangedToken  (L.SpecialOp x) _) = x
 unTok (L.RangedToken  (L.LoadA x) _) = x
 unTok (L.RangedToken  (L.LineT x) _) = x
 unTok (L.RangedToken  (L.VarToken x) _) = x
+unTok (L.RangedToken  (L.TypeClass x) _) = x
 unTok (L.RangedToken  (L.RepeatNum x) _) = x
 unTok _ = error "can't untok"
 
-mkPred :: L.RangedToken -> Predicate
-mkPred (L.RangedToken (L.TypeClass c x) _) = IsIn c (TypeVar x)
-mkPred _ = error "can't make predicate"
 
 mkAtom :: (Position -> Text -> Term) -> L.RangedToken -> L.Alex Term
 mkAtom constr tok@(L.RangedToken _ range) = do
@@ -357,7 +346,7 @@ parseActions input = L.runAlex input pActions
 parseBlocks :: Int -> Text -> Either String [Block]
 parseBlocks line input = L.runAlex input (L.lineLexer >> L.setInitialLineNum line >> pBlocks)
 
-parseTypeDecls :: Text -> Either String [(Text,Scheme)]
-parseTypeDecls input = L.runAlex input (L.typeLexer >> pTypeDecls)
+parseScheme :: Text -> Either String Scheme
+parseScheme input = L.runAlex input (L.typeLexer >> pScheme)
 
 }

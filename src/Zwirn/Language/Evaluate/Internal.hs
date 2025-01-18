@@ -63,11 +63,11 @@ getStateM xc = innerJoin $ liftA2 (\k l -> fromLookup $ Map.lookup k l) xc (get 
     fromMap (EMap n) = pure $ EMap n
     fromMap _ = silence
 
-modifyStateN :: Zwirn Text -> Zwirn (Zwirn Expression -> Zwirn Expression) -> Zwirn Expression -> Zwirn Expression
-modifyStateN kz fz xz = modifyStateN' <$> kz <*> fz <$$> xz
+modifyState :: Zwirn Text -> Zwirn (Zwirn Expression -> Zwirn Expression) -> Zwirn Expression -> Zwirn Expression
+modifyState kz fz xz = modifyState' <$> kz <*> fz <$$> xz
   where
-    modifyStateN' :: Text -> (Zwirn Expression -> Zwirn Expression) -> Zwirn Expression -> Zwirn Expression
-    modifyStateN' key f = withState (Map.update (Just . toExp . f . fromExp) key)
+    modifyState' :: Text -> (Zwirn Expression -> Zwirn Expression) -> Zwirn Expression -> Zwirn Expression
+    modifyState' key f = withState (Map.update (Just . toExp . f . fromExp) key)
 
 setState :: Zwirn Text -> Zwirn Expression -> Zwirn Expression -> Zwirn Expression
 setState t x = setMap t (pure $ EZwirn x)
