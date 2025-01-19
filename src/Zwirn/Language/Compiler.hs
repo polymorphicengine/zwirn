@@ -209,28 +209,36 @@ interpret input = do
   env <- gets intEnv
   return $ evaluate env input
 
+-- if ctx is false, highlighting should be disabled
+checkHighlight :: Bool -> Expression -> CI Expression
+checkHighlight True x = return $ x
+checkHighlight False x = return $ removePosExp x
+
 -----------------------------------------------------
 ----------------- Compiling Actions -----------------
 -----------------------------------------------------
 
 defAction :: Bool -> Def -> CI ()
-defAction b d = do
+defAction ctx d = do
   (LetS x st) <- runSimplifyDef d
   rot <- runRotate st
   ty <- runTypeCheck rot
   ex <- interpret rot
-  modify (\env -> env {intEnv = extend (x, ex, ty) (intEnv env)})
+  exCtx <- checkHighlight ctx ex
+  modify (\env -> env {intEnv = extend (x, exCtx, ty) (intEnv env)})
 
 showAction :: Term -> CI String
 showAction t = do
   s <- runSimplify t
   rot <- runRotate s
   ty <- runTypeCheck rot
-  do
-    ex <- interpret rot
-    stmv <- gets (sState . tStream)
-    st <- liftIO $ readMVar stmv
-    return $ showWithState st ex
+  if isBasicType ty
+    then do
+      ex <- interpret rot
+      stmv <- gets (sState . tStream)
+      st <- liftIO $ readMVar stmv
+      return $ showWithState st ex
+    else throw $ "Can not show expressions of type: " ++ ppscheme ty
 
 typeAction :: Term -> CI String
 typeAction t = do
@@ -255,21 +263,23 @@ streamAction ctx _ t = do
   s <- runSimplify t
   rot <- runRotate s
   ty <- runTypeCheck rot
-  p <- interpret rot
+  ex <- interpret rot
+  exCtx <- checkHighlight ctx ex
   if isBasicType ty
     then
       ( do
           str <- gets tStream
-          liftIO $ streamReplace str $ fromExp p
+          liftIO $ streamReplace str $ fromExp exCtx
       )
-    else throw "Can only stream basic types!"
+    else throw "Can only stream base types!"
 
 streamSetAction :: Bool -> Text -> Term -> CI ()
-streamSetAction _ x t = do
+streamSetAction ctx x t = do
   s <- runSimplify t
   rot <- runRotate s
   ty <- runTypeCheck rot
   ex <- interpret rot
+  exCtx <- checkHighlight ctx ex
 
   ( if isBasicType ty
       then
@@ -283,7 +293,7 @@ streamSetAction _ x t = do
 
             -- put expression into state
             str <- gets tStream
-            liftIO $ streamSet str x ex
+            liftIO $ streamSet str x exCtx
         )
       else throw "Can only set basic types!"
     )

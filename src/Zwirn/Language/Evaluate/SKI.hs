@@ -5,7 +5,12 @@
 {-# OPTIONS_GHC -Wno-incomplete-uni-patterns #-}
 {-# OPTIONS_GHC -Wno-unused-top-binds #-}
 
-module Zwirn.Language.Evaluate.SKI (evaluate, (!)) where
+module Zwirn.Language.Evaluate.SKI
+  ( evaluate,
+    (!),
+    removePosExp,
+  )
+where
 
 {-
     SKI.hs - evaluate epxressions via the SKI combinator calculus,
@@ -26,7 +31,6 @@ module Zwirn.Language.Evaluate.SKI (evaluate, (!)) where
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 -}
 
-import qualified Data.Map as Map
 import Data.Maybe (fromJust)
 import Data.Text (unpack)
 import Zwirn.Core.Cord
@@ -93,3 +97,7 @@ evaluate bs = link bs . compile
 addPosExp :: Position -> Expression -> Expression
 addPosExp p (EZwirn x) = EZwirn $ withInfos (p :) x
 addPosExp _ x = x
+
+removePosExp :: Expression -> Expression
+removePosExp (EZwirn z) = EZwirn $ removeInfo z
+removePosExp x = x

@@ -45,7 +45,7 @@ instance Pretty Name where
   ppr _ x = text $ unpack x
 
 instance Pretty Type where
-  ppr p (TypeArr a b) = (parensIf (isArrow a) (ppr p a)) <+> text "->" <+> ppr p b
+  ppr p (TypeArr a b) = parensIf (isArrow a) (ppr p a) <+> text "->" <+> ppr p b
     where
       isArrow TypeArr {} = True
       isArrow _ = False
@@ -53,7 +53,7 @@ instance Pretty Type where
   ppr _ (TypeCon a) = text $ unpack a
 
 instance Pretty Predicate where
-  ppr p (IsIn c t) = (text $ unpack c) <+> ppr p t
+  ppr p (IsIn c t) = text (unpack c) <+> ppr p t
 
 instance Pretty [Predicate] where
   ppr p ps = parensIf (length ps > 1) (hcat (punctuate comma (map (ppr p) ps)))
@@ -67,24 +67,26 @@ instance Pretty Scheme where
 
 instance Pretty Term where
   ppr _ (TVar _ x) = text $ unpack x
-  ppr _ (TRest) = text "~"
+  ppr _ TRest = text "~"
   ppr _ (TText _ x) = text $ unpack x
   ppr _ (TNum _ x) = double $ read $ unpack x
-  ppr p (TElong t (Just i)) = (ppr p t) <> text "@" <> int i
-  ppr p (TElong t Nothing) = (ppr p t) <> text "@"
-  ppr p (TRepeat t (Just i)) = (ppr p t) <> text "!" <> int i
-  ppr p (TRepeat t Nothing) = (ppr p t) <> text "!"
+  ppr p (TElong t (Just i)) = ppr p t <> text "@" <> int i
+  ppr p (TElong t Nothing) = ppr p t <> text "@"
+  ppr p (TRepeat t (Just i)) = ppr p t <> text "!" <> int i
+  ppr p (TRepeat t Nothing) = ppr p t <> text "!"
   ppr p (TSeq ts) = brackets (hcat (punctuate space (map (ppr p) ts)))
-  ppr p (TAlt ts) = text "<" <> (hcat (punctuate space (map (ppr p) ts))) <> text ">"
+  ppr p (TAlt ts) = text "<" <> hcat (punctuate space (map (ppr p) ts)) <> text ">"
   ppr p (TChoice _ ts) = brackets (hcat $ punctuate (text "|") (map (ppr p) ts))
   ppr p (TStack ts) = brackets (hcat $ punctuate comma (map (ppr p) ts))
-  ppr p (TEuclid t1 t2 t3 (Just t4)) = (ppr p t1) <> braces ((ppr p t2) <> comma <> (ppr p t3) <> comma <> (ppr p t4))
-  ppr p (TEuclid t1 t2 t3 Nothing) = (ppr p t1) <> braces ((ppr p t2) <> comma <> (ppr p t3))
-  ppr p (TPoly t1 t2) = (ppr p t1) <> text "%" <> (ppr p t2)
+  ppr p (TEuclid t1 t2 t3 (Just t4)) = ppr p t1 <> braces (ppr p t2 <> comma <> ppr p t3 <> comma <> ppr p t4)
+  ppr p (TEuclid t1 t2 t3 Nothing) = ppr p t1 <> braces (ppr p t2 <> comma <> ppr p t3)
+  ppr p (TPoly t1 t2) = ppr p t1 <> text "%" <> ppr p t2
   ppr p (TApp t1 t2) = parensIf (p > 0) (ppr (p + 1) t1 <+> ppr p t2)
-  ppr p (TInfix t1 n t2) = ppr p t1 <+> (text $ unpack n) <+> ppr p t2
+  ppr p (TInfix t1 n t2) = ppr p t1 <+> text (unpack n) <+> ppr p t2
   ppr p (TBracket t) = parens (ppr p t)
-  ppr p (TLambda vs t) = (text "\\") <> (hcat $ punctuate space $ map (text . unpack) vs) <+> text "->" <+> ppr p t
+  ppr p (TLambda vs t) = text "\\" <> hcat (punctuate space $ map (text . unpack) vs) <+> text "->" <+> ppr p t
+  ppr p (TSectionL t n) = ppr p t <+> text (unpack n)
+  ppr p (TSectionR n t) = text (unpack n) <+> ppr p t
 
 instance Pretty (Term, Scheme) where
   ppr p (t, s) = ppr p t <+> text "::" <+> ppr p s
