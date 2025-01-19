@@ -99,9 +99,6 @@ tokens :-
 <0> "!"               { tok Repeat }
 <0> "!"($digit+)      { tokText (\t -> RepeatNum $ Text.drop 1 t) }
 
--- Elongate
-<0> "@"     { tok Elongate }
-
 -- Parenthesis
 <0> "("     { tok LPar }
 <0> ")"     { tok RPar }
@@ -138,7 +135,6 @@ tokens :-
 <0> ":config"                         { tok ConfigA }
 <0> ":resetconfig"                    { tok ResetConfigA }
 <0> (":load") @path                   { tokText (\t -> LoadA $ Text.drop 6 t) }
-<0> ":js"                             { tok JSA }
 
 -- Identifiers
 <0> @id             { tokText Identifier }
@@ -209,8 +205,6 @@ data Token
   -- Repeat
   | Repeat
   | RepeatNum Text
-  -- Elongation
-  | Elongate
   -- Parenthesis
   | LPar
   | RPar
@@ -267,7 +261,6 @@ instance Show Token where
  show (SpecialOp o) = show o
  show Repeat = quoted "!"
  show (RepeatNum x) = quoted "!" ++ show x
- show Elongate = quoted "@"
  show LPar = quoted "("
  show RPar = quoted ")"
  show LBrack = quoted "["

@@ -67,8 +67,6 @@ import Zwirn.Language.Block
   -- Repeat
   '!'             { L.RangedToken L.Repeat _ }
   repnum          { L.RangedToken (L.RepeatNum _) _}
-  -- Elongation
-  '@'             { L.RangedToken L.Elongate _ }
   -- Parenthesis
   '('             { L.RangedToken L.LPar _ }
   ')'             { L.RangedToken L.RPar _ }
@@ -103,12 +101,12 @@ import Zwirn.Language.Block
   ':load'         { L.RangedToken (L.LoadA _ ) _}
   ':js'           { L.RangedToken L.JSA _ }
   -- Type Tokens
-  '=>'       { L.RangedToken L.Context _ }
-  textT      { L.RangedToken L.TextToken _ }
-  numT       { L.RangedToken L.NumberToken _ }
-  mapT       { L.RangedToken L.MapToken _ }
-  varT       { L.RangedToken (L.VarToken _) _ }
-  classT     { L.RangedToken (L.TypeClass _) _ }
+  '=>'            { L.RangedToken L.Context _ }
+  textT           { L.RangedToken L.TextToken _ }
+  numT            { L.RangedToken L.NumberToken _ }
+  mapT            { L.RangedToken L.MapToken _ }
+  varT            { L.RangedToken (L.VarToken _) _ }
+  classT          { L.RangedToken (L.TypeClass _) _ }
 
 %%
 
@@ -161,9 +159,6 @@ lambda :: { Term }
 polyrhythm :: { Term }
   : simple '%' simple   %shift  { TPoly $1 $3 }
 
-elongate :: { Term }
-  : simple '@' number           { TElong $1 (Just $ read $ Text.unpack $ unTok $3) }
-  | simple '@'          %shift  { TElong $1 Nothing }
 
 repeat :: { Term }
   : simple repnum               { TRepeat $1 (Just $ read $ Text.unpack $ unTok $2) }
@@ -177,9 +172,6 @@ fullSequence :: { Term }
 alternation :: { Term }
   : '<' some(simpleinfix) '>' { TAlt $2 }
 
-euclid :: { Term }
-  : simple '{' term ',' term '}'           { TEuclid  $1 $3 $5 Nothing }
-  | simple '{' term ',' term ',' term '}'  { TEuclid  $1 $3 $5 (Just $7) }
 
 simple :: { Term }
   : atom                           {$1}
@@ -187,9 +179,7 @@ simple :: { Term }
   | fullSequence                   {$1}
   | lambda                         {$1}
   | polyrhythm                     {$1}
-  | elongate                       {$1}
   | repeat                         {$1}
-  | euclid                         {$1}
   | '(' term ')'                   { TBracket $2 }
 
 -- special operators are left-associative
@@ -245,7 +235,6 @@ action :: { Action }
   | ':t' term                         { Type $2 }
   | ':show' term                      { Show $2 }
   | ':load'                           { Load $ unTok $1 }
-  | ':js' term                        { JS $2 }
 
 actionsrecrev :: { [Action] }
   : actionsrecrev ';' action           {$3:$1}

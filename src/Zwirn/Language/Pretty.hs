@@ -70,16 +70,12 @@ instance Pretty Term where
   ppr _ TRest = text "~"
   ppr _ (TText _ x) = text $ unpack x
   ppr _ (TNum _ x) = double $ read $ unpack x
-  ppr p (TElong t (Just i)) = ppr p t <> text "@" <> int i
-  ppr p (TElong t Nothing) = ppr p t <> text "@"
   ppr p (TRepeat t (Just i)) = ppr p t <> text "!" <> int i
   ppr p (TRepeat t Nothing) = ppr p t <> text "!"
   ppr p (TSeq ts) = brackets (hcat (punctuate space (map (ppr p) ts)))
   ppr p (TAlt ts) = text "<" <> hcat (punctuate space (map (ppr p) ts)) <> text ">"
   ppr p (TChoice _ ts) = brackets (hcat $ punctuate (text "|") (map (ppr p) ts))
   ppr p (TStack ts) = brackets (hcat $ punctuate comma (map (ppr p) ts))
-  ppr p (TEuclid t1 t2 t3 (Just t4)) = ppr p t1 <> braces (ppr p t2 <> comma <> ppr p t3 <> comma <> ppr p t4)
-  ppr p (TEuclid t1 t2 t3 Nothing) = ppr p t1 <> braces (ppr p t2 <> comma <> ppr p t3)
   ppr p (TPoly t1 t2) = ppr p t1 <> text "%" <> ppr p t2
   ppr p (TApp t1 t2) = parensIf (p > 0) (ppr (p + 1) t1 <+> ppr p t2)
   ppr p (TInfix t1 n t2) = ppr p t1 <+> text (unpack n) <+> ppr p t2

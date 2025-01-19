@@ -41,13 +41,11 @@ data Term
   | TText Position Text
   | TNum Position Text
   | TRest
-  | TElong Term (Maybe Int)
   | TRepeat Term (Maybe Int)
   | TSeq [Term]
   | TStack [Term]
   | TAlt [Term]
   | TChoice Int [Term]
-  | TEuclid Term Term Term (Maybe Term)
   | TPoly Term Term
   | TLambda [Text] Term
   | TApp Term Term
@@ -77,7 +75,6 @@ data Action
   | Type Term
   | Show Term
   | Load Text
-  | JS Term
   deriving (Eq, Show)
 
 data Associativity

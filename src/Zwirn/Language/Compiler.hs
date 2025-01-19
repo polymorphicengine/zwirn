@@ -77,7 +77,6 @@ data ConfigEnv
 data Environment
   = Environment
   { tStream :: Stream,
-    jsMV :: Maybe (MVar ()),
     intEnv :: InterpreterEnv,
     confEnv :: Maybe ConfigEnv,
     currBlock :: Maybe CurrentBlock
@@ -304,9 +303,6 @@ streamOnceAction _ _ = throw "not implemented"
 streamSetTempoAction :: Bool -> Tempo -> Term -> CI ()
 streamSetTempoAction _ _ _ = throw "not implemented"
 
-jsAction :: Bool -> Term -> CI ()
-jsAction _ _ = throw "not implemented"
-
 resetConfigAction :: CI String
 resetConfigAction = do
   (Environment {confEnv = mayEnv}) <- get
@@ -342,7 +338,6 @@ runAction _ (Show t) = showAction t
 runAction b (Def d) = defAction b d >> return ""
 runAction _ (Type t) = typeAction t
 runAction _ (Load p) = loadAction p >> return ""
-runAction b (JS t) = jsAction b t >> return ""
 runAction _ (Config k v) = setConfigAction k v
 runAction _ ResetConfig = resetConfigAction
 

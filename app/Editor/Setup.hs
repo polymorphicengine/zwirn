@@ -64,7 +64,7 @@ setupStream = do
 setupBackend :: Stream -> UI ()
 setupBackend str = do
   win <- askWindow
-  let env = Environment str Nothing builtinEnvironment (Just $ ConfigEnv (setConfig win) (clearConfig win)) Nothing
+  let env = Environment str builtinEnvironment (Just $ ConfigEnv (setConfig win) (clearConfig win)) Nothing
 
   envMV <- liftIO $ newMVar env
 
