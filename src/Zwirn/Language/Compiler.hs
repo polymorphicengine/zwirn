@@ -257,6 +257,14 @@ loadAction path = do
       ass <- mapM (runParser . bContent) sorted
       mapM_ (runActions False) ass
 
+infoAction :: Text -> CI String
+infoAction n = do
+  env <- gets intEnv
+  case lookupFull n env of
+    Just (Annotated _ t (Just d)) -> return $ unpack n ++ " :: " ++ ppscheme t ++ "\n" ++ unpack d
+    Just (Annotated _ t Nothing) -> return $ unpack n ++ " :: " ++ ppscheme t
+    Nothing -> throw $ "couldn't find information about " ++ unpack n
+
 streamAction :: Bool -> Text -> Term -> CI ()
 streamAction ctx _ t = do
   s <- runSimplify t
@@ -338,6 +346,7 @@ runAction _ (Show t) = showAction t
 runAction b (Def d) = defAction b d >> return ""
 runAction _ (Type t) = typeAction t
 runAction _ (Load p) = loadAction p >> return ""
+runAction _ (Info p) = infoAction p
 runAction _ (Config k v) = setConfigAction k v
 runAction _ ResetConfig = resetConfigAction
 

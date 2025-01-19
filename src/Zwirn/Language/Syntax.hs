@@ -75,6 +75,7 @@ data Action
   | Type Term
   | Show Term
   | Load Text
+  | Info Text
   deriving (Eq, Show)
 
 data Associativity

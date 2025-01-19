@@ -99,7 +99,7 @@ import Zwirn.Language.Block
   ':resetconfig'  { L.RangedToken L.ResetConfigA _ }
   '='             { L.RangedToken L.Assign _ }
   ':load'         { L.RangedToken (L.LoadA _ ) _}
-  ':js'           { L.RangedToken L.JSA _ }
+  ':info'           { L.RangedToken L.InfoA _ }
   -- Type Tokens
   '=>'            { L.RangedToken L.Context _ }
   textT           { L.RangedToken L.TextToken _ }
@@ -235,6 +235,7 @@ action :: { Action }
   | ':t' term                         { Type $2 }
   | ':show' term                      { Show $2 }
   | ':load'                           { Load $ unTok $1 }
+  | ':info' identifier                { Info $ unTok $2 }
 
 actionsrecrev :: { [Action] }
   : actionsrecrev ';' action           {$3:$1}
@@ -265,6 +266,8 @@ atomType :: { Type }
   | numT                                            { TypeCon "Number" }
   | mapT                                            { TypeCon "Map" }
   | varT                                            { TypeVar (unTok $1) }
+
+-- parsing types
 
 fullType :: { Type }
   : atomType                                        { $1 }

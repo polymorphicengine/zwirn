@@ -134,6 +134,7 @@ tokens :-
 <0> ":show"                           { tok ShowA }
 <0> ":config"                         { tok ConfigA }
 <0> ":resetconfig"                    { tok ResetConfigA }
+<0> ":info"                           { tok InfoA }
 <0> (":load") @path                   { tokText (\t -> LoadA $ Text.drop 6 t) }
 
 -- Identifiers
@@ -237,7 +238,7 @@ data Token
   | ResetConfigA
   | Assign
   | LoadA Text
-  | JSA
+  | InfoA
   -- Line & Block Tokens
   | LineT Text
   | BlockSep
@@ -284,7 +285,7 @@ instance Show Token where
  show ResetConfigA = quoted ":resetconfig"
  show Assign = quoted "="
  show (LoadA x) = ":load " <> show x
- show JSA = quoted ":js"
+ show InfoA = quoted ":info"
  show (LineT t) = "line " <> show t
  show BlockSep = "block"
  show Context = "=>"

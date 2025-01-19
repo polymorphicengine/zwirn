@@ -41,3 +41,6 @@ lookupDescription k (IEnv l _) = aDesc =<< Map.lookup k l
 
 lookupExp :: Text -> InterpreterEnv -> Maybe Expression
 lookupExp k (IEnv l _) = aExp <$> Map.lookup k l
+
+lookupFull :: Text -> InterpreterEnv -> Maybe AnnotatedExpression
+lookupFull k (IEnv l _) = Map.lookup k l
