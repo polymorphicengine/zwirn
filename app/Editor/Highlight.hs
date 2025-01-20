@@ -72,7 +72,8 @@ updateBuf buf ls = do
 
 highlightOnce :: Stream -> ClockConfig -> ClockRef -> MVar Buffer -> UI ()
 highlightOnce stream cc cref buffMV = do
-  z <- liftIO $ readMVar $ sCord stream
+  pm <- liftIO $ readMVar $ sPlayMap stream
+  let z = playMapToCord pm
   t <- liftIO $ getCycleTime cc cref
   sMap <- liftIO $ readMVar $ sState stream
   buffer <- liftIO $ takeMVar buffMV

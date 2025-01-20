@@ -51,14 +51,13 @@ setup win = void $ do
 
 setupStream :: UI Stream
 setupStream = do
-  mv <- liftIO $ newMVar silence
+  mv <- liftIO $ newMVar Map.empty
   m <- liftIO $ newMVar Map.empty
-  let str = Stream mv m
-      conf = defaultConfig
-  ref <- liftIO $ startStream str conf
+  let conf = defaultConfig
+  str <- liftIO $ startStream mv m conf
   win <- askWindow
   bufMV <- liftIO $ newMVar []
-  _ <- liftIO $ forkIO $ highlightLoop win str conf ref bufMV
+  _ <- liftIO $ forkIO $ highlightLoop win str conf (sClockRef str) bufMV
   return str
 
 setupBackend :: Stream -> UI ()
