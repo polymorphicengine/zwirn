@@ -305,7 +305,19 @@ streamSetAction ctx x t = do
     )
 
 streamOnceAction :: Bool -> Term -> CI ()
-streamOnceAction _ _ = throw "not implemented"
+streamOnceAction ctx t = do
+  s <- runSimplify t
+  rot <- runRotate s
+  ty <- runTypeCheck rot
+  ex <- interpret rot
+  exCtx <- checkHighlight ctx ex
+  if isBasicType ty
+    then
+      ( do
+          str <- gets tStream
+          liftIO $ streamFirst str (fromExp exCtx)
+      )
+    else throw "Can only stream base types!"
 
 streamSetTempoAction :: Tempo -> Text -> CI ()
 streamSetTempoAction CPS t = gets tStream >>= \str -> liftIO $ streamSetCPS str (toRational (read $ unpack t :: Double))

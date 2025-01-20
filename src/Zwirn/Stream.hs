@@ -2,9 +2,9 @@
 
 module Zwirn.Stream where
 
-import Control.Concurrent.MVar (MVar, modifyMVar_, readMVar)
+import Control.Concurrent.MVar (MVar, modifyMVar_, newMVar, readMVar)
 import qualified Data.Map as Map
-import Data.Text (Text)
+import Data.Text (Text, pack)
 import qualified Data.Text as T
 import qualified Network.Socket as N
 import qualified Sound.Osc as O
@@ -23,6 +23,7 @@ data Stream = Stream
   { sPlayMap :: MVar PlayMap,
     sState :: MVar ExpressionMap,
     sAddress :: RemoteAddress,
+    sLocal :: O.Udp,
     sClockRef :: ClockRef,
     sClockConfig :: ClockConfig
   }
@@ -41,13 +42,10 @@ streamSetCPS s = Clock.setCPS (sClockConfig s) (sClockRef s)
 streamSetBPM :: Stream -> Time -> IO ()
 streamSetBPM s = Clock.setBPM (sClockRef s)
 
--- streamFirst but with random cycle instead of always first cicle
--- streamOnce :: Stream -> Zwirn Expression -> IO ()
--- streamOnce st p = do i <- getStdRandom $ randomR (0, 8192)
---                      streamFirst st $ rotL (toRational (i :: Int)) p
-
--- streamFirst :: Stream -> Zwirn Expression -> IO ()
--- streamFirst str pat = Clock.clockOnce (tickAction str undefined) clockConfig clockRef
+streamFirst :: Stream -> Zwirn Expression -> IO ()
+streamFirst str z = do
+  dummy <- newMVar $ Map.singleton (pack "_streamOnceDummy_") z
+  Clock.clockOnce (tickAction dummy (sState str) (sAddress str) (sLocal str)) (sClockConfig str) (sClockRef str)
 
 startStream :: MVar PlayMap -> MVar ExpressionMap -> ClockConfig -> IO Stream
 startStream zMV stMV conf = do
@@ -57,7 +55,7 @@ startStream zMV stMV conf = do
   local <- O.udp_server 2323
 
   cref <- clocked conf (tickAction zMV stMV (N.addrAddress remote) local)
-  return $ Stream zMV stMV (N.addrAddress remote) cref conf
+  return $ Stream zMV stMV (N.addrAddress remote) local cref conf
 
 tickAction :: MVar PlayMap -> MVar ExpressionMap -> RemoteAddress -> O.Udp -> (Time, Time) -> Double -> ClockConfig -> ClockRef -> (SessionState, SessionState) -> IO ()
 tickAction zMV stMV remote local (star, end) nudge cconf cref (ss, _) = do
