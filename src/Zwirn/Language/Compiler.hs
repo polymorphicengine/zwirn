@@ -38,7 +38,6 @@ where
 -}
 
 import Control.Concurrent (readMVar)
-import Control.Concurrent.MVar (MVar)
 import Control.Exception (SomeException, try)
 import Control.Monad
 import Control.Monad.Except
@@ -266,7 +265,7 @@ infoAction n = do
     Nothing -> throw $ "couldn't find information about " ++ unpack n
 
 streamAction :: Bool -> Text -> Term -> CI ()
-streamAction ctx _ t = do
+streamAction ctx key t = do
   s <- runSimplify t
   rot <- runRotate s
   ty <- runTypeCheck rot
@@ -276,7 +275,7 @@ streamAction ctx _ t = do
     then
       ( do
           str <- gets tStream
-          liftIO $ streamReplace str $ fromExp exCtx
+          liftIO $ streamReplace str key (fromExp exCtx)
       )
     else throw "Can only stream base types!"
 

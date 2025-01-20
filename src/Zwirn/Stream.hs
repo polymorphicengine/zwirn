@@ -4,6 +4,7 @@ module Zwirn.Stream where
 
 import Control.Concurrent.MVar (MVar, modifyMVar_, readMVar)
 import qualified Data.Map as Map
+import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Network.Socket as N
 import qualified Sound.Osc as O
@@ -11,12 +12,15 @@ import qualified Sound.Osc.Transport.Fd.Udp as O
 import Sound.Tidal.Clock
 import qualified Sound.Tidal.Clock as Clock
 import Sound.Tidal.Link
+import Zwirn.Core.Cord (stack)
 import Zwirn.Core.Query
 import qualified Zwirn.Core.Time as Z
 import Zwirn.Language.Evaluate
 
+type PlayMap = Map.Map Text (Zwirn Expression)
+
 data Stream = Stream
-  { sCord :: MVar (Zwirn Expression),
+  { sPlayMap :: MVar PlayMap,
     sState :: MVar ExpressionMap,
     sAddress :: RemoteAddress,
     sClockRef :: ClockRef,
@@ -25,8 +29,8 @@ data Stream = Stream
 
 type RemoteAddress = N.SockAddr
 
-streamReplace :: Stream -> Zwirn Expression -> IO ()
-streamReplace str p = modifyMVar_ (sCord str) (const $ pure p)
+streamReplace :: Stream -> Text -> Zwirn Expression -> IO ()
+streamReplace str key p = modifyMVar_ (sPlayMap str) (return . Map.insert key p)
 
 streamSet :: Stream -> T.Text -> Expression -> IO ()
 streamSet str x ex = modifyMVar_ (sState str) (return . Map.insert x ex)
@@ -45,7 +49,7 @@ streamSetBPM s = Clock.setBPM (sClockRef s)
 -- streamFirst :: Stream -> Zwirn Expression -> IO ()
 -- streamFirst str pat = Clock.clockOnce (tickAction str undefined) clockConfig clockRef
 
-startStream :: MVar (Zwirn Expression) -> MVar ExpressionMap -> ClockConfig -> IO Stream
+startStream :: MVar PlayMap -> MVar ExpressionMap -> ClockConfig -> IO Stream
 startStream zMV stMV conf = do
   let target_address = "127.0.0.1"
       target_port = 57120
@@ -55,9 +59,10 @@ startStream zMV stMV conf = do
   cref <- clocked conf (tickAction zMV stMV (N.addrAddress remote) local)
   return $ Stream zMV stMV (N.addrAddress remote) cref conf
 
-tickAction :: MVar (Zwirn Expression) -> MVar ExpressionMap -> RemoteAddress -> O.Udp -> (Time, Time) -> Double -> ClockConfig -> ClockRef -> (SessionState, SessionState) -> IO ()
+tickAction :: MVar PlayMap -> MVar ExpressionMap -> RemoteAddress -> O.Udp -> (Time, Time) -> Double -> ClockConfig -> ClockRef -> (SessionState, SessionState) -> IO ()
 tickAction zMV stMV remote local (star, end) nudge cconf cref (ss, _) = do
-  p <- readMVar zMV
+  pm <- readMVar zMV
+  let p = playMapToCord pm
   st <- readMVar stMV
   let qs = findAllValuesWithTimeState (Z.Time (align star) 1, Z.Time (align end) 1) st p
       vs = map (\(t, v, _) -> (t, v)) qs
@@ -72,6 +77,9 @@ resolve host port = do
   let hints = N.defaultHints {N.addrSocketType = N.Stream}
   addr : _ <- N.getAddrInfo (Just hints) (Just host) (Just port)
   return addr
+
+playMapToCord :: PlayMap -> Zwirn Expression
+playMapToCord = stack . Map.elems
 
 align :: Time -> Time
 align t = fromIntegral (floor $ t / 0.001) * 0.001
