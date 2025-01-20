@@ -224,8 +224,8 @@ action :: { Action }
   : string     '<-' term              { StreamAction (unTok $1) $3 }
   | number     '<-' term              { StreamAction (unTok $1) $3 }
   | identifier '<-' term              { StreamSet (unTok $1) $3 }
-  | ':cps' term                       { StreamSetTempo CPS $2 }
-  | ':bpm' term                       { StreamSetTempo BPM $2 }
+  | ':cps' number                     { StreamSetTempo CPS (unTok $2) }
+  | ':bpm' number                     { StreamSetTempo BPM (unTok $2) }
   | '!' term                          { StreamOnce $2 }
   | ':config' identifier string       { Config (unTok $2) (unTok $3) }
   | ':config' identifier identifier   { Config (unTok $2) (unTok $3) }

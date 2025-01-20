@@ -68,7 +68,7 @@ data Action
   = StreamAction Text Term
   | StreamSet Text Term
   | StreamOnce Term
-  | StreamSetTempo Tempo Term
+  | StreamSetTempo Tempo Text
   | Config Text Text
   | ResetConfig
   | Def Def

@@ -308,8 +308,9 @@ streamSetAction ctx x t = do
 streamOnceAction :: Bool -> Term -> CI ()
 streamOnceAction _ _ = throw "not implemented"
 
-streamSetTempoAction :: Bool -> Tempo -> Term -> CI ()
-streamSetTempoAction _ _ _ = throw "not implemented"
+streamSetTempoAction :: Tempo -> Text -> CI ()
+streamSetTempoAction CPS t = gets tStream >>= \str -> liftIO $ streamSetCPS str (toRational (read $ unpack t :: Double))
+streamSetTempoAction BPM t = gets tStream >>= \str -> liftIO $ streamSetBPM str (toRational (read $ unpack t :: Double))
 
 resetConfigAction :: CI String
 resetConfigAction = do
@@ -341,7 +342,7 @@ runAction :: Bool -> Action -> CI String
 runAction b (StreamAction i t) = streamAction b i t >> return ""
 runAction b (StreamSet i t) = streamSetAction b i t >> return ""
 runAction b (StreamOnce t) = streamOnceAction b t >> return ""
-runAction b (StreamSetTempo mode t) = streamSetTempoAction b mode t >> return ""
+runAction _ (StreamSetTempo mode t) = streamSetTempoAction mode t >> return ""
 runAction _ (Show t) = showAction t
 runAction b (Def d) = defAction b d >> return ""
 runAction _ (Type t) = typeAction t

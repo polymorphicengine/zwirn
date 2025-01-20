@@ -15,7 +15,13 @@ import Zwirn.Core.Query
 import qualified Zwirn.Core.Time as Z
 import Zwirn.Language.Evaluate
 
-data Stream = Stream {sCord :: MVar (Zwirn Expression), sState :: MVar ExpressionMap}
+data Stream = Stream
+  { sCord :: MVar (Zwirn Expression),
+    sState :: MVar ExpressionMap,
+    sAddress :: RemoteAddress,
+    sClockRef :: ClockRef,
+    sClockConfig :: ClockConfig
+  }
 
 type RemoteAddress = N.SockAddr
 
@@ -25,32 +31,40 @@ streamReplace str p = modifyMVar_ (sCord str) (const $ pure p)
 streamSet :: Stream -> T.Text -> Expression -> IO ()
 streamSet str x ex = modifyMVar_ (sState str) (return . Map.insert x ex)
 
-startStream :: Stream -> ClockConfig -> IO ClockRef
-startStream str conf = do
+streamSetCPS :: Stream -> Time -> IO ()
+streamSetCPS s = Clock.setCPS (sClockConfig s) (sClockRef s)
+
+streamSetBPM :: Stream -> Time -> IO ()
+streamSetBPM s = Clock.setBPM (sClockRef s)
+
+-- streamFirst but with random cycle instead of always first cicle
+-- streamOnce :: Stream -> Zwirn Expression -> IO ()
+-- streamOnce st p = do i <- getStdRandom $ randomR (0, 8192)
+--                      streamFirst st $ rotL (toRational (i :: Int)) p
+
+-- streamFirst :: Stream -> Zwirn Expression -> IO ()
+-- streamFirst str pat = Clock.clockOnce (tickAction str undefined) clockConfig clockRef
+
+startStream :: MVar (Zwirn Expression) -> MVar ExpressionMap -> ClockConfig -> IO Stream
+startStream zMV stMV conf = do
   let target_address = "127.0.0.1"
       target_port = 57120
   remote <- resolve target_address (show target_port)
-  local <-
-    O.udp_socket
-      ( \sock sockaddr -> do
-          N.setSocketOption sock N.Broadcast 1
-          N.connect sock sockaddr
-      )
-      target_address
-      target_port
+  local <- O.udp_server 2323
 
-  clocked conf (tickAction str (N.addrAddress remote) local)
+  cref <- clocked conf (tickAction zMV stMV (N.addrAddress remote) local)
+  return $ Stream zMV stMV (N.addrAddress remote) cref conf
 
-tickAction :: Stream -> RemoteAddress -> O.Udp -> (Time, Time) -> Double -> ClockConfig -> ClockRef -> (SessionState, SessionState) -> IO ()
-tickAction str remote local (star, end) nudge cconf cref (ss, _) = do
-  p <- readMVar (sCord str)
-  st <- readMVar (sState str)
+tickAction :: MVar (Zwirn Expression) -> MVar ExpressionMap -> RemoteAddress -> O.Udp -> (Time, Time) -> Double -> ClockConfig -> ClockRef -> (SessionState, SessionState) -> IO ()
+tickAction zMV stMV remote local (star, end) nudge cconf cref (ss, _) = do
+  p <- readMVar zMV
+  st <- readMVar stMV
   let qs = findAllValuesWithTimeState (Z.Time (align star) 1, Z.Time (align end) 1) st p
       vs = map (\(t, v, _) -> (t, v)) qs
       sts = map (\(_, _, x) -> x) qs
 
   -- TODO: what about race conditions?
-  updateState (sState str) sts
+  updateState stMV sts
   mapM_ (processAndSend remote local nudge cconf cref ss) vs
 
 resolve :: String -> String -> IO N.AddrInfo
