@@ -57,7 +57,6 @@ compile (SChoice i xs) = EChoice i $ map compile xs
 compile (SInfix s1 n s2) = EApp (EApp (EVar Nothing n) (compile s1)) (compile s2)
 compile (SBracket s) = compile s
 compile SRest = EZwirn silence
-compile _ = error "not yet implemented"
 
 abstract :: Name -> Expression -> Expression
 abstract x (EVar _ n) | x == n = combI

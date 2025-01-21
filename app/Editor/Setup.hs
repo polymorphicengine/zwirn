@@ -31,7 +31,7 @@ import Editor.Highlight (highlightLoop)
 import Editor.UI
 import Graphics.UI.Threepenny.Core as C hiding (defaultConfig, text)
 import Sound.Tidal.Clock (defaultConfig)
-import Zwirn.Language.Builtin
+import Zwirn.Language.Builtin.Prelude
 import Zwirn.Language.Compiler
 import Zwirn.Stream
 

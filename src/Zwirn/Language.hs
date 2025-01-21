@@ -1,7 +1,6 @@
 module Zwirn.Language
   ( module Zwirn.Language.Block,
     module Zwirn.Language.Compiler,
-    module Zwirn.Language.Builtin,
     module Zwirn.Language.Lexer,
     module Zwirn.Language.Rotate,
     module Zwirn.Language.Parser,
@@ -16,7 +15,6 @@ module Zwirn.Language
 where
 
 import Zwirn.Language.Block
-import Zwirn.Language.Builtin
 import Zwirn.Language.Compiler
 import Zwirn.Language.Environment
 import Zwirn.Language.Lexer

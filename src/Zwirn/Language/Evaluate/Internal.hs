@@ -75,8 +75,8 @@ setState t x = setMap t (pure $ EZwirn x)
 -- fromNum _ = silence
 
 -- create a singleton map with specific key
-singMap :: Zwirn Text -> Zwirn Expression -> Zwirn Expression
-singMap kz vz = innerJoin $ fmap (\k -> fmap (EMap . Map.singleton k) vz) kz
+singMap :: (ToExpression a) => Zwirn Text -> Zwirn a -> Zwirn Expression
+singMap t x = EMap . fmap toExp <$> liftA2Right Map.singleton t x
 
 -- lookup a number key in a map
 lookN :: Zwirn Text -> Zwirn ExpressionMap -> Zwirn Expression

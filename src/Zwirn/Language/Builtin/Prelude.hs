@@ -1,12 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module Zwirn.Language.Builtin
+module Zwirn.Language.Builtin.Prelude
   ( builtinEnvironment,
-    noDesc,
-    (===),
-    (<::),
-    (--|),
   )
 where
 
@@ -29,8 +25,7 @@ where
 -}
 
 import qualified Data.Map as Map
-import Data.String
-import Data.Text (Text, pack)
+import Data.Text (Text)
 import Zwirn.Core.Conditional as Z
 import Zwirn.Core.Cord
 import Zwirn.Core.Core
@@ -38,9 +33,10 @@ import Zwirn.Core.Modulate
 import Zwirn.Core.Number
 import Zwirn.Core.Structure
 import Zwirn.Core.Time
+import Zwirn.Language.Builtin.Internal
+import Zwirn.Language.Builtin.Parameters
 import Zwirn.Language.Environment
 import Zwirn.Language.Evaluate hiding (insert)
-import Zwirn.Language.Parser (parseScheme)
 import Zwirn.Language.TypeCheck.Types
 
 builtinEnvironment :: InterpreterEnv
@@ -55,27 +51,9 @@ instances =
     IsIn "Eq" textT
   ]
 
-instance IsString Scheme where
-  fromString s = fromEither $ parseScheme (pack s)
-    where
-      fromEither (Right r) = r
-      fromEither (Left e) = error e
-
-(===) :: Text -> Expression -> Map.Map Text Expression
-(===) = Map.singleton
-
-(<::) :: Map.Map Text Expression -> Scheme -> Map.Map Text (Expression, Scheme)
-(<::) x s = fmap (\l -> (l, s)) x
-
-(--|) :: Map.Map Text (Expression, Scheme) -> Text -> Map.Map Text AnnotatedExpression
-(--|) n t = fmap (\(x, s) -> Annotated x s (Just t)) n
-
-noDesc :: Map.Map Text (Expression, Scheme) -> Map.Map Text AnnotatedExpression
-noDesc = fmap (\(x, s) -> Annotated x s Nothing)
-
 builtins :: Map.Map Text AnnotatedExpression
 builtins =
-  Map.unions
+  Map.unions $
     [ "id"
         === lambda id
         <:: "a -> a"
@@ -241,11 +219,11 @@ builtins =
         <:: "Number -> (a -> a) -> a -> a"
         --| "apply a function to a specific layer of a cord",
       "pN"
-        === toExp singMap
+        === toExp (singMap :: Zwirn Text -> Zwirn Double -> Zwirn Expression)
         <:: "Text -> Number -> Map"
         --| "number singleton with specific key",
       "pT"
-        === toExp singMap
+        === toExp (singMap :: Zwirn Text -> Zwirn Text -> Zwirn Expression)
         <:: "Text -> Text -> Map"
         --| "text singleton with specific key",
       "#"
@@ -281,3 +259,4 @@ builtins =
         <:: "Text -> (a -> a) -> b -> b"
         --| "modify state at given key with function"
     ]
+      ++ builtinParams

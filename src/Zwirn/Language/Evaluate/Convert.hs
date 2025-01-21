@@ -100,6 +100,9 @@ instance ToExpression Bool where
   toExp True = ENum 1
   toExp False = ENum 0
 
+instance ToExpression Text where
+  toExp = EText
+
 instance (ToExpression a) => ToExpression (Zwirn a) where
   toExp a = EZwirn $ fmap toExp a
 
