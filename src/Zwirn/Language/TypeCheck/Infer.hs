@@ -178,18 +178,6 @@ infer expr = case expr of
     (t, ps, cs) <- infer x
     infs <- mapM infer xs
     return (t, ps, cs ++ concatMap (\(_, _, y) -> y) infs ++ [(t, t') | t' <- map (\(y, _, _) -> y) infs])
-  SElong x _ -> infer x
-  (SEuclid e1 e2 e3 (Just e4)) -> do
-    (t1, ps1, c1) <- infer e1
-    (t2, ps2, c2) <- infer e2
-    (t3, ps3, c3) <- infer e3
-    (t4, ps4, c4) <- infer e4
-    return (t1, ps1 ++ ps2 ++ ps3 ++ ps4, c1 ++ c2 ++ c3 ++ c4 ++ [(t2, numberT), (t3, numberT), (t4, numberT)])
-  (SEuclid e1 e2 e3 Nothing) -> do
-    (t1, ps1, c1) <- infer e1
-    (t2, ps2, c2) <- infer e2
-    (t3, ps3, c3) <- infer e3
-    return (t1, ps1 ++ ps2 ++ ps3, c1 ++ c2 ++ c3 ++ [(t2, numberT), (t3, numberT)])
   _ -> error "Can't happen"
 
 normalize :: Scheme -> Scheme

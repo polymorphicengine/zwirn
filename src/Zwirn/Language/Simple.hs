@@ -36,11 +36,9 @@ data SimpleTerm
   | SText Position Text
   | SNum (Maybe Position) Text
   | SRest
-  | SElong SimpleTerm Int
   | SSeq [SimpleTerm]
   | SStack [SimpleTerm]
   | SChoice Int [SimpleTerm]
-  | SEuclid SimpleTerm SimpleTerm SimpleTerm (Maybe SimpleTerm)
   | SLambda Var SimpleTerm
   | SApp SimpleTerm SimpleTerm
   | SInfix SimpleTerm OperatorSymbol SimpleTerm
