@@ -55,7 +55,23 @@ instances =
 
 builtins :: Map.Map Text AnnotatedExpression
 builtins =
-  Map.unions $
+  Map.unions
+    [ coreFunctions,
+      numberFunctions,
+      signals,
+      randomFunctions,
+      timeFunctions,
+      structureFunctions,
+      conditionalFunctions,
+      cordFunctions,
+      mapFunctions,
+      stateFunctions,
+      builtinParams
+    ]
+
+coreFunctions :: Map.Map Text AnnotatedExpression
+coreFunctions =
+  Map.unions
     [ "id"
         === lambda id
         <:: "a -> a"
@@ -95,8 +111,13 @@ builtins =
       "map"
         === toExp (mapZ :: Zwirn (Zwirn Expression -> Zwirn Expression) -> Zwirn Expression -> Zwirn Expression)
         <:: "(a -> b) -> a -> b"
-        --| "map a function over the structure of the argument",
-      "|+"
+        --| "map a function over the structure of the argument"
+    ]
+
+numberFunctions :: Map.Map Text AnnotatedExpression
+numberFunctions =
+  Map.unions
+    [ "|+"
         === toExp ((+) :: Zwirn Expression -> Zwirn Expression -> Zwirn Expression)
         <:: "Num a => a -> a -> a"
         --| "addition",
@@ -231,8 +252,13 @@ builtins =
       "range"
         === toExp (range :: Zwirn Double -> Zwirn Double -> Zwirn Double -> Zwirn Double)
         <:: "Number -> Number -> Number -> Number"
-        --| "range x y l maps number l linearly into interval (x,y), assuming l is between 0 and 1",
-      "sine"
+        --| "range x y l maps number l linearly into interval (x,y), assuming l is between 0 and 1"
+    ]
+
+signals :: Map.Map Text AnnotatedExpression
+signals =
+  Map.unions
+    [ "sine"
         === toExp (sine :: Zwirn Time)
         <:: "Number"
         --| "sine signal",
@@ -279,16 +305,26 @@ builtins =
       "square2"
         === toExp (square2 :: Zwirn Time)
         <:: "Number"
-        --| "bipolar square signal",
-      "noise"
+        --| "bipolar square signal"
+    ]
+
+randomFunctions :: Map.Map Text AnnotatedExpression
+randomFunctions =
+  Map.unions
+    [ "noise"
         === toExp (noise :: Zwirn Double)
         <:: "Number"
         --| "random stream of values between 0 and 1",
       "irand"
         === toExp (irand :: Zwirn Int -> Zwirn Int)
         <:: "Number -> Number"
-        --| "random integer values between 0 and given input",
-      "*"
+        --| "random integer values between 0 and given input"
+    ]
+
+timeFunctions :: Map.Map Text AnnotatedExpression
+timeFunctions =
+  Map.unions
+    [ "*"
         === toExp (flip fast :: Zwirn Expression -> Zwirn Time -> Zwirn Expression)
         <:: "a -> Number -> a"
         --| "multiply time, making it faster",
@@ -323,8 +359,13 @@ builtins =
       "rev"
         === toExp (rev :: Zwirn Expression -> Zwirn Expression)
         <:: "a -> a"
-        --| "reverse time completely",
-      "euclidOff"
+        --| "reverse time completely"
+    ]
+
+structureFunctions :: Map.Map Text AnnotatedExpression
+structureFunctions =
+  Map.unions
+    [ "euclidOff"
         === toExp (euclidOff :: Zwirn Int -> Zwirn Int -> Zwirn Int -> Zwirn Expression -> Zwirn Expression)
         <:: "Number -> Number -> Number -> a -> a"
         --| "shifted euclidean rhythm",
@@ -343,8 +384,13 @@ builtins =
       "run"
         === toExp (run :: Zwirn Int -> Zwirn Int)
         <:: "Number -> Number"
-        --| "run n == [0 .. n-1]",
-      "=="
+        --| "run n == [0 .. n-1]"
+    ]
+
+conditionalFunctions :: Map.Map Text AnnotatedExpression
+conditionalFunctions =
+  Map.unions
+    [ "=="
         === toExp (eq :: Zwirn Expression -> Zwirn Expression -> Zwirn Bool)
         <:: "Eq a => a -> a -> Number"
         --| "equality",
@@ -384,7 +430,24 @@ builtins =
         === toExp (iff :: Zwirn Bool -> Zwirn Expression -> Zwirn Expression)
         <:: "Number -> a -> a"
         --| "greater",
-      "project"
+      "while"
+        === toExp (while :: Zwirn Bool -> Zwirn (Zwirn Expression -> Zwirn Expression) -> Zwirn Expression -> Zwirn Expression)
+        <:: "Number -> (a -> a) -> a -> a"
+        --| "apply function while condition is true",
+      "everyFor"
+        === toExp (everyFor :: Zwirn Time -> Zwirn Time -> Zwirn (Zwirn Expression -> Zwirn Expression) -> Zwirn Expression -> Zwirn Expression)
+        <:: "Number -> Number -> (a -> a) -> a -> a"
+        --| "apply function periodically for a given amount of time",
+      "every"
+        === toExp (every :: Zwirn Time -> Zwirn (Zwirn Expression -> Zwirn Expression) -> Zwirn Expression -> Zwirn Expression)
+        <:: "Number -> (a -> a) -> a -> a"
+        --| "apply function periodically for one cycle"
+    ]
+
+cordFunctions :: Map.Map Text AnnotatedExpression
+cordFunctions =
+  Map.unions
+    [ "project"
         === toExp (project :: Zwirn Int -> Zwirn Expression -> Zwirn Expression)
         <:: "Number -> a -> a"
         --| "project to a certain layer of a cord",
@@ -415,8 +478,13 @@ builtins =
       "at"
         === toExp (at :: Zwirn Int -> Zwirn (Zwirn Expression -> Zwirn Expression) -> Zwirn Expression -> Zwirn Expression)
         <:: "Number -> (a -> a) -> a -> a"
-        --| "apply a function to a specific layer of a cord",
-      "pN"
+        --| "apply a function to a specific layer of a cord"
+    ]
+
+mapFunctions :: Map.Map Text AnnotatedExpression
+mapFunctions =
+  Map.unions
+    [ "pN"
         === toExp ((\t -> fmap toExp . singleton t) :: Zwirn Text -> Zwirn Double -> Zwirn Expression)
         <:: "Text -> Number -> Map"
         --| "number singleton with specific key",
@@ -459,8 +527,13 @@ builtins =
       "striateBy"
         === toExp (striateBy :: Zwirn Int -> Zwirn Expression -> Zwirn ExpressionMap -> Zwirn ExpressionMap)
         <:: "Number -> Number -> Map -> Map"
-        --| "",
-      "getN"
+        --| ""
+    ]
+
+stateFunctions :: Map.Map Text AnnotatedExpression
+stateFunctions =
+  Map.unions
+    [ "getN"
         === toExp getStateN
         <:: "Text -> Number"
         --| "retrieve number from state at given key or silence if key is missing or it's value not a number",
@@ -479,6 +552,5 @@ builtins =
       "modify"
         === toExp modifyState
         <:: "Text -> (a -> a) -> b -> b"
-        --| "modify state at given key with function",
-      builtinParams
+        --| "modify state at given key with function"
     ]
