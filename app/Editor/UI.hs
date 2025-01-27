@@ -1,3 +1,4 @@
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# OPTIONS_GHC -Wno-missing-signatures #-}
 
 module Editor.UI where
@@ -24,7 +25,9 @@ module Editor.UI where
 -- import Sound.Tidal.Config as Conf
 
 import Control.Concurrent (threadDelay)
+import Control.Exception (SomeException)
 import Control.Monad (unless, void)
+import Control.Monad.Catch (catch)
 import Data.IORef (IORef, modifyIORef, readIORef)
 import Data.Text (Text, pack, unpack)
 import Foreign.JavaScript (JSObject)
@@ -53,14 +56,14 @@ getDisplayElV = do
     Just el -> return el
 
 getCursorLine :: (ToJS a) => a -> UI Int
-getCursorLine cm = callFunction $ ffi (wrapCatchErr "getCursorLine(%1)") cm
+getCursorLine cm = catchHaskellError 0 $ callFunction $ ffi "getCursorLine(%1)" cm
 
 getValue :: (ToJS a) => a -> UI String
-getValue cm = callFunction $ ffi "getV(%1)" cm
+getValue cm = catchHaskellError "" $ callFunction $ ffi "getV(%1)" cm
 
 getEditorNumber :: (ToJS a) => a -> UI Int
 getEditorNumber cm = do
-  idd <- callFunction $ ffi "(%1).getTextArea().id" cm
+  idd <- catchHaskellError "editor0" $ callFunction $ ffi "(%1).getTextArea().id" cm
   case idd of
     'e' : 'd' : 'i' : 't' : 'o' : 'r' : xs -> return $ read xs
     _ -> return 0
@@ -108,37 +111,36 @@ redoEditorLayout ref = do
 
 -- flashing
 
-checkUndefined :: (ToJS a) => a -> UI String
-checkUndefined cm = callFunction $ ffi "(function (a) { if (typeof a === 'undefined' || a === null) {return \"yes\";} else { return \"no\"; } })(%1)" cm
-
-highlightBlock :: JSObject -> Int -> Int -> String -> UI JSObject
-highlightBlock cm lineStart lineEnd color = do
-  undef <- checkUndefined cm
-  case undef of
-    "no" -> callFunction $ ffi "((%1).markText({line: %2, ch: 0}, {line: %3, ch: 0}, {css: %4}))" cm lineStart lineEnd color
-    _ -> callFunction $ ffi "return {}"
+highlightBlock :: JSObject -> Int -> Int -> String -> UI (Maybe JSObject)
+highlightBlock cm lineStart lineEnd color = catchHaskellErrorMaybe $ callFunction $ ffi "((%1).markText({line: %2, ch: 0}, {line: %3, ch: 0}, {css: %4}))" cm lineStart lineEnd color
 
 unHighlight :: JSObject -> UI ()
 unHighlight mark = runFunction $ ffi "if (typeof %1 !== 'undefined'){%1.clear()};" mark
 
 flashSuccess :: JSObject -> Int -> Int -> UI ()
 flashSuccess cm lineStart lineEnd = do
-  mark <- highlightBlock cm lineStart (lineEnd + 1) "background-color: green"
-  liftIO $ threadDelay 100000
-  unHighlight mark
-  flushCallBuffer
+  maymark <- highlightBlock cm lineStart (lineEnd + 1) "background-color: green"
+  case maymark of
+    Just mark -> do
+      liftIO $ threadDelay 100000
+      unHighlight mark
+      flushCallBuffer
+    Nothing -> return ()
 
 flashError :: JSObject -> Int -> Int -> UI ()
 flashError cm lineStart lineEnd = do
-  mark <- highlightBlock cm lineStart (lineEnd + 1) "background-color: red"
-  liftIO $ threadDelay 100000
-  unHighlight mark
-  flushCallBuffer
+  maymark <- highlightBlock cm lineStart (lineEnd + 1) "background-color: red"
+  case maymark of
+    Just mark -> do
+      liftIO $ threadDelay 100000
+      unHighlight mark
+      flushCallBuffer
+    Nothing -> return ()
 
 -- setting, getting and clearing the config
 
 setConfig :: Window -> Text -> Text -> IO ()
-setConfig win key v = runUI win $ runFunction $ ffi ("window.electronAPI.putInStore(%1," ++ (unpack v) ++ ")") (unpack key)
+setConfig win key v = runUI win $ runFunction $ ffi ("window.electronAPI.putInStore(%1," ++ unpack v ++ ")") (unpack key)
 
 clearConfig :: Window -> IO ()
 clearConfig win = runUI win $ runFunction $ ffi "window.electronAPI.clearStore()"
@@ -198,5 +200,12 @@ getHydra = do
     "true" -> return True
     _ -> return False
 
-wrapCatchErr :: String -> String
-wrapCatchErr st = "try {" ++ st ++ "} catch (err) {}"
+addMessage :: String -> UI ()
+addMessage s = getOutputEl >>= \out -> void $ element out # set UI.text s
+
+-- to catch javascript errors when using callFunction
+catchHaskellError :: a -> UI a -> UI a
+catchHaskellError x action = catch action (\(e :: SomeException) -> addMessage (show e) >> return x)
+
+catchHaskellErrorMaybe :: UI a -> UI (Maybe a)
+catchHaskellErrorMaybe action = catch (fmap Just action) (\(e :: SomeException) -> addMessage (show e) >> return Nothing)

@@ -24,6 +24,7 @@ module Editor.Highlight where
 import Control.Concurrent (readMVar, threadDelay)
 import Control.Concurrent.MVar (MVar, putMVar, takeMVar)
 import Data.List ((\\))
+import Editor.UI (catchHaskellErrorMaybe)
 import Foreign.JavaScript (JSObject)
 import Graphics.UI.Threepenny.Core as C hiding (text)
 import Sound.Tidal.Clock
@@ -35,15 +36,17 @@ import Zwirn.Stream
 
 type Buffer = [(Position, JSObject)]
 
-highlight :: Position -> UI JSObject
-highlight (Pos line strt end editorNum) = callFunction $ ffi ("(editor" ++ show editorNum ++ "cm.markText({line: %1, ch: %2}, {line: %1, ch: %3}, {css: \"outline: 2px solid blue;\"}))") line strt end
+highlight :: Position -> UI (Maybe JSObject)
+highlight (Pos line strt end editorNum) = catchHaskellErrorMaybe $ callFunction $ ffi ("(editor" ++ show editorNum ++ "cm.markText({line: %1, ch: %2}, {line: %1, ch: %3}, {css: \"outline: 2px solid blue;\"}))") line strt end
 
 highlightMany :: [Position] -> UI [JSObject]
 highlightMany [] = return []
 highlightMany (x : xs) = do
-  mark <- highlight x
+  maymark <- highlight x
   marks <- highlightMany xs
-  return (mark : marks)
+  case maymark of
+    Just mark -> return (mark : marks)
+    Nothing -> return marks
 
 unHighlight :: JSObject -> UI ()
 unHighlight mark = runFunction $ ffi "if (typeof %1 !== 'undefined'){%1.clear()};" mark
