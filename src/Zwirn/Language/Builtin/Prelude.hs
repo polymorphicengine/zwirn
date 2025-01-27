@@ -27,10 +27,12 @@ where
 import qualified Data.Map as Map
 import Data.Text (Text)
 import Zwirn.Core.Conditional as Z
-import Zwirn.Core.Cord
+import Zwirn.Core.Cord as C
 import Zwirn.Core.Core
+import Zwirn.Core.Map as M
 import Zwirn.Core.Modulate
-import Zwirn.Core.Number
+import Zwirn.Core.Number as N
+import Zwirn.Core.Random
 import Zwirn.Core.Structure
 import Zwirn.Core.Time
 import Zwirn.Language.Builtin.Internal
@@ -102,10 +104,182 @@ builtins =
         === toExp ((/) :: Zwirn Expression -> Zwirn Expression -> Zwirn Expression)
         <:: "Num a => a -> a -> a"
         --| "division",
+      "negate"
+        === toExp (negate :: Zwirn Expression -> Zwirn Expression)
+        <:: "Num a => a -> a"
+        --| "negate",
+      "abs"
+        === toExp (abs :: Zwirn Expression -> Zwirn Expression)
+        <:: "Num a => a -> a"
+        --| "absolute value",
+      "signum"
+        === toExp (signum :: Zwirn Expression -> Zwirn Expression)
+        <:: "Num a =>  a -> a"
+        --| "signum",
+      "recip"
+        === toExp (recip :: Zwirn Expression -> Zwirn Expression)
+        <:: "Num a => a -> a"
+        --| "reciprocal value",
+      "pi"
+        === toExp (pi :: Zwirn Expression)
+        <:: "Number"
+        --| "pi",
+      "|**"
+        === toExp ((**) :: Zwirn Expression -> Zwirn Expression -> Zwirn Expression)
+        <:: "Num a => a -> a -> a"
+        --| "exponentiation",
+      "exp"
+        === toExp (exp :: Zwirn Expression -> Zwirn Expression)
+        <:: "Num a => a -> a"
+        --| "exponential function",
+      "log"
+        === toExp (log :: Zwirn Expression -> Zwirn Expression)
+        <:: "Num a => a -> a"
+        --| "logarithm base 10",
+      "sqrt"
+        === toExp (sqrt :: Zwirn Expression -> Zwirn Expression)
+        <:: "Num a =>  a -> a"
+        --| "square root",
+      "sin"
+        === toExp (sin :: Zwirn Expression -> Zwirn Expression)
+        <:: "Num a => a -> a"
+        --| "sine function",
+      "cos"
+        === toExp (cos :: Zwirn Expression -> Zwirn Expression)
+        <:: "Num a => a -> a"
+        --| "cosine function",
+      "tan"
+        === toExp (tan :: Zwirn Expression -> Zwirn Expression)
+        <:: "Num a => a -> a"
+        --| "tangens",
+      "asin"
+        === toExp (asin :: Zwirn Expression -> Zwirn Expression)
+        <:: "Num a => a -> a"
+        --| "arc sine function",
+      "acos"
+        === toExp (acos :: Zwirn Expression -> Zwirn Expression)
+        <:: "Num a => a -> a"
+        --| "arc cosine function",
+      "atan"
+        === toExp (atan :: Zwirn Expression -> Zwirn Expression)
+        <:: "Num a => a -> a"
+        --| "arc tangens",
+      "sinh"
+        === toExp (sinh :: Zwirn Expression -> Zwirn Expression)
+        <:: "Num a => a -> a"
+        --| "hyperbolic sine",
+      "cosh"
+        === toExp (cosh :: Zwirn Expression -> Zwirn Expression)
+        <:: "Num a =>  a -> a"
+        --| "hyperbolic cosine",
+      "tanh"
+        === toExp (tan :: Zwirn Expression -> Zwirn Expression)
+        <:: "Num a => a -> a"
+        --| "hyperbolic tangens",
+      "asinh"
+        === toExp (asinh :: Zwirn Expression -> Zwirn Expression)
+        <:: "Num a => a -> a"
+        --| "hyperbolic arc sine function",
+      "acosh"
+        === toExp (acosh :: Zwirn Expression -> Zwirn Expression)
+        <:: "Num a => a -> a"
+        --| "hyperbolic arc cosine function",
+      "atanh"
+        === toExp (atanh :: Zwirn Expression -> Zwirn Expression)
+        <:: "Num a => a -> a"
+        --| "hyperbolic arc tangens",
+      "mod"
+        === toExp (N.mod :: Zwirn Double -> Zwirn Double -> Zwirn Double)
+        <:: "Number -> Number -> Number"
+        --| "modulo",
+      "frac"
+        === toExp (N.frac :: Zwirn Double -> Zwirn Double)
+        <:: "Number -> Number"
+        --| "fractional part of a number",
+      "trunc"
+        === toExp (N.trunc :: Zwirn Double -> Zwirn Int)
+        <:: "Number -> Number"
+        --| "truncate",
+      "ceil"
+        === toExp (N.ceil :: Zwirn Double -> Zwirn Int)
+        <:: "Number -> Number"
+        --| "round up",
+      "floor"
+        === toExp (N.floor :: Zwirn Double -> Zwirn Int)
+        <:: "Number -> Number"
+        --| "round down",
+      "round"
+        === toExp (N.round :: Zwirn Double -> Zwirn Int)
+        <:: "Number -> Number"
+        --| "round to closest",
+      "gcd"
+        === toExp (N.gcd :: Zwirn Int -> Zwirn Int -> Zwirn Int)
+        <:: "Number -> Number -> Number"
+        --| "greatest common divisor",
+      "lcm"
+        === toExp (N.lcm :: Zwirn Int -> Zwirn Int -> Zwirn Int)
+        <:: "Number -> Number -> Number"
+        --| "least common multiple",
       "range"
         === toExp (range :: Zwirn Double -> Zwirn Double -> Zwirn Double -> Zwirn Double)
         <:: "Number -> Number -> Number -> Number"
         --| "range x y l maps number l linearly into interval (x,y), assuming l is between 0 and 1",
+      "sine"
+        === toExp (sine :: Zwirn Time)
+        <:: "Number"
+        --| "sine signal",
+      "sine2"
+        === toExp (sine2 :: Zwirn Time)
+        <:: "Number"
+        --| "bipolar sine signal",
+      "saw"
+        === toExp (saw :: Zwirn Time)
+        <:: "Number"
+        --| "saw signal",
+      "saw2"
+        === toExp (saw2 :: Zwirn Time)
+        <:: "Number"
+        --| "bipolar saw signal",
+      "cosine"
+        === toExp (cosine :: Zwirn Time)
+        <:: "Number"
+        --| "cosine signal",
+      "cosine2"
+        === toExp (cosine2 :: Zwirn Time)
+        <:: "Number"
+        --| "bipolar cosine signal",
+      "isaw"
+        === toExp (isaw :: Zwirn Time)
+        <:: "Number"
+        --| "inverse saw signal",
+      "isaw2"
+        === toExp (isaw2 :: Zwirn Time)
+        <:: "Number"
+        --| "bipolar inverse saw signal",
+      "tri"
+        === toExp (tri :: Zwirn Time)
+        <:: "Number"
+        --| "triangle signal",
+      "tri2"
+        === toExp (tri2 :: Zwirn Time)
+        <:: "Number"
+        --| "bipolar triangle signal",
+      "square"
+        === toExp (square :: Zwirn Time)
+        <:: "Number"
+        --| "square signal",
+      "square2"
+        === toExp (square2 :: Zwirn Time)
+        <:: "Number"
+        --| "bipolar square signal",
+      "noise"
+        === toExp (noise :: Zwirn Double)
+        <:: "Number"
+        --| "random stream of values between 0 and 1",
+      "irand"
+        === toExp (irand :: Zwirn Int -> Zwirn Int)
+        <:: "Number -> Number"
+        --| "random integer values between 0 and given input",
       "*"
         === toExp (flip fast :: Zwirn Expression -> Zwirn Time -> Zwirn Expression)
         <:: "a -> Number -> a"
@@ -207,37 +381,77 @@ builtins =
         <:: "Number -> a -> a"
         --| "project to a certain layer of a cord",
       "insert"
-        === toExp (insert :: Zwirn Int -> Zwirn Expression -> Zwirn Expression -> Zwirn Expression)
+        === toExp (C.insert :: Zwirn Int -> Zwirn Expression -> Zwirn Expression -> Zwirn Expression)
         <:: "Number -> a -> a -> a"
         --| "insert into a specific layer of a cord",
       "remove"
         === toExp (remove :: Zwirn Int -> Zwirn Expression -> Zwirn Expression)
         <:: "Number -> a -> a"
         --| "remove a specific layer of a cord",
+      "arp"
+        === toExp (arp :: Zwirn Expression -> Zwirn Expression)
+        <:: "a -> a"
+        --| "arpeggiate",
+      "reverse"
+        === toExp (reverseC :: Zwirn Expression -> Zwirn Expression)
+        <:: "a -> a"
+        --| "reverse order of cord",
+      "invert"
+        === toExp (invertC :: Zwirn Expression -> Zwirn Expression)
+        <:: "Number -> Number"
+        --| "chord inversion",
+      "rotate"
+        === toExp (rotateC :: Zwirn Expression -> Zwirn Expression)
+        <:: "a -> a"
+        --| "cord rotation",
       "at"
         === toExp (at :: Zwirn Int -> Zwirn (Zwirn Expression -> Zwirn Expression) -> Zwirn Expression -> Zwirn Expression)
         <:: "Number -> (a -> a) -> a -> a"
         --| "apply a function to a specific layer of a cord",
       "pN"
-        === toExp (singMap :: Zwirn Text -> Zwirn Double -> Zwirn Expression)
+        === toExp ((\t -> fmap toExp . singleton t) :: Zwirn Text -> Zwirn Double -> Zwirn Expression)
         <:: "Text -> Number -> Map"
         --| "number singleton with specific key",
       "pT"
-        === toExp (singMap :: Zwirn Text -> Zwirn Text -> Zwirn Expression)
+        === toExp ((\t -> fmap toExp . singleton t) :: Zwirn Text -> Zwirn Text -> Zwirn Expression)
         <:: "Text -> Text -> Map"
         --| "text singleton with specific key",
       "#"
-        === toExp (liftA2 Map.union :: Zwirn ExpressionMap -> Zwirn ExpressionMap -> Zwirn ExpressionMap)
+        === toExp (union :: Zwirn ExpressionMap -> Zwirn ExpressionMap -> Zwirn ExpressionMap)
         <:: "Map -> Map -> Map"
         --| "union of two maps - structure from the left",
       "lookupN"
-        === toExp lookN
+        === toExp (M.lookup :: Zwirn Text -> Zwirn ExpressionMap -> Zwirn Expression)
         <:: "Text -> Map -> Number"
         --| "retrieve number at given key or silence if key is missing or it's value not a number",
       "lookupT"
-        === toExp lookT
+        === toExp (M.lookup :: Zwirn Text -> Zwirn ExpressionMap -> Zwirn Expression)
         <:: "Text -> Map -> Text"
         --| "retrieve text at given key or silence if key is missing or it's value not a text",
+      "fix"
+        === toExp (M.fix :: Zwirn Text -> Zwirn (Zwirn Expression -> Zwirn Expression) -> Zwirn ExpressionMap -> Zwirn ExpressionMap)
+        <:: "Text -> (Map -> Map) -> Map -> Map"
+        --| "apply a function to a specific key",
+      "loopAt"
+        === toExp (loopAt :: Zwirn Time -> Zwirn ExpressionMap -> Zwirn ExpressionMap)
+        <:: "Number -> Map -> Map"
+        --| "",
+      "slice"
+        === toExp (slice :: Zwirn Int -> Zwirn Int -> Zwirn ExpressionMap -> Zwirn ExpressionMap)
+        <:: "Number -> Number -> Map -> Map"
+        --| "slice a sample into equal btis and index into them",
+      "chop"
+        === toExp (chop :: Zwirn Int -> Zwirn ExpressionMap -> Zwirn ExpressionMap)
+        <:: "Number -> Map -> Map"
+        --| "",
+      "striate"
+        === toExp (striate :: Zwirn Int -> Zwirn ExpressionMap -> Zwirn ExpressionMap)
+        <:: "Number -> Map -> Map"
+        --| "",
+      "striateBy"
+        === toExp (striateBy :: Zwirn Int -> Zwirn Expression -> Zwirn ExpressionMap -> Zwirn ExpressionMap)
+        <:: "Number -> Number -> Map -> Map"
+        --| "",
       "getN"
         === toExp getStateN
         <:: "Text -> Number"
@@ -257,6 +471,6 @@ builtins =
       "modify"
         === toExp modifyState
         <:: "Text -> (a -> a) -> b -> b"
-        --| "modify state at given key with function"
+        --| "modify state at given key with function",
+      builtinParams
     ]
-      ++ builtinParams

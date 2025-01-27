@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# OPTIONS_GHC -Wno-incomplete-uni-patterns #-}
 {-# OPTIONS_GHC -Wno-unused-top-binds #-}
@@ -27,9 +28,7 @@ module Zwirn.Language.Evaluate.Internal where
 import qualified Data.Map as Map
 import Data.Text (Text)
 import Zwirn.Core.Core (withState, (<$$>))
-import Zwirn.Core.Modulate
 import Zwirn.Core.State
-import Zwirn.Core.Time (Time)
 import Zwirn.Core.Types
 import Zwirn.Language.Evaluate.Convert
 import Zwirn.Language.Evaluate.Expression
@@ -71,26 +70,3 @@ modifyState kz fz xz = modifyState' <$> kz <*> fz <$$> xz
 
 setState :: Zwirn Text -> Zwirn Expression -> Zwirn Expression -> Zwirn Expression
 setState t x = setMap t (pure $ EZwirn x)
-
--- fromNum _ = silence
-
--- create a singleton map with specific key
-singMap :: (ToExpression a) => Zwirn Text -> Zwirn a -> Zwirn Expression
-singMap t x = EMap . fmap toExp <$> liftA2Right Map.singleton t x
-
--- lookup a number key in a map
-lookN :: Zwirn Text -> Zwirn ExpressionMap -> Zwirn Expression
-lookN tz xz = outerJoin $ liftA2Right (\t x -> fromLookup $ Map.lookup t x) tz xz
-  where
-    fromLookup (Just (ENum e)) = pure $ ENum e
-    fromLookup _ = silence
-
--- lookup a text key in a map
-lookT :: Zwirn Text -> Zwirn ExpressionMap -> Zwirn Expression
-lookT tz xz = outerJoin $ liftA2Right (\t x -> fromLookup $ Map.lookup t x) tz xz
-  where
-    fromLookup (Just (EText e)) = pure $ EText e
-    fromLookup _ = silence
-
-modTimeExp :: Zwirn (Zwirn Time -> Zwirn Time) -> Zwirn Expression -> Zwirn Expression
-modTimeExp fz x = innerJoin $ fmap (`modTime` x) fz

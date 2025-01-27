@@ -77,7 +77,7 @@ highlightOnce stream cc cref buffMV = do
   t <- liftIO $ getCycleTime cc cref
   sMap <- liftIO $ readMVar $ sState stream
   buffer <- liftIO $ takeMVar buffMV
-  let ls = locs sMap (realToFrac t) z
+  let ls = locs sMap (realToFrac $ align t) z
   newBuf <- updateBuf buffer ls
   liftIO $ threadDelay 10000
   liftIO $ putMVar buffMV newBuf

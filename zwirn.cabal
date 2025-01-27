@@ -22,7 +22,9 @@ library
                    Zwirn.Language.Simple
                    Zwirn.Language.Pretty
                    Zwirn.Language.Block
-                   Zwirn.Language.Builtin
+                   Zwirn.Language.Builtin.Internal
+                   Zwirn.Language.Builtin.Prelude
+                   Zwirn.Language.Builtin.Parameters
                    Zwirn.Language.Environment
                    Zwirn.Language.Evaluate
                    Zwirn.Language.Evaluate.Convert

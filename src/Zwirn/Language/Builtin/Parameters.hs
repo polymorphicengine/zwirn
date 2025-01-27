@@ -4,25 +4,25 @@ module Zwirn.Language.Builtin.Parameters where
 
 import qualified Data.Map as Map
 import Data.Text (Text)
+import Zwirn.Core.Map
 import Zwirn.Language.Builtin.Internal
 import Zwirn.Language.Environment
 import Zwirn.Language.Evaluate (Expression, Zwirn, toExp)
-import Zwirn.Language.Evaluate.Internal
 
-builtinParams :: [Map.Map Text AnnotatedExpression]
-builtinParams = [builtinTextParams, builtinNumberParams, builtinIntParams]
+builtinParams :: Map.Map Text AnnotatedExpression
+builtinParams = addAliases aliases $ Map.unions [builtinTextParams, builtinNumberParams, builtinIntParams]
 
 builtinTextParams :: Map.Map Text AnnotatedExpression
-builtinTextParams = Map.unions $ map (\t -> noDesc $ t === toExp (singMap $ pure t :: Zwirn Text -> Zwirn Expression) <:: "Text -> Map") textParams
+builtinTextParams = Map.unions $ map (\t -> noDesc $ t === toExp ((fmap toExp . singleton (pure t)) :: Zwirn Text -> Zwirn Expression) <:: "Text -> Map") textParams
 
 builtinNumberParams :: Map.Map Text AnnotatedExpression
-builtinNumberParams = Map.unions $ map (\t -> noDesc $ t === toExp (singMap $ pure t :: Zwirn Double -> Zwirn Expression) <:: "Number -> Map") numberParams
+builtinNumberParams = Map.unions $ map (\t -> noDesc $ t === toExp ((fmap toExp . singleton (pure t)) :: Zwirn Double -> Zwirn Expression) <:: "Number -> Map") numberParams
 
 builtinIntParams :: Map.Map Text AnnotatedExpression
-builtinIntParams = Map.unions $ map (\t -> noDesc $ t === toExp (singMap $ pure t :: Zwirn Int -> Zwirn Expression) <:: "Number -> Map") intParams
+builtinIntParams = Map.unions $ map (\t -> noDesc $ t === toExp ((fmap toExp . singleton (pure t)) :: Zwirn Int -> Zwirn Expression) <:: "Number -> Map") intParams
 
 textParams :: [Text]
-textParams = ["s", "unit", "vowel", "sound", "toArg"]
+textParams = ["s", "unit", "vowel", "toArg"]
 
 intParams :: [Text]
 intParams = ["cut", "orbit"]
@@ -125,35 +125,47 @@ numberParams =
     "velocity",
     "voice",
     "waveloss",
-    "xsdelay",
-    "voi",
-    "up",
-    "tremr",
-    "tremdp",
-    "sz",
-    "sus",
-    "stt",
-    "std",
-    "sld",
-    "scr",
-    "rel",
-    "por",
-    "phasr",
-    "phasdp",
-    "number",
-    "lpq",
-    "lpf",
-    "hpq",
-    "hpf",
-    "gat",
-    "fadeOutTime",
-    "dt",
-    "dfb",
-    "det",
-    "delayt",
-    "delayfb",
-    "ctf",
-    "bpq",
-    "bpf",
-    "att"
+    "xsdelay"
   ]
+
+aliases :: [(Text, Text)]
+aliases =
+  [ ("sound", "s"),
+    ("voi", "voice"),
+    ("up", "n"),
+    ("tremr", "tremolorate"),
+    ("tremdp", "tremolodepth"),
+    ("sz", "size"),
+    ("sus", "sustain"),
+    ("stt", "stuttertime"),
+    ("std", "stutterdepth"),
+    ("sld", "slide"),
+    ("scr", "scrash"),
+    ("rel", "release"),
+    ("por", "portamento"),
+    ("phasr", "phaserrate"),
+    ("phasdp", "phaserdepth"),
+    ("number", "n"),
+    ("lpq", "resonance"),
+    ("lpf", "cutoff"),
+    ("hpq", "hresonance"),
+    ("hpf", "hcutoff"),
+    ("gat", "gate"),
+    ("fadeOutTime", "fadeTime"),
+    ("dt", "delaytime"),
+    ("dfb", "delayfeedback"),
+    ("det", "detune"),
+    ("delayt", "delaytime"),
+    ("delayfb", "delayfeedback"),
+    ("ctf", "cutoff"),
+    ("bpq", "bandq"),
+    ("bpf", "bandf"),
+    ("att", "attack")
+  ]
+
+addAliases :: [(Text, Text)] -> Map.Map Text AnnotatedExpression -> Map.Map Text AnnotatedExpression
+addAliases as x = Map.unions $ map look as ++ [x]
+  where
+    look (y, n) = case Map.lookup n x of
+      Just a -> Map.singleton y a
+      Nothing -> Map.empty

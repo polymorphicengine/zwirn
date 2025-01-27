@@ -27,7 +27,8 @@ module Zwirn.Language.Evaluate.Convert where
 -}
 
 import qualified Data.Map as Map
-import Data.Text (Text)
+import Data.String (IsString, fromString)
+import Data.Text (Text, pack)
 import Zwirn.Core.Time (Time (..))
 import Zwirn.Core.Types
 import Zwirn.Language.Evaluate.Expression
@@ -84,9 +85,6 @@ instance (FromExpression a) => FromExpression (Zwirn a) where
 instance ToExpression Expression where
   toExp = id
 
-instance ToExpression ExpressionMap where
-  toExp = EMap
-
 instance ToExpression Double where
   toExp = ENum
 
@@ -102,6 +100,9 @@ instance ToExpression Bool where
 
 instance ToExpression Text where
   toExp = EText
+
+instance (ToExpression a) => ToExpression (Map.Map Text a) where
+  toExp m = EMap $ toExp <$> m
 
 instance (ToExpression a) => ToExpression (Zwirn a) where
   toExp a = EZwirn $ fmap toExp a
@@ -120,6 +121,24 @@ instance Num Expression where
 instance Fractional Expression where
   fromRational r = ENum $ fromRational r
   (/) = pervasive2 ((/) @Double)
+
+instance Floating Expression where
+  pi = EZwirn $ pure $ ENum pi
+  exp = pervasive (exp :: Double -> Double)
+  log = pervasive (log :: Double -> Double)
+  sin = pervasive (sin :: Double -> Double)
+  cos = pervasive (cos :: Double -> Double)
+  asin = pervasive (asin :: Double -> Double)
+  acos = pervasive (acos :: Double -> Double)
+  atan = pervasive (atan :: Double -> Double)
+  sinh = pervasive (sinh :: Double -> Double)
+  cosh = pervasive (cosh :: Double -> Double)
+  asinh = pervasive (asinh :: Double -> Double)
+  acosh = pervasive (acosh :: Double -> Double)
+  atanh = pervasive (atanh :: Double -> Double)
+
+instance IsString Expression where
+  fromString = EText . pack
 
 class Pervasive a where
   pervasive :: (a -> a) -> Expression -> Expression

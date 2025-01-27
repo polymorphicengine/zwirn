@@ -89,7 +89,7 @@ expressionToOSC (EMap m) = concatMap (\(k, v) -> O.string (T.unpack k) : express
 expressionToOSC _ = []
 
 additionalData :: Double -> [O.Datum]
-additionalData cyc = [O.string "cps", O.float 0.525, O.string "cycle", O.float cyc, O.string "delta", O.float 1]
+additionalData cyc = [O.string "cps", O.float 0.5625, O.string "cycle", O.float cyc]
 
 expressionToMessage :: Double -> Expression -> O.Message
 expressionToMessage cyc ex = O.message "/dirt/play" (additionalData cyc ++ expressionToOSC ex)

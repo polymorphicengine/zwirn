@@ -67,6 +67,7 @@ varC = TypeVar "c"
 
 isBasicType :: Scheme -> Bool
 isBasicType (Forall [] (Qual [] (TypeCon _))) = True
+isBasicType (Forall _ (Qual [] (TypeVar _))) = True
 isBasicType _ = False
 
 infixr 1 -->
