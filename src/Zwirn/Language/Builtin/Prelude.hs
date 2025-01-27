@@ -68,6 +68,14 @@ builtins =
         === lambda (\f -> lambda $ \g -> lambda $ \x -> f ! x ! (g ! x))
         <:: "(a -> b -> c) -> (a -> b) -> a -> c"
         --| "S-combinator",
+      "."
+        === lambda (\g -> lambda $ \f -> lambda $ \x -> g ! (f ! x))
+        <:: "(b -> c) -> (a -> b) -> a -> c"
+        --| "function composition",
+      "flip"
+        === lambda (\f -> lambda $ \y -> lambda $ \x -> f ! x ! y)
+        <:: "(a -> b -> c) -> b -> a -> c"
+        --| "flip arguments",
       "\'"
         === toExp (flip squeezeApply :: Zwirn Expression -> Zwirn (Zwirn Expression -> Zwirn Expression) -> Zwirn Expression)
         <:: "a -> (a -> b) -> b"
