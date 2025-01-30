@@ -28,7 +28,7 @@ import qualified Data.Map as Map
 import Data.Text (Text)
 import Zwirn.Core.Conditional as Z
 import Zwirn.Core.Cord as C
-import Zwirn.Core.Core
+import Zwirn.Core.Core as C
 import Zwirn.Core.Map as M
 import Zwirn.Core.Modulate
 import Zwirn.Core.Number as N
@@ -110,6 +110,10 @@ coreFunctions =
         --| "apply argument to function",
       "map"
         === toExp (mapZ :: Zwirn (Zwirn Expression -> Zwirn Expression) -> Zwirn Expression -> Zwirn Expression)
+        <:: "(a -> b) -> a -> b"
+        --| "map a function over the structure of the argument",
+      "zip"
+        === toExp (zipApply :: Zwirn (Zwirn Expression -> Zwirn Expression) -> Zwirn Expression -> Zwirn Expression)
         <:: "(a -> b) -> a -> b"
         --| "map a function over the structure of the argument"
     ]
@@ -359,7 +363,19 @@ timeFunctions =
       "rev"
         === toExp (rev :: Zwirn Expression -> Zwirn Expression)
         <:: "a -> a"
-        --| "reverse time completely"
+        --| "reverse time completely",
+      "ply"
+        === toExp (ply :: Zwirn Time -> Zwirn Expression -> Zwirn Expression)
+        <:: "Number -> a -> a"
+        --| "speed up time inside",
+      "timeloop"
+        === toExp (timeloop :: Zwirn Time -> Zwirn Expression -> Zwirn Expression)
+        <:: "Number -> a -> a"
+        --| "loop time from 0 to the given number",
+      "zoom"
+        === toExp (zoom :: Zwirn Time -> Zwirn Time -> Zwirn Expression -> Zwirn Expression)
+        <:: "Number -> Number -> a -> a"
+        --| "zoom and loop a part of a zwirn"
     ]
 
 structureFunctions :: Map.Map Text AnnotatedExpression
