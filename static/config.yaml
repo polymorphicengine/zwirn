@@ -1,0 +1,15 @@
+editor:
+  port: 8023
+  highlight: false
+
+stream:
+  port: 57120
+  address: "127.0.0.1"
+
+clock:
+  quantum: 4
+  beatsPerCycle: 4
+  frameTimespan: 0.05
+  enableLink: false
+  skipTicks: 10
+  processAhead: 0.3

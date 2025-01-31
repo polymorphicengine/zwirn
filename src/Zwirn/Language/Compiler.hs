@@ -69,8 +69,8 @@ data CurrentBlock
 
 data ConfigEnv
   = ConfigEnv
-  { cSetConfig :: Text -> Text -> IO (),
-    cResetConfig :: IO ()
+  { cSetConfig :: String -> String -> IO (Either String String),
+    cResetConfig :: IO String
   }
 
 data Environment
@@ -327,27 +327,19 @@ resetConfigAction :: CI String
 resetConfigAction = do
   (Environment {confEnv = mayEnv}) <- get
   case mayEnv of
-    Nothing -> throw "reset config not available"
-    Just (ConfigEnv _ reset) -> liftIO $ reset >> return "configuration reset to default! please restart for it to have an effect!"
+    Nothing -> throw "Configuration not available."
+    Just (ConfigEnv _ reset) -> liftIO reset
 
 setConfigAction :: Text -> Text -> CI String
-setConfigAction key v = do
+setConfigAction key val = do
   (Environment {confEnv = mayEnv}) <- get
   case mayEnv of
-    Nothing -> throw "set config not available"
-    Just (ConfigEnv setC _) ->
-      ( if key `elem` tidalKeys
-          then liftIO $ setC ("tidal." <> key) v >> return "configuration set! please restart for it to have an effect!"
-          else
-            ( if key `elem` editorKeys
-                then liftIO $ setC ("editor." <> key) v >> return "configuration set! please restart for it to have an effect!"
-                else (if key `elem` otherKeys then liftIO $ setC key v >> return "configuration set! please restart for it to have an effect!" else throw "unknown configuration key!")
-            )
-      )
-  where
-    tidalKeys = ["dirtport", "latency", "frameTimespan", "processAhead", "link", "skipTicks", "quantum", "beatsPerCycle"]
-    editorKeys = ["lineNumbers", "keyMap", "matchBrackets", "autoCloseBrackets"]
-    otherKeys = ["bootPath", "highlight", "hydra"]
+    Nothing -> throw "Configuration not available."
+    Just (ConfigEnv setConf _) -> do
+      ac <- liftIO $ setConf (unpack key) (unpack val)
+      case ac of
+        Left err -> throw err
+        Right t -> return t
 
 runAction :: Bool -> Action -> CI String
 runAction b (StreamAction i t) = streamAction b i t >> return ""

@@ -26,43 +26,48 @@ import Control.Monad (void)
 import Data.IORef (newIORef)
 import qualified Data.Map as Map
 import Editor.Backend
+import Editor.Config
 import Editor.Frontend
-import Editor.Highlight (highlightLoop)
+import Editor.Highlight (highlightLoop, toggleHighlight)
 import Editor.UI
 import Graphics.UI.Threepenny.Core as C hiding (defaultConfig, text)
-import Sound.Tidal.Clock (defaultConfig)
 import Zwirn.Language.Builtin.Prelude
 import Zwirn.Language.Compiler
 import Zwirn.Stream
 
-setup :: Window -> UI ()
-setup win = void $ do
+setup :: FullConfig -> Window -> UI ()
+setup config win = void $ do
   editor <- frontend win
   setupEditors editor
 
-  catchJSErrors
+  str <- setupStream config
 
-  str <- setupStream
+  setupHighlight config str
 
   setupBackend str
   addFileInputAndSettings
   makeEditor "editor0"
 
-setupStream :: UI Stream
-setupStream = do
+setupStream :: FullConfig -> UI Stream
+setupStream config = do
   mv <- liftIO $ newMVar Map.empty
   m <- liftIO $ newMVar Map.empty
-  let conf = defaultConfig
-  str <- liftIO $ startStream mv m conf
+  liftIO $ startStream (fullConfigStream config) mv m (toClock $ fullConfigClock config)
+
+setupHighlight :: FullConfig -> Stream -> UI ()
+setupHighlight config str = do
   win <- askWindow
   bufMV <- liftIO $ newMVar []
-  _ <- liftIO $ forkIO $ highlightLoop win str conf (sClockRef str) bufMV
-  return str
+  boolMV <- liftIO $ newMVar False
+  void $ liftIO $ forkIO $ highlightLoop win str (toClock $ fullConfigClock config) (sClockRef str) bufMV
+
+  createHaskellFunction "toggleHighlight" (runUI win $ toggleHighlight boolMV bufMV)
+  (if editorConfigHighlight $ fullConfigEditor config then return () else toggleHighlight boolMV bufMV)
 
 setupBackend :: Stream -> UI ()
 setupBackend str = do
   win <- askWindow
-  let env = Environment str builtinEnvironment (Just $ ConfigEnv (setConfig win) (clearConfig win)) Nothing
+  let env = Environment str builtinEnvironment Nothing Nothing
 
   envMV <- liftIO $ newMVar env
 
@@ -74,7 +79,6 @@ setupBackend str = do
   createHaskellFunction "evalLineAtLine" (\cm l -> runUI win $ evalContentAtLine EvalLine cm l envMV)
 
   createHaskellFunction "hush" (liftIO $ return () :: IO ())
-  createHaskellFunction "toggleHighlight" (liftIO $ return () :: IO ())
 
 setupEditors :: Element -> UI ()
 setupEditors mainEditor = do

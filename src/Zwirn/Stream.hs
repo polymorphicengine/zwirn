@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveGeneric #-}
 {-# OPTIONS_GHC -Wno-type-defaults #-}
 
 module Zwirn.Stream where
@@ -6,6 +7,7 @@ import Control.Concurrent.MVar (MVar, modifyMVar_, newMVar, readMVar)
 import qualified Data.Map as Map
 import Data.Text (Text, pack)
 import qualified Data.Text as T
+import GHC.Generics (Generic)
 import qualified Network.Socket as N
 import qualified Sound.Osc as O
 import qualified Sound.Osc.Transport.Fd.Udp as O
@@ -18,6 +20,12 @@ import qualified Zwirn.Core.Time as Z
 import Zwirn.Language.Evaluate
 
 type PlayMap = Map.Map Text (Zwirn Expression)
+
+data StreamConfig = StreamConfig
+  { streamConfigPort :: Int,
+    streamConfigAddress :: String
+  }
+  deriving (Generic)
 
 data Stream = Stream
   { sPlayMap :: MVar PlayMap,
@@ -47,10 +55,10 @@ streamFirst str z = do
   dummy <- newMVar $ Map.singleton (pack "_streamOnceDummy_") z
   Clock.clockOnce (tickAction dummy (sState str) (sAddress str) (sLocal str)) (sClockConfig str) (sClockRef str)
 
-startStream :: MVar PlayMap -> MVar ExpressionMap -> ClockConfig -> IO Stream
-startStream zMV stMV conf = do
-  let target_address = "127.0.0.1"
-      target_port = 57120
+startStream :: StreamConfig -> MVar PlayMap -> MVar ExpressionMap -> ClockConfig -> IO Stream
+startStream config zMV stMV conf = do
+  let target_address = streamConfigAddress config
+      target_port = streamConfigPort config
   remote <- resolve target_address (show target_port)
   local <- O.udp_server 2323
 

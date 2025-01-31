@@ -1,3 +1,5 @@
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# OPTIONS_GHC -Wno-missing-signatures #-}
 
@@ -29,11 +31,9 @@ import Control.Exception (SomeException)
 import Control.Monad (unless, void)
 import Control.Monad.Catch (catch)
 import Data.IORef (IORef, modifyIORef, readIORef)
-import Data.Text (Text, pack, unpack)
 import Foreign.JavaScript (JSObject)
 import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core as C hiding (get, text, value)
-import System.Directory (doesDirectoryExist, doesFileExist, listDirectory)
 import Zwirn.Stream
 
 hush :: Stream -> x -> IO ()
@@ -74,11 +74,8 @@ createHaskellFunction name fn = do
 
 -- adding and removing editors
 
-catchJSErrors :: UI ()
-catchJSErrors = runFunction $ ffi "window.onerror = function(msg, url, linenumber) { alert(msg);return true;}"
-
 makeEditor :: String -> UI ()
-makeEditor i = runFunction $ ffi $ i ++ "cm = CodeMirror.fromTextArea(document.getElementById('" ++ i ++ "'), fullSettings.editor);"
+makeEditor i = runFunction $ ffi $ i ++ "cm = CodeMirror.fromTextArea(document.getElementById('" ++ i ++ "'), editorSettings);"
 
 addEditor :: IORef [Element] -> UI ()
 addEditor ref = do
@@ -136,69 +133,6 @@ flashError cm lineStart lineEnd = do
       unHighlight mark
       flushCallBuffer
     Nothing -> return ()
-
--- setting, getting and clearing the config
-
-setConfig :: Window -> Text -> Text -> IO ()
-setConfig win key v = runUI win $ runFunction $ ffi ("window.electronAPI.putInStore(%1," ++ unpack v ++ ")") (unpack key)
-
-clearConfig :: Window -> IO ()
-clearConfig win = runUI win $ runFunction $ ffi "window.electronAPI.clearStore()"
-
--- configureTarget :: UI Target
--- configureTarget = do
---   dirtport <- callFunction $ ffi "fullSettings.tidal.dirtport"
---   latency <- callFunction $ ffi "fullSettings.tidal.latency"
---   return $ superdirtTarget {oLatency = latency, oAddress = "127.0.0.1", oPort = dirtport}
-
--- configureStream :: UI Conf.Config
--- configureStream = do
---   frameTimespan <- callFunction $ ffi "fullSettings.tidal.frameTimespan"
---   processAhead <- callFunction $ ffi "fullSettings.tidal.processAhead"
---   link <- callFunction $ ffi "fullSettings.tidal.link"
---   let linkB = case link of
---         "false" -> False
---         _ -> True
---   skipTicks <- callFunction $ ffi "fullSettings.tidal.skipTicks"
---   quantum <- callFunction $ ffi "fullSettings.tidal.quantum"
---   beatsPerCycle <- callFunction $ ffi "fullSettings.tidal.beatsPerCycle"
---   return $
---     Conf.defaultConfig
---       { cVerbose = False,
---         cFrameTimespan = frameTimespan,
---         cEnableLink = linkB,
---         cProcessAhead = processAhead,
---         cSkipTicks = read skipTicks,
---         cQuantum = read quantum,
---         cBeatsPerCycle = read beatsPerCycle
---       }
-
-getBootPaths :: UI (Maybe [Text])
-getBootPaths = do
-  p <- callFunction $ ffi "fullSettings.bootPath"
-  b <- liftIO $ doesDirectoryExist p
-  ( if b
-      then fmap (Just . map (\x -> pack $ p ++ "/" ++ x)) $ liftIO $ listDirectory p
-      else
-        ( do
-            bb <- liftIO $ doesFileExist p
-            (if bb then return $ Just [pack p] else (getOutputEl # set UI.text (show p)) >> return Nothing)
-        )
-    )
-
-getHighlight :: UI Bool
-getHighlight = do
-  h <- callFunction $ ffi "fullSettings.highlight"
-  case h of
-    "true" -> return True
-    _ -> return False
-
-getHydra :: UI Bool
-getHydra = do
-  h <- callFunction $ ffi "fullSettings.hydra"
-  case h of
-    "true" -> return True
-    _ -> return False
 
 addMessage :: String -> UI ()
 addMessage s = getOutputEl >>= \out -> void $ element out # set UI.text s

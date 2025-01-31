@@ -9,5 +9,6 @@
 /browse.txt
 /output.txt
 .ghc.environment.*
+package-lock.json
 
 out/

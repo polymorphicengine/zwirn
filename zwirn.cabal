@@ -59,18 +59,18 @@ executable zwirn-interpreter
                       Editor.UI
                       Editor.Highlight
                       Editor.Hydra
-                      Editor.CommandLine
+                      Editor.Config
     build-depends:    base >= 4.19,
                       text,
                       containers,
                       tidal-link,
-                      deepseq,
                       zwirn,
                       threepenny-gui,
                       exceptions,
                       filepath,
                       directory,
-                      optparse-applicative,
+                      conferer,
+                      conferer-yaml,
                       zwirn-core
     hs-source-dirs:   app
     default-language: Haskell2010

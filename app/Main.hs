@@ -18,22 +18,23 @@ module Main where
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 -}
 
-import Editor.CommandLine
+import Conferer as Conf
+import Editor.Config
 import Editor.Setup
 import Graphics.UI.Threepenny.Core as C hiding (text)
-import Options.Applicative (execParser)
 import System.Environment (getExecutablePath)
 import System.FilePath (dropFileName)
 
 main :: IO ()
 main = do
-  config <- execParser conf
+  config <- getConfig
   execPath <- dropFileName <$> getExecutablePath
+  fullConfig <- Conf.fetch config
 
   startGUI
     C.defaultConfig
       { jsStatic = Just $ execPath ++ "static",
         jsCustomHTML = Just "tidal.html",
-        jsPort = Just (tpPort config)
+        jsPort = Just (tpPort fullConfig)
       }
-    setup
+    (setup fullConfig)
