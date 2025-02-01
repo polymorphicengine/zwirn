@@ -53,9 +53,9 @@ $alphasmall = [a-z]
 $alpha = [a-zA-Z]
 
 @id = ($alphasmall) ($alpha | $digit | \_ )*
-@singles = ("+" | "&" | "$" | "?" | "-" | "#" | "." | "^")
+@singles = ("&" | "$" | "?" | "#" | "." | "^")
 @otherops = ("|" | "=" | "~" | "<" | ">" | "%")
-@specialop = ("*" | "/" | "'")
+@specialop = ("*" | "/" | "'" | "+" | "-")
 @op = ((@singles (@singles | @otherops | @specialop)*) | ((@otherops | @specialop) (@singles | @otherops | @specialop)+))
 @num = ("-")? ($digit)+ ("." ($digit)+)?
 @path = $white ($alpha | "/" | ".")+
