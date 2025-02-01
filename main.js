@@ -10,7 +10,7 @@ initialize();
 // Time to wait for Threepenny server, milliseconds
 const timeout = 10000;
 
-const relBin = "build/zwirn-interpreter";
+const relBin = "build/zwirn-editor";
 
 // Assign a random port to run on.
 freeport((err, port) => {

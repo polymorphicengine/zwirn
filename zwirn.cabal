@@ -51,7 +51,7 @@ library
   ghc-options: -threaded
                -Wall
 
-executable zwirn-interpreter
+executable zwirn-editor
     main-is:          Main.hs
     other-modules:    Editor.Backend
                       Editor.Frontend
@@ -72,7 +72,7 @@ executable zwirn-interpreter
                       conferer,
                       conferer-yaml,
                       zwirn-core
-    hs-source-dirs:   app
+    hs-source-dirs:   zwirn-editor
     default-language: Haskell2010
     ghc-options: -threaded
                  -Wall
