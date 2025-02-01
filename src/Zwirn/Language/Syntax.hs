@@ -69,7 +69,7 @@ data Action
   | StreamSet Text Term
   | StreamOnce Term
   | StreamSetTempo Tempo Text
-  | Config Text Text
+  | ConfigPath
   | ResetConfig
   | Def Def
   | Type Term

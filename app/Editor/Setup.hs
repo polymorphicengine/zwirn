@@ -67,7 +67,7 @@ setupHighlight config str = do
 setupBackend :: Stream -> UI ()
 setupBackend str = do
   win <- askWindow
-  let env = Environment str builtinEnvironment Nothing Nothing
+  let env = Environment str builtinEnvironment (Just $ ConfigEnv configPath resetConfig) Nothing
 
   envMV <- liftIO $ newMVar env
 

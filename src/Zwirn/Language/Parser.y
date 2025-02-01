@@ -227,9 +227,7 @@ action :: { Action }
   | ':cps' number                     { StreamSetTempo CPS (unTok $2) }
   | ':bpm' number                     { StreamSetTempo BPM (unTok $2) }
   | '!' term                          { StreamOnce $2 }
-  | ':config' identifier string       { Config (unTok $2) (unTok $3) }
-  | ':config' identifier identifier   { Config (unTok $2) (unTok $3) }
-  | ':config' identifier number       { Config (unTok $2) (unTok $3) }
+  | ':config'                         { ConfigPath }
   | ':resetconfig'                    { ResetConfig }
   | def                               { Def $1 }
   | ':t' term                         { Type $2 }

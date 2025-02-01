@@ -81,12 +81,12 @@ getConfig = do
   curr <- getCurrentDirectory
   home <- getHomeDirectory
   configDirPath <- (home <>) <$> encodeUtf "/.config/zwirn-editor/"
-  configPath <- (home <>) <$> encodeUtf "/.config/zwirn-editor/config.yaml"
+  path <- (home <>) <$> encodeUtf "/.config/zwirn-editor/config.yaml"
   defaultConfigPath <- (curr <>) <$> encodeUtf "/static/config.yaml"
   createDirectoryIfMissing True configDirPath
-  exists <- doesFileExist configPath
-  unless exists (copyFile defaultConfigPath configPath)
-  decoded <- decodeUtf configPath
+  exists <- doesFileExist path
+  unless exists (copyFile defaultConfigPath path)
+  decoded <- decodeUtf path
   mkConfig'
     []
     [ Cli.fromConfig,
@@ -103,3 +103,22 @@ fromClock (Clock.ClockConfig a b c d e f) = ClockConfig (realToFrac a) (realToFr
 
 toClock :: ClockConfig -> Clock.ClockConfig
 toClock (ClockConfig a b c d e f) = Clock.ClockConfig (realToFrac a) (realToFrac b) c d (fromIntegral e) f
+
+configPath :: IO String
+configPath = do
+  home <- getHomeDirectory
+  path <- (home <>) <$> encodeUtf "/.config/zwirn-editor/config.yaml"
+  exists <- doesFileExist path
+  decoded <- decodeUtf path
+  if exists then return decoded else return "Config file not found!"
+
+resetConfig :: IO String
+resetConfig = do
+  curr <- getCurrentDirectory
+  home <- getHomeDirectory
+  configDirPath <- (home <>) <$> encodeUtf "/.config/zwirn-editor/"
+  path <- (home <>) <$> encodeUtf "/.config/zwirn-editor/config.yaml"
+  defaultConfigPath <- (curr <>) <$> encodeUtf "/static/config.yaml"
+  createDirectoryIfMissing True configDirPath
+  copyFile defaultConfigPath path
+  return "Restored default config."

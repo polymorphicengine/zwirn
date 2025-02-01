@@ -69,7 +69,7 @@ data CurrentBlock
 
 data ConfigEnv
   = ConfigEnv
-  { cSetConfig :: String -> String -> IO (Either String String),
+  { cConfigPath :: IO String,
     cResetConfig :: IO String
   }
 
@@ -330,16 +330,12 @@ resetConfigAction = do
     Nothing -> throw "Configuration not available."
     Just (ConfigEnv _ reset) -> liftIO reset
 
-setConfigAction :: Text -> Text -> CI String
-setConfigAction key val = do
+getConfigPathAction :: CI String
+getConfigPathAction = do
   (Environment {confEnv = mayEnv}) <- get
   case mayEnv of
     Nothing -> throw "Configuration not available."
-    Just (ConfigEnv setConf _) -> do
-      ac <- liftIO $ setConf (unpack key) (unpack val)
-      case ac of
-        Left err -> throw err
-        Right t -> return t
+    Just (ConfigEnv path _) -> liftIO path
 
 runAction :: Bool -> Action -> CI String
 runAction b (StreamAction i t) = streamAction b i t >> return ""
@@ -351,7 +347,7 @@ runAction b (Def d) = defAction b d >> return ""
 runAction _ (Type t) = typeAction t
 runAction _ (Load p) = loadAction p >> return ""
 runAction _ (Info p) = infoAction p
-runAction _ (Config k v) = setConfigAction k v
+runAction _ ConfigPath = getConfigPathAction
 runAction _ ResetConfig = resetConfigAction
 
 runActions :: Bool -> [Action] -> CI String
