@@ -25,12 +25,16 @@ import Control.Concurrent.MVar (newMVar)
 import Control.Monad (void)
 import Data.IORef (newIORef)
 import qualified Data.Map as Map
+import Data.Text (pack)
 import Editor.Backend
 import Editor.Config
 import Editor.Frontend
 import Editor.Highlight (highlightLoop, toggleHighlight)
 import Editor.UI
+import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core as C hiding (defaultConfig, text)
+import System.Directory.OsPath (doesDirectoryExist, doesFileExist, listDirectory)
+import System.OsPath (decodeUtf, encodeUtf)
 import Zwirn.Language.Builtin.Prelude
 import Zwirn.Language.Compiler
 import Zwirn.Stream
@@ -44,7 +48,7 @@ setup config win = void $ do
 
   setupHighlight config str
 
-  setupBackend str
+  setupBackend (fullConfigEditor config) str
   addFileInputAndSettings
   makeEditor "editor0"
 
@@ -64,12 +68,14 @@ setupHighlight config str = do
   createHaskellFunction "toggleHighlight" (runUI win $ toggleHighlight boolMV bufMV)
   (if editorConfigHighlight $ fullConfigEditor config then return () else toggleHighlight boolMV bufMV)
 
-setupBackend :: Stream -> UI ()
-setupBackend str = do
+setupBackend :: EditorConfig -> Stream -> UI ()
+setupBackend config str = do
   win <- askWindow
   let env = Environment str builtinEnvironment (Just $ ConfigEnv configPath resetConfig) Nothing
 
-  envMV <- liftIO $ newMVar env
+  bootEnv <- checkBoot config env
+
+  envMV <- liftIO $ newMVar bootEnv
 
   createHaskellFunction "evalBlockAtCursor" (\cm -> runUI win $ evalContentAtCursor EvalBlock cm envMV)
   createHaskellFunction "evalLineAtCursor" (\cm -> runUI win $ evalContentAtCursor EvalLine cm envMV)
@@ -96,3 +102,27 @@ addFileInputAndSettings = do
       #+ [ fileInput,
            tidalSettings
          ]
+
+checkBoot :: EditorConfig -> Environment -> UI Environment
+checkBoot (EditorConfig _ _ "") env = return env
+checkBoot (EditorConfig _ _ path) env = do
+  ospath <- encodeUtf path
+  isfile <- liftIO $ doesFileExist ospath
+  ps <-
+    if isfile
+      then return $ decodeUtf ospath
+      else do
+        isfolder <- liftIO $ doesDirectoryExist ospath
+        if isfolder
+          then do
+            pss <- liftIO $ listDirectory ospath
+            fs <- mapM decodeUtf pss
+            return $ map (\f -> path ++ "/" ++ f) fs
+          else return []
+  res <- liftIO $ runCI env (compilerInterpreterBoot $ map pack ps)
+  case res of
+    Left (CIError err newEnv) -> getOutputEl # set UI.text ("Error in Bootfile: " ++ err) >> return newEnv
+    Right newEnv ->
+      if ps /= []
+        then getOutputEl # set UI.text ("Successfully loaded Bootfiles from " ++ path) >> return newEnv
+        else getOutputEl # set UI.text ("No Bootfiles found at " ++ path) >> return newEnv

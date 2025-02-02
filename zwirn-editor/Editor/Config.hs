@@ -35,7 +35,8 @@ import Zwirn.Stream
 
 data EditorConfig = EditorConfig
   { editorConfigPort :: Int,
-    editorConfigHighlight :: Bool
+    editorConfigHighlight :: Bool,
+    editorConfigBootPath :: FilePath
   }
   deriving (Generic)
 
@@ -60,7 +61,7 @@ instance DefaultConfig StreamConfig where
   configDef = StreamConfig 57120 "127.0.0.1"
 
 instance DefaultConfig EditorConfig where
-  configDef = EditorConfig 8000 False
+  configDef = EditorConfig 8000 False ""
 
 instance DefaultConfig ClockConfig where
   configDef = fromClock Clock.defaultConfig
