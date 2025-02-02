@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module CI.Setup (setup) where
 
 {-
@@ -23,6 +21,9 @@ module CI.Setup (setup) where
 import CI.Config
 import Control.Concurrent.MVar (newMVar)
 import qualified Data.Map as Map
+import qualified Data.Text as T
+import System.Directory.OsPath
+import System.OsPath
 import Zwirn.Language.Builtin.Prelude
 import Zwirn.Language.Compiler
 import Zwirn.Stream
@@ -30,7 +31,8 @@ import Zwirn.Stream
 setup :: FullConfig -> IO Environment
 setup config = do
   str <- setupStream config
-  return $ getInitialEnv str
+  let initE = getInitialEnv str
+  checkBoot (fullConfigCi config) initE
 
 setupStream :: FullConfig -> IO Stream
 setupStream config = do
@@ -40,3 +42,27 @@ setupStream config = do
 
 getInitialEnv :: Stream -> Environment
 getInitialEnv str = Environment str builtinEnvironment (Just $ ConfigEnv configPath resetConfig) Nothing
+
+checkBoot :: CiConfig -> Environment -> IO Environment
+checkBoot (CiConfig "") env = return env
+checkBoot (CiConfig path) env = do
+  ospath <- encodeUtf path
+  isfile <- doesFileExist ospath
+  ps <-
+    if isfile
+      then return $ decodeUtf ospath
+      else do
+        isfolder <- doesDirectoryExist ospath
+        if isfolder
+          then do
+            pss <- listDirectory ospath
+            fs <- mapM decodeUtf pss
+            return $ map (\f -> path ++ "/" ++ f) fs
+          else return []
+  res <- runCI env (compilerInterpreterBoot $ map T.pack ps)
+  case res of
+    Left (CIError err newEnv) -> print ("Error in Bootfile: " ++ err) >> return newEnv
+    Right newEnv ->
+      if ps /= []
+        then print ("Successfully loaded Bootfiles from " ++ path) >> return newEnv
+        else print ("No Bootfiles found at " ++ path) >> return newEnv

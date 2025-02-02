@@ -50,11 +50,20 @@ data ClockConfig = ClockConfig
   }
   deriving (Generic)
 
+newtype CiConfig = CiConfig
+  { ciConfigBootPath :: FilePath
+  }
+  deriving (Generic)
+
 data FullConfig = FullConfig
-  { fullConfigClock :: ClockConfig,
+  { fullConfigCi :: CiConfig,
+    fullConfigClock :: ClockConfig,
     fullConfigStream :: StreamConfig
   }
   deriving (Generic)
+
+instance DefaultConfig CiConfig where
+  configDef = CiConfig ""
 
 instance DefaultConfig StreamConfig where
   configDef = StreamConfig 57120 "127.0.0.1"
@@ -63,7 +72,9 @@ instance DefaultConfig ClockConfig where
   configDef = fromClock Clock.defaultConfig
 
 instance DefaultConfig FullConfig where
-  configDef = FullConfig configDef configDef
+  configDef = FullConfig configDef configDef configDef
+
+instance FromConfig CiConfig
 
 instance FromConfig StreamConfig
 

@@ -262,7 +262,7 @@ loadAction :: Text -> CI ()
 loadAction path = do
   mayfile <- liftIO ((try $ readFile $ unpack path) :: IO (Either SomeException Text))
   case mayfile of
-    Left _ -> throw "file note found"
+    Left _ -> throw "file not found"
     Right input -> do
       blocks <- runBlocks 0 input
       let sorted = sortOn (\(Block x _ _) -> x) blocks

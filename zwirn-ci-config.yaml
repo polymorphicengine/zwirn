@@ -1,3 +1,6 @@
+ci:
+  bootPath: ""
+
 stream:
   port: 57120
   address: "127.0.0.1"
