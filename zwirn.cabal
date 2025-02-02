@@ -76,3 +76,29 @@ executable zwirn-editor
     default-language: Haskell2010
     ghc-options: -threaded
                  -Wall
+
+executable zwirn-ci
+    main-is:          Main.hs
+    other-modules:    CI.Backend
+                      CI.Setup
+                      CI.Config
+    build-depends:    base >= 4.19,
+                      haskeline,
+                      text,
+                      mtl,
+                      file-embed,
+                      file-io,
+                      containers,
+                      bytestring,
+                      tidal-link,
+                      zwirn,
+                      exceptions,
+                      filepath,
+                      directory,
+                      conferer,
+                      conferer-yaml,
+                      zwirn-core
+    hs-source-dirs:   zwirn-ci
+    default-language: Haskell2010
+    ghc-options: -threaded
+                 -Wall
