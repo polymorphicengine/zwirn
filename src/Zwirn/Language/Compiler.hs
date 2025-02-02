@@ -8,9 +8,12 @@
 module Zwirn.Language.Compiler
   ( ConfigEnv (..),
     Environment (..),
+    CI,
+    CIMessage (..),
     CIError (..),
     CurrentBlock (..),
     Stream,
+    compilerInterpreterBasic,
     compilerInterpreterBlock,
     compilerInterpreterLine,
     compilerInterpreterWhole,
@@ -82,13 +85,23 @@ data Environment
   }
 
 data CIError
-  = CIError String (Maybe CurrentBlock)
-  deriving (Eq, Show)
+  = CIError
+  { eError :: String,
+    eEnv :: Environment
+  }
 
-type CI a = StateT Environment (ExceptT CIError IO) a
+instance Show CIError where
+  show (CIError err _) = err
+
+type CI = StateT Environment (ExceptT CIError IO)
 
 runCI :: Environment -> CI a -> IO (Either CIError a)
 runCI env m = runExceptT $ evalStateT m env
+
+compilerInterpreterBasic :: Text -> CI String
+compilerInterpreterBasic input = do
+  as <- runParser input
+  runActions True as
 
 compilerInterpreterBlock :: Int -> Int -> Text -> CI (String, Environment, Int, Int)
 compilerInterpreterBlock line editor input = do
@@ -133,8 +146,8 @@ compilerInterpreterBoot ps = runActions False (map Load ps) >> get
 
 throw :: String -> CI a
 throw err = do
-  Environment {currBlock = b} <- get
-  throwError $ CIError err b
+  env <- get
+  throwError $ CIError err env
 
 setCurrentBlock :: Int -> Int -> CI ()
 setCurrentBlock st en = modify (\env -> env {currBlock = Just $ CurrentBlock st en})

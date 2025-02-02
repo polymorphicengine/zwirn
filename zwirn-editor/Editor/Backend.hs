@@ -18,19 +18,14 @@ module Editor.Backend where
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 -}
 
-import Control.Monad  (void)
-
-import Control.Concurrent.MVar  (MVar, putMVar, takeMVar)
-
+import Control.Concurrent.MVar (MVar, putMVar, takeMVar)
+import Control.Monad (void)
+import Data.Text (pack)
+import Editor.UI
 import Foreign.JavaScript (JSObject)
-
 import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core as C hiding (text)
-
-import Editor.UI
 import Zwirn.Language.Compiler
-
-import Data.Text (pack)
 
 data EvalMode
   = EvalBlock
@@ -40,29 +35,30 @@ data EvalMode
 
 evalContentAtCursor :: EvalMode -> JSObject -> MVar Environment -> UI ()
 evalContentAtCursor mode cm envMV = do
-                line <- getCursorLine cm
-                evalContentAtLine mode cm line envMV
+  line <- getCursorLine cm
+  evalContentAtLine mode cm line envMV
 
 evalContentAtLine :: EvalMode -> JSObject -> Int -> MVar Environment -> UI ()
 evalContentAtLine mode cm line envMV = do
-                editorContent <- getValue cm
-                editorNum <- getEditorNumber cm
-                out <- getOutputEl
-                env <- liftIO $ takeMVar envMV
-                let ci = case mode of
-                            EvalBlock -> compilerInterpreterBlock line editorNum (pack editorContent)
-                            EvalLine -> compilerInterpreterLine line editorNum (pack editorContent)
-                            EvalWhole -> compilerInterpreterWhole editorNum (pack editorContent)
-                res <- liftIO $ runCI env ci
-                case res of
-                      Left (CIError err (Just (CurrentBlock st end))) -> do
-                                          flashError cm st end
-                                          void $ element out # set UI.text err  --TODO: get block start and end for flashing error
-                                          liftIO $ putMVar envMV env
-                      Left (CIError err Nothing) -> do
-                                          void $ element out # set UI.text err  --TODO: get block start and end for flashing error
-                                          liftIO $ putMVar envMV env
-                      Right (resp, newEnv, st, end) -> do
-                                          flashSuccess cm st end
-                                          _ <- element out # set UI.text resp
-                                          liftIO $ putMVar envMV newEnv
+  editorContent <- getValue cm
+  editorNum <- getEditorNumber cm
+  out <- getOutputEl
+  env <- liftIO $ takeMVar envMV
+  let ci = case mode of
+        EvalBlock -> compilerInterpreterBlock line editorNum (pack editorContent)
+        EvalLine -> compilerInterpreterLine line editorNum (pack editorContent)
+        EvalWhole -> compilerInterpreterWhole editorNum (pack editorContent)
+  res <- liftIO $ runCI env ci
+  case res of
+    Left (CIError err newenv) -> case currBlock newenv of
+      Just (CurrentBlock st end) -> do
+        flashError cm st end
+        void $ element out # set UI.text err -- TODO: get block start and end for flashing error
+        liftIO $ putMVar envMV newenv
+      Nothing -> do
+        void $ element out # set UI.text err -- TODO: get block start and end for flashing error
+        liftIO $ putMVar envMV newenv
+    Right (resp, newEnv, st, end) -> do
+      flashSuccess cm st end
+      _ <- element out # set UI.text resp
+      liftIO $ putMVar envMV newEnv
