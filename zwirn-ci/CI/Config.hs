@@ -66,7 +66,7 @@ instance DefaultConfig CiConfig where
   configDef = CiConfig ""
 
 instance DefaultConfig StreamConfig where
-  configDef = StreamConfig 57120 "127.0.0.1"
+  configDef = StreamConfig 57120 57110 "127.0.0.1"
 
 instance DefaultConfig ClockConfig where
   configDef = fromClock Clock.defaultConfig

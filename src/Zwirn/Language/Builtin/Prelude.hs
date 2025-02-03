@@ -115,7 +115,11 @@ coreFunctions =
       "zip"
         === toExp (zipApply :: Zwirn (Zwirn Expression -> Zwirn Expression) -> Zwirn Expression -> Zwirn Expression)
         <:: "(a -> b) -> a -> b"
-        --| "map a function over the structure of the argument"
+        --| "map a function over the structure of the argument",
+      "bus"
+        === toExp (id :: Zwirn Expression -> Zwirn Expression)
+        <:: "Number -> Bus"
+        --| "controlbus"
     ]
 
 numberFunctions :: Map.Map Text AnnotatedExpression

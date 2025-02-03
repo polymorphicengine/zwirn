@@ -102,6 +102,7 @@ import Zwirn.Language.Block
   textT           { L.RangedToken L.TextToken _ }
   numT            { L.RangedToken L.NumberToken _ }
   mapT            { L.RangedToken L.MapToken _ }
+  busT            { L.RangedToken L.BusToken _ }
   varT            { L.RangedToken (L.VarToken _) _ }
   classT          { L.RangedToken (L.TypeClass _) _ }
 
@@ -270,15 +271,16 @@ blocks :: { [Block] }
   | blocksrec some(bsep)                        { $1 }
   | blocksrec                                   { $1 }
 
+-------------------------------------------------------------
+----------------------- parsing types -----------------------
+-------------------------------------------------------------
+
 atomType :: { Type }
   : textT                                       { TypeCon "Text" }
   | numT                                        { TypeCon "Number" }
   | mapT                                        { TypeCon "Map" }
+  | busT                                        { TypeCon "Bus" }
   | varT                                        { TypeVar (unTok $1) }
-
--------------------------------------------------------------
------------------------ parsing types -----------------------
--------------------------------------------------------------
 
 fullType :: { Type }
   : atomType                                    { $1 }

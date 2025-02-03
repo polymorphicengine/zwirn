@@ -48,6 +48,7 @@ import Control.Monad.State
 import Data.List (sortOn)
 import Data.Text (Text, unpack)
 import Data.Text.IO (readFile)
+import Text.Read (readMaybe)
 import Zwirn.Core.Types (silence)
 import Zwirn.Language.Block
 import Zwirn.Language.Environment
@@ -290,7 +291,17 @@ streamAction ctx key t = do
           str <- gets tStream
           liftIO $ streamReplace str key (fromExp exCtx)
       )
-    else throw "Can only stream base types!"
+    else
+      if isBus ty
+        then
+          ( do
+              str <- gets tStream
+              let mayindex = readMaybe $ unpack key
+              case mayindex of
+                Just ind -> liftIO $ streamReplaceBus str ind (fromExp exCtx)
+                Nothing -> throw "Please use an integer as bus index"
+          )
+        else throw "Can only stream base types!"
 
 streamSetAction :: Bool -> Text -> Term -> CI ()
 streamSetAction ctx x t = do

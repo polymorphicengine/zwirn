@@ -58,7 +58,7 @@ data FullConfig = FullConfig
   deriving (Generic)
 
 instance DefaultConfig StreamConfig where
-  configDef = StreamConfig 57120 "127.0.0.1"
+  configDef = StreamConfig 57120 57110 "127.0.0.1"
 
 instance DefaultConfig EditorConfig where
   configDef = EditorConfig 8000 False ""

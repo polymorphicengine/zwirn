@@ -76,6 +76,7 @@ tokens :-
 <ty> "Text"                        { tok TextToken }
 <ty> "Number"                      { tok NumberToken }
 <ty> "Map"                         { tok MapToken }
+<ty> "Bus"                         { tok BusToken }
 <ty> @id                           { tokText VarToken }
 <ty> [A-Z] $alphasmall+            { tokText TypeClass }
 <ty> @id                           { tokText Identifier }
@@ -247,6 +248,7 @@ data Token
   | TextToken
   | NumberToken
   | MapToken
+  | BusToken
   | VarToken Text
   | TypeClass Text
   -- EOF
