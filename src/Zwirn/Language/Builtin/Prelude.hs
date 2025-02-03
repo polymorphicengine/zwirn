@@ -119,7 +119,11 @@ coreFunctions =
       "bus"
         === toExp (id :: Zwirn Expression -> Zwirn Expression)
         <:: "Number -> Bus"
-        --| "controlbus"
+        --| "controlbus",
+      "recv"
+        === toExp (toExp recv)
+        <:: "Text -> Number -> Map"
+        --| "recieve a value from a bus and send it to the given parameter"
     ]
 
 numberFunctions :: Map.Map Text AnnotatedExpression

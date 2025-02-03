@@ -1,6 +1,5 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# OPTIONS_GHC -Wno-incomplete-uni-patterns #-}
 {-# OPTIONS_GHC -Wno-unused-top-binds #-}
@@ -26,8 +25,9 @@ module Zwirn.Language.Evaluate.Internal where
 -}
 
 import qualified Data.Map as Map
-import Data.Text (Text)
+import Data.Text (Text, pack)
 import Zwirn.Core.Core (withState, (<$$>))
+import Zwirn.Core.Map
 import Zwirn.Core.State
 import Zwirn.Core.Types
 import Zwirn.Language.Evaluate.Convert
@@ -70,3 +70,6 @@ modifyState kz fz xz = modifyState' <$> kz <*> fz <$$> xz
 
 setState :: Zwirn Text -> Zwirn Expression -> Zwirn Expression -> Zwirn Expression
 setState t x = setMap t (pure $ EZwirn x)
+
+recv :: Zwirn Text -> Zwirn Int -> Zwirn ExpressionMap
+recv t i = singleton t (fmap (toExp . (\x -> pack $ "c" ++ show x)) i)
