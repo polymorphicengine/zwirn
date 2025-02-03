@@ -107,13 +107,14 @@ startStream config zMV stMV conf = do
 
 tickAction :: MVar PlayMap -> MVar BusMap -> MVar ExpressionMap -> MVar [Int] -> RemoteAddress -> RemoteAddress -> O.Udp -> (Time, Time) -> Double -> ClockConfig -> ClockRef -> (SessionState, SessionState) -> IO ()
 tickAction zMV busMapMV stMV bussesMV remote remoteBus local (star, end) nudge cconf cref (ss, _) = do
-  vs <- processPlayMap (star, end) zMV stMV
+  cps <- Clock.getCPS cconf cref
+  vs <- processPlayMap (star, end) cps zMV stMV
   bs <- processBusMap (star, end) busMapMV stMV bussesMV
   mapM_ (processAndSend remote local nudge cconf cref ss) vs
   mapM_ (processAndSend remoteBus local nudge cconf cref ss) bs
 
-processPlayMap :: (Time, Time) -> MVar PlayMap -> MVar ExpressionMap -> IO [(Z.Time, O.Message)]
-processPlayMap (star, end) zMV stMV = do
+processPlayMap :: (Time, Time) -> Time -> MVar PlayMap -> MVar ExpressionMap -> IO [(Z.Time, O.Message)]
+processPlayMap (star, end) cps zMV stMV = do
   pm <- readMVar zMV
   let p = playMapToCord pm
   st <- readMVar stMV
@@ -124,7 +125,7 @@ processPlayMap (star, end) zMV stMV = do
   -- TODO: what about race conditions?
   updateState stMV sts
 
-  return $ (\(t, ex) -> (t, expressionToMessage (fromIntegral $ floor t) ex)) <$> vs
+  return $ (\(t, ex) -> (t, expressionToMessage (fromIntegral $ floor t) (realToFrac cps) ex)) <$> vs
 
 processBusMap :: (Time, Time) -> MVar BusMap -> MVar ExpressionMap -> MVar [Int] -> IO [(Z.Time, O.Message)]
 processBusMap (star, end) busMV stMV bussesMV = do
@@ -156,11 +157,11 @@ expressionToOSC (EText n) = [O.string $ T.unpack n]
 expressionToOSC (EMap m) = concatMap (\(k, v) -> O.string (T.unpack k) : expressionToOSC v) $ Map.toList m
 expressionToOSC _ = []
 
-additionalData :: Double -> [O.Datum]
-additionalData cyc = [O.string "cps", O.float 0.5625, O.string "cycle", O.float cyc]
+additionalData :: Double -> Double -> [O.Datum]
+additionalData cyc cps = [O.string "cps", O.float cps, O.string "cycle", O.float cyc]
 
-expressionToMessage :: Double -> Expression -> O.Message
-expressionToMessage cyc ex = O.message "/dirt/play" (additionalData cyc ++ expressionToOSC ex)
+expressionToMessage :: Double -> Double -> Expression -> O.Message
+expressionToMessage cyc cps ex = O.message "/dirt/play" (additionalData cyc cps ++ expressionToOSC ex)
 
 busExpressionToMessage :: Int -> Expression -> O.Message
 busExpressionToMessage bus ex = O.message "/c_set" (O.int32 bus : expressionToOSC ex)
