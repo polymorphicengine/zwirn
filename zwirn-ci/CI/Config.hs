@@ -52,7 +52,8 @@ data ClockConfig = ClockConfig
 
 data CiConfig = CiConfig
   { ciConfigBootPath :: FilePath,
-    ciConfigDocumentation :: Bool
+    ciConfigDocumentation :: Bool,
+    ciConfigListener :: Bool
   }
   deriving (Generic)
 
@@ -64,7 +65,7 @@ data FullConfig = FullConfig
   deriving (Generic)
 
 instance DefaultConfig CiConfig where
-  configDef = CiConfig "" False
+  configDef = CiConfig "" False False
 
 instance DefaultConfig StreamConfig where
   configDef = StreamConfig 57120 57110 "127.0.0.1"

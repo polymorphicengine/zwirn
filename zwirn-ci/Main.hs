@@ -21,6 +21,7 @@ module Main where
 import CI.Backend
 import CI.Config
 import CI.Documentation
+import CI.Listener
 import CI.Setup
 import Conferer as Conf
 import Control.Monad (when)
@@ -34,4 +35,12 @@ main = do
   fullConfig <- Conf.fetch config
   when (ciConfigDocumentation $ fullConfigCi fullConfig) generateDocumentation
   env <- setup fullConfig
-  runZwirnCI env evalInputLoop
+  if listenerMode fullConfig
+    then listenerStartMessage >> runListener env
+    else runZwirnCI env evalInputLoop
+
+listenerMode :: FullConfig -> Bool
+listenerMode = ciConfigListener . fullConfigCi
+
+generateDocs :: FullConfig -> Bool
+generateDocs = ciConfigDocumentation . fullConfigCi

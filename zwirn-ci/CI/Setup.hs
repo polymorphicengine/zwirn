@@ -44,8 +44,8 @@ getInitialEnv :: Stream -> Environment
 getInitialEnv str = Environment str builtinEnvironment (Just $ ConfigEnv configPath resetConfig) Nothing
 
 checkBoot :: CiConfig -> Environment -> IO Environment
-checkBoot (CiConfig "" _) env = return env
-checkBoot (CiConfig path _) env = do
+checkBoot (CiConfig "" _ _) env = return env
+checkBoot (CiConfig path _ _) env = do
   ospath <- encodeUtf path
   isfile <- doesFileExist ospath
   ps <-
@@ -61,8 +61,8 @@ checkBoot (CiConfig path _) env = do
           else return []
   res <- runCI env (compilerInterpreterBoot $ map T.pack ps)
   case res of
-    Left (CIError err newEnv) -> print ("Error in Bootfile: " ++ err) >> return newEnv
+    Left (CIError err newEnv) -> putStrLn ("Error in Bootfile: " ++ err) >> return newEnv
     Right newEnv ->
       if ps /= []
-        then print ("Successfully loaded Bootfiles from " ++ path) >> return newEnv
-        else print ("No Bootfiles found at " ++ path) >> return newEnv
+        then putStrLn ("Successfully loaded Bootfiles from " ++ path) >> return newEnv
+        else putStrLn ("No Bootfiles found at " ++ path) >> return newEnv

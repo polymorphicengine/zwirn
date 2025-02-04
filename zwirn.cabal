@@ -83,6 +83,7 @@ executable zwirn-ci
                       CI.Setup
                       CI.Config
                       CI.Documentation
+                      CI.Listener
     build-depends:    base >= 4.19,
                       haskeline,
                       text,
@@ -93,6 +94,8 @@ executable zwirn-ci
                       bytestring,
                       tidal-link,
                       zwirn,
+                      hosc,
+                      network,
                       exceptions,
                       filepath,
                       directory,
