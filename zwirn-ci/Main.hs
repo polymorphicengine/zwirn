@@ -20,8 +20,10 @@ module Main where
 
 import CI.Backend
 import CI.Config
+import CI.Documentation
 import CI.Setup
 import Conferer as Conf
+import Control.Monad (when)
 import System.IO (BufferMode (..), hSetBuffering, stdin, stdout)
 
 main :: IO ()
@@ -30,5 +32,6 @@ main = do
   hSetBuffering stdin NoBuffering
   config <- getConfig
   fullConfig <- Conf.fetch config
+  when (ciConfigDocumentation $ fullConfigCi fullConfig) generateDocumentation
   env <- setup fullConfig
   runZwirnCI env evalInputLoop

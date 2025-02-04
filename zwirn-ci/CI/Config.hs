@@ -50,8 +50,9 @@ data ClockConfig = ClockConfig
   }
   deriving (Generic)
 
-newtype CiConfig = CiConfig
-  { ciConfigBootPath :: FilePath
+data CiConfig = CiConfig
+  { ciConfigBootPath :: FilePath,
+    ciConfigDocumentation :: Bool
   }
   deriving (Generic)
 
@@ -63,7 +64,7 @@ data FullConfig = FullConfig
   deriving (Generic)
 
 instance DefaultConfig CiConfig where
-  configDef = CiConfig ""
+  configDef = CiConfig "" False
 
 instance DefaultConfig StreamConfig where
   configDef = StreamConfig 57120 57110 "127.0.0.1"
@@ -95,8 +96,7 @@ getConfig = do
     []
     [ Cli.fromConfig,
       Env.fromConfig "zwirn",
-      Yaml.fromFilePath decoded,
-      Yaml.fromFilePath "./static/config.yaml"
+      Yaml.fromFilePath decoded
     ]
 
 fromClock :: Clock.ClockConfig -> ClockConfig

@@ -12,13 +12,11 @@ data AnnotatedExpression
     aType :: Scheme,
     aDesc :: Maybe Text
   }
-  deriving (Show)
 
 data InterpreterEnv = IEnv
   { eExpressions :: Map.Map Text AnnotatedExpression,
     eInstances :: [Instance]
   }
-  deriving (Show)
 
 withExpressions :: (Map.Map Text AnnotatedExpression -> Map.Map Text AnnotatedExpression) -> InterpreterEnv -> InterpreterEnv
 withExpressions f (IEnv l i) = IEnv (f l) i

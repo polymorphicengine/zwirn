@@ -1,10 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module Zwirn.Language.Builtin.Prelude
-  ( builtinEnvironment,
-  )
-where
+module Zwirn.Language.Builtin.Prelude where
 
 {-
     Builtin.hs - defines builtin functions
@@ -437,23 +434,23 @@ conditionalFunctions =
       "not"
         === toExp (Z.not :: Zwirn Bool -> Zwirn Bool)
         <:: "Number -> Number"
-        --| "equality",
+        --| "logical not",
       "&&"
         === toExp (Z.and :: Zwirn Bool -> Zwirn Bool -> Zwirn Bool)
         <:: "Number -> Number -> Number"
-        --| "greater or equal",
+        --| "logical and",
       "||"
         === toExp (Z.or :: Zwirn Bool -> Zwirn Bool -> Zwirn Bool)
         <:: "Number -> Number -> Number"
-        --| "less or equal",
+        --| "logical or",
       "ifthen"
         === toExp (ifthen :: Zwirn Bool -> Zwirn Expression -> Zwirn Expression -> Zwirn Expression)
         <:: "Number -> a -> a -> a"
-        --| "less",
+        --| "choose between two expressions based on a condition",
       "if"
         === toExp (iff :: Zwirn Bool -> Zwirn Expression -> Zwirn Expression)
         <:: "Number -> a -> a"
-        --| "greater",
+        --| "if condition is true produce the value, silence otherwise",
       "while"
         === toExp (while :: Zwirn Bool -> Zwirn (Zwirn Expression -> Zwirn Expression) -> Zwirn Expression -> Zwirn Expression)
         <:: "Number -> (a -> a) -> a -> a"

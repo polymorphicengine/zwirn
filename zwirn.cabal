@@ -82,6 +82,7 @@ executable zwirn-ci
     other-modules:    CI.Backend
                       CI.Setup
                       CI.Config
+                      CI.Documentation
     build-depends:    base >= 4.19,
                       haskeline,
                       text,

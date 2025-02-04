@@ -44,8 +44,8 @@ getInitialEnv :: Stream -> Environment
 getInitialEnv str = Environment str builtinEnvironment (Just $ ConfigEnv configPath resetConfig) Nothing
 
 checkBoot :: CiConfig -> Environment -> IO Environment
-checkBoot (CiConfig "") env = return env
-checkBoot (CiConfig path) env = do
+checkBoot (CiConfig "" _) env = return env
+checkBoot (CiConfig path _) env = do
   ospath <- encodeUtf path
   isfile <- doesFileExist ospath
   ps <-
