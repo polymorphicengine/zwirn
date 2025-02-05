@@ -1,4 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
 module Zwirn.Language.Syntax where
 
 {-
@@ -26,11 +25,15 @@ type Var = Text
 
 type OperatorSymbol = Text
 
-data Position = Pos { pLine :: Int
-                    , pStart :: Int
-                    , pEnd :: Int
-                    , pEditor :: Int
-                    } deriving (Eq, Show)
+data Position = Pos
+  { pLine :: Int,
+    pStart :: Int,
+    pEnd :: Int,
+    pEditor :: Int
+  }
+  deriving (Eq, Show)
+
+data EnumKind = Cord | Choice | Run | Alt deriving (Eq, Show)
 
 -- sugary representation of patterns
 data Term
@@ -38,18 +41,20 @@ data Term
   | TText Position Text
   | TNum Position Text
   | TRest
-  | TElong Term (Maybe Int)
   | TRepeat Term (Maybe Int)
   | TSeq [Term]
   | TStack [Term]
   | TAlt [Term]
   | TChoice Int [Term]
-  | TEuclid Term Term Term (Maybe Term)
   | TPoly Term Term
   | TLambda [Text] Term
   | TApp Term Term
   | TInfix Term Text Term
+  | TSectionR Text Term
+  | TSectionL Term Text
   | TBracket Term
+  | TEnum EnumKind Term Term
+  | TEnumThen EnumKind Term Term Term
   deriving (Eq, Show)
 
 data Def
@@ -62,17 +67,17 @@ data Tempo
   deriving (Eq, Show)
 
 data Action
-  = Stream Text Term
+  = StreamAction Text Term
   | StreamSet Text Term
   | StreamOnce Term
-  | StreamSetTempo Tempo Term
-  | Config Text Text
+  | StreamSetTempo Tempo Text
+  | ConfigPath
   | ResetConfig
   | Def Def
   | Type Term
   | Show Term
   | Load Text
-  | JS Term
+  | Info Text
   deriving (Eq, Show)
 
 data Associativity

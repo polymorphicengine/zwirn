@@ -1,9 +1,9 @@
 module Main where
 
-import Zwirn.Language.Parser
 import Data.Text (pack)
-import System.Process
 import System.IO
+import System.Process
+import Zwirn.Language.Parser
 
 {-
     gen/Main.hs - short script for automatically generating the
@@ -27,7 +27,7 @@ import System.IO
 
 main :: IO ()
 main = do
-  (Just hin, Just hout, _, ph) <- createProcess (shell "ghci -v0") { std_in = CreatePipe, std_out = CreatePipe }
+  (Just hin, Just hout, _, ph) <- createProcess (shell "ghci -v0") {std_in = CreatePipe, std_out = CreatePipe}
   hSetBuffering hin LineBuffering
   hPutStrLn hin $ "import qualified Prelude as P ()"
   hPutStrLn hin $ "import Zwirn.Interactive"
@@ -35,8 +35,8 @@ main = do
   hPutStrLn hin $ ":q"
   x <- hGetContents hout
   waitForProcess ph
-  --putStrLn x
-  --x <- readFile "/home/martin/Schreibtisch/zwirn/browse.txt"
+  -- putStrLn x
+  -- x <- readFile "/home/martin/Schreibtisch/zwirn/browse.txt"
   case parseTypeDecls (pack x) of
     Left err -> putStrLn err
-    Right xs -> writeFile "/home/martin/Schreibtisch/zwirn/output.txt" $ show xs
+    Right xs -> writeFile "output.txt" $ show xs

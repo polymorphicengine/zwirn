@@ -1,44 +1,20 @@
 cabal-version:      3.0
 name:               zwirn
-
--- The package version.
--- See the Haskell package versioning policy (PVP) for standards
--- guiding when and how versions should be incremented.
--- https://pvp.haskell.org
--- PVP summary:     +-+------- breaking API changes
---                  | | +----- non-breaking API additions
---                  | | | +--- code changes with no API change
 version:            0.1.0.0
 license:            GPL-3.0-or-later
 license-file:       LICENSE
 author:             Martin Gius
 maintainer:         gius_martin@yahoo.de
 build-type:         Simple
-extra-doc-files:    CHANGELOG.md, README.md
+extra-doc-files:    README.md
 
 
 library
   hs-source-dirs: src
-  exposed-modules: Zwirn.Interactive.Prelude.Chords
-                   Zwirn.Interactive.Prelude.Core
-                   Zwirn.Interactive.Prelude.Control
-                   Zwirn.Interactive.Prelude.Hydra
-                   Zwirn.Interactive.Prelude.MiniPrelude
-                   Zwirn.Interactive.Prelude.Params
-                   Zwirn.Interactive.Generic
-                   Zwirn.Interactive.Transform
-                   Zwirn.Interactive.Convert
-                   Zwirn.Interactive.Prelude
-                   Zwirn.Interactive.Types
-                   Zwirn.Interactive.HydraT
-                   Zwirn.Interactive.TidalT
-                   Zwirn.Interactive
-                   Zwirn.Language.TypeCheck.Types
-                   Zwirn.Language.TypeCheck.Env
+  exposed-modules: Zwirn.Language.TypeCheck.Types
                    Zwirn.Language.TypeCheck.Constraint
                    Zwirn.Language.TypeCheck.Infer
                    Zwirn.Language.Syntax
-                   Zwirn.Language.Generator
                    Zwirn.Language.Lexer
                    Zwirn.Language.Parser
                    Zwirn.Language.Compiler
@@ -46,26 +22,36 @@ library
                    Zwirn.Language.Simple
                    Zwirn.Language.Pretty
                    Zwirn.Language.Block
-                   Zwirn.Language.Hint
-                   Zwirn.Language.Default
+                   Zwirn.Language.Builtin.Internal
+                   Zwirn.Language.Builtin.Prelude
+                   Zwirn.Language.Builtin.Parameters
+                   Zwirn.Language.Environment
+                   Zwirn.Language.Evaluate
+                   Zwirn.Language.Evaluate.Convert
+                   Zwirn.Language.Evaluate.Expression
+                   Zwirn.Language.Evaluate.SKI
+                   Zwirn.Language.Evaluate.Internal
                    Zwirn.Language
-  build-depends: base,
+                   Zwirn.Stream
+  build-depends: base >= 4.19,
                  array,
                  text,
                  pretty,
                  mtl,
-                 hint,
                  exceptions,
                  filepath,
                  containers,
-                 template-haskell,
-                 tidal == 1.9.2
+                 zwirn-core == 0.1.1.0,
+                 tidal-link,
+                 hosc == 0.21,
+                 network,
+                 bytestring
   build-tool-depends: alex:alex, happy:happy
   default-language: Haskell2010
   ghc-options: -threaded
                -Wall
 
-executable zwirn-interpreter
+executable zwirn-editor
     main-is:          Main.hs
     other-modules:    Editor.Backend
                       Editor.Frontend
@@ -73,32 +59,50 @@ executable zwirn-interpreter
                       Editor.UI
                       Editor.Highlight
                       Editor.Hydra
-                      Editor.CommandLine
-    build-depends:    base,
+                      Editor.Config
+    build-depends:    base >= 4.19,
                       text,
                       containers,
-                      tidal == 1.9.2,
                       tidal-link,
-                      deepseq,
                       zwirn,
                       threepenny-gui,
                       exceptions,
                       filepath,
                       directory,
-                      optparse-applicative
-    hs-source-dirs:   app
+                      conferer,
+                      conferer-yaml,
+                      zwirn-core
+    hs-source-dirs:   zwirn-editor
     default-language: Haskell2010
     ghc-options: -threaded
                  -Wall
-    ld-options: -Wl,-rpath -Wl,$ORIGIN/c-libs
-    if os(darwin)
-       ld-options: -mmacosx-version-min=10.9
 
-executable generate-default
-   main-is:          Main.hs
-   build-depends:    base,
-                     zwirn,
-                     text,
-                     process
-   hs-source-dirs:   gen
-   default-language: Haskell2010
+executable zwirn-ci
+    main-is:          Main.hs
+    other-modules:    CI.Backend
+                      CI.Setup
+                      CI.Config
+                      CI.Documentation
+                      CI.Listener
+    build-depends:    base >= 4.19,
+                      haskeline,
+                      text,
+                      mtl,
+                      file-embed,
+                      file-io,
+                      containers,
+                      bytestring,
+                      tidal-link,
+                      zwirn,
+                      hosc,
+                      network,
+                      exceptions,
+                      filepath,
+                      directory,
+                      conferer,
+                      conferer-yaml,
+                      zwirn-core
+    hs-source-dirs:   zwirn-ci
+    default-language: Haskell2010
+    ghc-options: -threaded
+                 -Wall

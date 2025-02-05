@@ -53,9 +53,9 @@ $alphasmall = [a-z]
 $alpha = [a-zA-Z]
 
 @id = ($alphasmall) ($alpha | $digit | \_ )*
-@singles = ("+" | "&" | "$" | "?" | "-" | "#" | "." | "^")
+@singles = ("&" | "$" | "?" | "#" | "." | "^")
 @otherops = ("|" | "=" | "~" | "<" | ">" | "%")
-@specialop = ("*" | "/" | "'")
+@specialop = ("*" | "/" | "'" | "+" | "-")
 @op = ((@singles (@singles | @otherops | @specialop)*) | ((@otherops | @specialop) (@singles | @otherops | @specialop)+))
 @num = ("-")? ($digit)+ ("." ($digit)+)?
 @path = $white ($alpha | "/" | ".")+
@@ -68,18 +68,17 @@ tokens :-
 
 <ty> $white+ ;
 <ty> $alpha+ "." ;
-<ty> "::"                          { tok DoubleColon }
-<ty> "P"                           { tok PTypeFam }
 <ty> "=>"                          { tok Context }
 <ty> "->"                          { tok Arrow }
 <ty> "("                           { tok LPar }
 <ty> ")"                           { tok RPar }
 <ty> ","                           { tok Comma }
-<ty> "TextPattern"                 { tok TextToken }
-<ty> "NumberPattern"               { tok NumberToken }
-<ty> "ControlPattern"              { tok ControlToken }
-<ty> "Pattern " [a-z]              { tokText (\t -> VarToken $ Text.drop 8 t) }
-<ty> $alpha+ " " [a-z]             { tokText (\t -> TypeClass (Text.take (Text.length t - 2) t) (Text.pack [Text.last t])) }
+<ty> "Text"                        { tok TextToken }
+<ty> "Number"                      { tok NumberToken }
+<ty> "Map"                         { tok MapToken }
+<ty> "Bus"                         { tok BusToken }
+<ty> @id                           { tokText VarToken }
+<ty> [A-Z] $alphasmall+            { tokText TypeClass }
 <ty> @id                           { tokText Identifier }
 <ty> @op                           { tokText Operator }
 <ty> @specialop                    { tokText SpecialOp }
@@ -101,9 +100,6 @@ tokens :-
 <0> "!"               { tok Repeat }
 <0> "!"($digit+)      { tokText (\t -> RepeatNum $ Text.drop 1 t) }
 
--- Elongate
-<0> "@"     { tok Elongate }
-
 -- Parenthesis
 <0> "("     { tok LPar }
 <0> ")"     { tok RPar }
@@ -117,6 +113,9 @@ tokens :-
 
 -- Choice
 <0> "|"     { tok Pipe }
+
+-- Enum
+<0> ".."    { tok Enum }
 
 -- Polyrhythm
 <0> "%"     { tok Poly }
@@ -139,11 +138,14 @@ tokens :-
 <0> ":show"                           { tok ShowA }
 <0> ":config"                         { tok ConfigA }
 <0> ":resetconfig"                    { tok ResetConfigA }
+<0> ":info"                           { tok InfoA }
 <0> (":load") @path                   { tokText (\t -> LoadA $ Text.drop 6 t) }
-<0> ":js"                             { tok JSA }
 
 -- Identifiers
-<0> @id     { tokText Identifier }
+<0> @id             { tokText Identifier }
+
+-- Operator Identifier
+<0> \( @op \)       { tokText (Identifier . rmFirstLast) }
 
 -- Constants
 <0> @num            { tokText Number }
@@ -208,8 +210,6 @@ data Token
   -- Repeat
   | Repeat
   | RepeatNum Text
-  -- Elongation
-  | Elongate
   -- Parenthesis
   | LPar
   | RPar
@@ -231,6 +231,8 @@ data Token
   -- Lambda
   | Lambda
   | Arrow
+  -- Enum
+  | Enum
   -- Actions
   | Colon
   | StreamA
@@ -242,19 +244,18 @@ data Token
   | ResetConfigA
   | Assign
   | LoadA Text
-  | JSA
+  | InfoA
   -- Line & Block Tokens
   | LineT Text
   | BlockSep
   -- Type Tokens
-  | DoubleColon
-  | PTypeFam
   | Context
   | TextToken
   | NumberToken
-  | ControlToken
+  | MapToken
+  | BusToken
   | VarToken Text
-  | TypeClass Text Text
+  | TypeClass Text
   -- EOF
   | EOF
   deriving (Eq)
@@ -268,7 +269,6 @@ instance Show Token where
  show (SpecialOp o) = show o
  show Repeat = quoted "!"
  show (RepeatNum x) = quoted "!" ++ show x
- show Elongate = quoted "@"
  show LPar = quoted "("
  show RPar = quoted ")"
  show LBrack = quoted "["
@@ -283,6 +283,7 @@ instance Show Token where
  show Lambda = quoted "\\"
  show Arrow = quoted "->"
  show Colon = quoted ";"
+ show Enum = quoted ".."
  show StreamA = quoted "<-"
  show TempoCps = ":cps"
  show TempoBpm = ":bpm"
@@ -292,17 +293,16 @@ instance Show Token where
  show ResetConfigA = quoted ":resetconfig"
  show Assign = quoted "="
  show (LoadA x) = ":load " <> show x
- show JSA = quoted ":js"
+ show InfoA = quoted ":info"
  show (LineT t) = "line " <> show t
  show BlockSep = "block"
- show DoubleColon = "::"
- show PTypeFam = "P"
  show Context = "=>"
  show TextToken = "Text"
  show NumberToken = "Number"
- show ControlToken = "ValueMap"
+ show MapToken = "Map"
+ show BusToken = "Bus"
  show (VarToken t) = show t
- show (TypeClass c v) = show c ++ " " ++ show v
+ show (TypeClass c) = show c
  show EOF = "end of file"
 
 quoted :: String -> String
@@ -325,6 +325,9 @@ mkLine inp@(_, _, _, str) len = case Text.all (\c -> elem c ("\n\t " :: String))
 replaceTab :: Char  -> Char
 replaceTab '\t' = ' '
 replaceTab x = x
+
+rmFirstLast :: Text -> Text
+rmFirstLast t = Text.init (Text.tail t)
 
 tok :: Token -> AlexAction RangedToken
 tok ctor inp len =

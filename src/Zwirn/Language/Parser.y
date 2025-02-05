@@ -4,7 +4,7 @@ module Zwirn.Language.Parser
     ( parseActionsWithPos
     , parseActions
     , parseBlocks
-    , parseTypeDecls
+    , parseScheme
     ) where
 
 import           Data.Text (Text)
@@ -44,7 +44,7 @@ import Zwirn.Language.Block
 %name parse term
 %name pActions actions
 %name pBlocks blocks
-%name pTypeDecls typeDecls
+%name pScheme scheme
 %tokentype { L.RangedToken }
 %errorhandlertype explist
 %error { parseError }
@@ -67,8 +67,6 @@ import Zwirn.Language.Block
   -- Repeat
   '!'             { L.RangedToken L.Repeat _ }
   repnum          { L.RangedToken (L.RepeatNum _) _}
-  -- Elongation
-  '@'             { L.RangedToken L.Elongate _ }
   -- Parenthesis
   '('             { L.RangedToken L.LPar _ }
   ')'             { L.RangedToken L.RPar _ }
@@ -82,11 +80,10 @@ import Zwirn.Language.Block
   '>'             { L.RangedToken L.RAngle _ }
   -- Choice
   '|'             { L.RangedToken L.Pipe _ }
+  -- Enum
+  '..'            { L.RangedToken L.Enum _ }
   -- Polyrhythm
   '%'             { L.RangedToken L.Poly _ }
-  -- Euclid
-  '{'             { L.RangedToken L.LBraces _ }
-  '}'             { L.RangedToken L.RBraces _ }
   -- Lambda
   '\\'            { L.RangedToken L.Lambda _ }
   '->'            { L.RangedToken L.Arrow _ }
@@ -101,201 +98,226 @@ import Zwirn.Language.Block
   ':resetconfig'  { L.RangedToken L.ResetConfigA _ }
   '='             { L.RangedToken L.Assign _ }
   ':load'         { L.RangedToken (L.LoadA _ ) _}
-  ':js'           { L.RangedToken L.JSA _ }
+  ':info'           { L.RangedToken L.InfoA _ }
   -- Type Tokens
-  '::'       { L.RangedToken L.DoubleColon _ }
-  typefam    { L.RangedToken L.PTypeFam _ }
-  '=>'       { L.RangedToken L.Context _ }
-  textT      { L.RangedToken L.TextToken _ }
-  numT       { L.RangedToken L.NumberToken _ }
-  controlT   { L.RangedToken L.ControlToken _ }
-  varT       { L.RangedToken (L.VarToken _) _ }
-  classT     { L.RangedToken (L.TypeClass _ _) _ }
+  '=>'            { L.RangedToken L.Context _ }
+  textT           { L.RangedToken L.TextToken _ }
+  numT            { L.RangedToken L.NumberToken _ }
+  mapT            { L.RangedToken L.MapToken _ }
+  busT            { L.RangedToken L.BusToken _ }
+  varT            { L.RangedToken (L.VarToken _) _ }
+  classT          { L.RangedToken (L.TypeClass _) _ }
 
 %%
 
+-------------------------------------------------------------
+------------------------- utilities -------------------------
+-------------------------------------------------------------
+
 optional(p)
-  :   { Nothing }
-  | p { Just $1 }
+  :                                             { Nothing }
+  | p                                           { Just $1 }
 
 many_rev(p)
-  :               { [] }
-  | many_rev(p) p { $2 : $1 }
+  :                                             { [] }
+  | many_rev(p) p                               { $2 : $1 }
 
 many(p)
-  : many_rev(p) { reverse $1 }
+  : many_rev(p)                                 { reverse $1 }
 
 some_rev(p)
-  : p             { [$1] }
-  | some_rev(p) p { $2 : $1 }
+  : p                                           { [$1] }
+  | some_rev(p) p                               { $2 : $1 }
 
 some(p)
-  : some_rev(p) { reverse $1 }
+  : some_rev(p)                                 { reverse $1 }
 
 sepBy_rev(p, sep)
-  : p                      { [$1] }
-  | sepBy_rev(p, sep) sep p { $3 : $1 }
+  : p                                           { [$1] }
+  | sepBy_rev(p, sep) sep p                     { $3 : $1 }
 
 sepBy(p, sep)
-  : sepBy_rev(p, sep) { reverse $1 }
+  : sepBy_rev(p, sep)                           { reverse $1 }
+
+sepBy_rev2(p, sep)
+  : p sep p                                     { [$3, $1] }
+  | sepBy_rev2(p, sep) sep p                    { $3 : $1 }
+
+sepBy2(p, sep)
+  : sepBy_rev2(p, sep)                          { reverse $1 }
+
+-------------------------------------------------------------
+----------------------- parsing terms -----------------------
+-------------------------------------------------------------
 
 atom :: { Term }
-  : identifier { % (mkAtom TVar) $1 }
-  | number     { % (mkAtom TNum) $1 }
-  | string     { % (mkAtom TText) $1 }
-  | '~'        { TRest }
+  : identifier                                  { % (mkAtom TVar) $1 }
+  | number                                      { % (mkAtom TNum) $1 }
+  | string                                      { % (mkAtom TText) $1 }
+  | '~'                                         { TRest }
+
+simpleseq :: { [Term] }
+  : infix                                %shift { [$1] }
+  | infix simpleseq                             { $1: $2 }
+
+seq :: { Term }
+  : simpleseq                                   { TSeq $1 }
+  | infix '..' infix                            { TEnum Run $1 $3 }
+  | infix infix '..' infix                      { TEnumThen Run $1 $2 $4 }
+  |                                             { TRest }
 
 sequence :: { Term }
-  : some(simpleinfix) %shift { TSeq $1 }
+  :  '[' seq ']'                                { $2 }
 
-sequence2 :: { Term }
-  : some(simpleinfix) %shift { TSeq $1 }
-
-stack :: { [Term] }
-  : sepBy(sequence, ',')   { $1 }
-
-choice :: { [Term] }
-  : sepBy(sequence2, '|')  { $1 }
+choice :: { Term }
+  : '[' sepBy2(simpleseq, '|') ']'                             { % L.increaseChoice >>= \x -> return $ TChoice x (map TSeq $2) }
+  | '[' simpleseq '|' '..' simpleseq ']'                       { TEnum Choice (TSeq $2) (TSeq $5) }
+  | '[' simpleseq '|' simpleseq '..' simpleseq ']'             { TEnumThen Choice (TSeq $2) (TSeq $4) (TSeq $6) }
 
 lambda :: { Term }
-  : '\\' some(identifier) '->' term %shift { TLambda (map unTok $2) $4 }
+  : '\\' some(identifier) '->' term      %shift { TLambda (map unTok $2) $4 }
 
 polyrhythm :: { Term }
-  : simple '%' simple   %shift  { TPoly $1 $3 }
-
-elongate :: { Term }
-  : simple '@' number           { TElong $1 (Just $ read $ Text.unpack $ unTok $3) }
-  | simple '@'          %shift  { TElong $1 Nothing }
+  : simple '%' simple                    %shift { TPoly $1 $3 }
 
 repeat :: { Term }
-  : simple repnum               { TRepeat $1 (Just $ read $ Text.unpack $ unTok $2) }
-  | simple '!'                  { TRepeat $1 Nothing }
+  : simple repnum                               { TRepeat $1 (Just $ read $ Text.unpack $ unTok $2) }
+  | simple '!'                                  { TRepeat $1 Nothing }
 
-fullSequence :: { Term }
-  : '[' stack ']'            { TStack $2 }
-  | '[' choice ']'           { % L.increaseChoice >>= \x -> return $ TChoice x $2 }
-  | '[' some(simpleinfix) ']'     { TSeq $2 }
+stack :: { Term }
+  : '[' sepBy2(simpleseq, ',') ']'                   { TStack (map TSeq $2) }
+  | '[' simpleseq ',' '..' simpleseq ']'             { TEnum Cord (TSeq $2) (TSeq $5) }
+  | '[' simpleseq ',' simpleseq '..' simpleseq ']'   { TEnumThen Cord (TSeq $2) (TSeq $4) (TSeq $6) }
+
+alt :: { Term }
+  : simpleseq                                   { TAlt $1 }
+  | infix '..' infix                            { TEnum Alt $1 $3 }
+  | infix infix '..' infix                      { TEnumThen Alt $1 $2 $4 }
 
 alternation :: { Term }
-  : '<' some(simpleinfix) '>' { TAlt $2 }
+  : '<' alt  '>'                                { $2 }
 
-euclid :: { Term }
-  : simple '{' term ',' term '}'           { TEuclid  $1 $3 $5 Nothing }
-  | simple '{' term ',' term ',' term '}'  { TEuclid  $1 $3 $5 (Just $7) }
+bracket :: { Term }
+  : '(' term ')'                                { TBracket $2 }
 
 simple :: { Term }
-  : atom                           {$1}
-  | alternation                    {$1}
-  | fullSequence                   {$1}
-  | lambda                         {$1}
-  | polyrhythm                     {$1}
-  | elongate                       {$1}
-  | repeat                         {$1}
-  | euclid                         {$1}
-  | '(' term ')'                   { TBracket $2 }
+  : atom                                        { $1 }
+  | alternation                                 { $1 }
+  | sequence                                    { $1 }
+  | choice                                      { $1 }
+  | stack                                       { $1 }
+  | lambda                                      { $1 }
+  | polyrhythm                                  { $1 }
+  | repeat                                      { $1 }
+  | bracket                                     { $1 }
 
 -- special operators are left-associative
 specialinfix :: { Term }
-  : specialinfix specop simple    %shift { TInfix  $1 (unTok $2) $3 }
-  | simple                        %shift {$1}
+  : specialinfix specop simple           %shift { TInfix  $1 (unTok $2) $3 }
+  | simple                               %shift { $1 }
 
 -- all other operators are assumed to be right-associative, AST rotation will fix it
 -- this definition is for use inside of sequences
-simpleinfix :: { Term }
-  : specialinfix operator simpleinfix  %shift { TInfix  $1 (unTok $2) $3 }
-  | specialinfix                       %shift {$1}
+infix :: { Term }
+  : specialinfix operator infix          %shift { TInfix  $1 (unTok $2) $3 }
+  | specialinfix                         %shift { $1 }
 
 -- application is left-associative, binds stronger than operators
 -- outside of sequences
 app :: { Term }
-  : app specialinfix              %shift { TApp $1 $2 }
-  | specialinfix                  %shift {$1}
+  : app specialinfix                     %shift { TApp $1 $2 }
+  | specialinfix                         %shift {$1}
+
+sectionR :: { Term }
+  : operator app                         %shift { TSectionR (unTok $1) $2 }
+
+sectionL :: { Term }
+  : app operator                         %shift { TSectionL $1 (unTok $2) }
 
 -- operators outside of sequences have the weakest binding
 term :: { Term }
-  : app operator term       %shift { TInfix  $1 (unTok $2) $3 }
-  | app                     %shift {$1}
+  : app operator term                    %shift { TInfix  $1 (unTok $2) $3 }
+  | app                                  %shift { $1 }
+  | sectionR                             %shift { $1 }
+  | sectionL                             %shift { $1 }
 
--- parsing definitions
+-------------------------------------------------------------
+---------------------- parsing actions ----------------------
+-------------------------------------------------------------
 
 def :: { Def }
-  : identifier many(identifier) '=' term { Let (unTok $1) (map unTok $2) $4 }
-
-defs :: { [Def] }
-  : sepBy(def, ';')        {$1}
+  : identifier many(identifier) '=' term        { Let (unTok $1) (map unTok $2) $4 }
 
 action :: { Action }
-  : string     '<-' term              { Stream (unTok $1) $3 }
-  | number     '<-' term              { Stream (unTok $1) $3 }
-  | identifier '<-' term              { StreamSet (unTok $1) $3 }
-  | ':cps' term                       { StreamSetTempo CPS $2 }
-  | ':bpm' term                       { StreamSetTempo BPM $2 }
-  | '!' term                          { StreamOnce $2 }
-  | ':config' identifier string       { Config (unTok $2) (unTok $3) }
-  | ':config' identifier identifier   { Config (unTok $2) (unTok $3) }
-  | ':config' identifier number       { Config (unTok $2) (unTok $3) }
-  | ':resetconfig'                    { ResetConfig }
-  | def                               { Def $1 }
-  | ':t' term                         { Type $2 }
-  | ':show' term                      { Show $2 }
-  | ':load'                           { Load $ unTok $1 }
-  | ':js' term                        { JS $2 }
+  : string     '<-' term                        { StreamAction (unTok $1) $3 }
+  | number     '<-' term                        { StreamAction (unTok $1) $3 }
+  | identifier '<-' term                        { StreamSet (unTok $1) $3 }
+  | ':cps' number                               { StreamSetTempo CPS (unTok $2) }
+  | ':bpm' number                               { StreamSetTempo BPM (unTok $2) }
+  | '!' term                                    { StreamOnce $2 }
+  | ':config'                                   { ConfigPath }
+  | ':resetconfig'                              { ResetConfig }
+  | def                                         { Def $1 }
+  | ':t' term                                   { Type $2 }
+  | ':show' term                                { Show $2 }
+  | ':load'                                     { Load $ unTok $1 }
+  | ':info' identifier                          { Info $ unTok $2 }
 
 actionsrecrev :: { [Action] }
-  : actionsrecrev ';' action           {$3:$1}
-  | action                             {[$1]}
+  : actionsrecrev ';' action                    { $3:$1 }
+  | action                                      { [$1] }
 
 actions :: { [Action] }
-  : actionsrecrev ';'                     {reverse $1}
-  | actionsrecrev                         {reverse $1}
-  |                                       {[]}
+  : actionsrecrev ';'                           { reverse $1 }
+  | actionsrecrev                               { reverse $1 }
+  |                                             { [] }
 
--- parsing blocks of text
+-------------------------------------------------------------
+----------------------- parsing blocks ----------------------
+-------------------------------------------------------------
 
 block :: { Block }
-  : some(line)                                      {toBlock $1}
+  : some(line)                                  { toBlock $1 }
 
 blocksrec :: { [Block] }
-  : blocksrec some(bsep) block                      {$3:$1}
-  | block                                           {[$1]}
+  : blocksrec some(bsep) block                  { $3:$1 }
+  | block                                       { [$1] }
 
 blocks :: { [Block] }
-  : some(bsep) blocksrec some(bsep)                 {$2}
-  | some(bsep) blocksrec                            {$2}
-  | blocksrec some(bsep)                            {$1}
-  | blocksrec                                       {$1}
+  : some(bsep) blocksrec some(bsep)             { $2 }
+  | some(bsep) blocksrec                        { $2 }
+  | blocksrec some(bsep)                        { $1 }
+  | blocksrec                                   { $1 }
+
+-------------------------------------------------------------
+----------------------- parsing types -----------------------
+-------------------------------------------------------------
 
 atomType :: { Type }
-  : textT                                           { TypeCon "Text" }
-  | numT                                            { TypeCon "Number" }
-  | controlT                                        { TypeCon "ValueMap" }
-  | varT                                            { TypeVar (unTok $1) }
+  : textT                                       { TypeCon "Text" }
+  | numT                                        { TypeCon "Number" }
+  | mapT                                        { TypeCon "Map" }
+  | busT                                        { TypeCon "Bus" }
+  | varT                                        { TypeVar (unTok $1) }
 
 fullType :: { Type }
-  : atomType                                        { $1 }
-  | fullType '->' fullType                %shift    { TypeArr $1 $3 }
-  | '(' fullType ')'                                { $2 }
+  : atomType                                    { $1 }
+  | fullType '->' fullType               %shift { TypeArr $1 $3 }
+  | '(' fullType ')'                            { $2 }
 
 predicate :: { Predicate }
-  : classT                                          { mkPred $1 }
+  : classT varT                                 { IsIn (unTok $1) (TypeVar (unTok $2))}
 
 predicates :: { [Predicate] }
-  : '(' sepBy(predicate, ',') ')' '=>'              {$2}
-  | predicate '=>'                                  {[$1]}
-  |                                                 {[]}
+  : predicate '=>'                              { [$1] }
+  |                                             { [] }
 
 scheme :: { Scheme }
-  : predicates typefam fullType                     {generalize $1 $3}
+  : predicates fullType                  %shift { generalize $1 $2 }
 
-typeDecl :: { (Text,Scheme) }
-  : identifier '::' scheme                          {(unTok $1, $3)}
-  | '(' operator ')' '::' scheme                    {(unTok $2, $5)}
-  | '(' specop ')' '::' scheme                      {(unTok $2, $5)}
-
-typeDecls :: { [(Text,Scheme)] }
-  : some(typeDecl)                                  {map (\(x,y) -> (x, filterPatClass y)) $1}
 
 {
+
 parseError :: (L.RangedToken, [String]) -> L.Alex a
 parseError (L.RangedToken t _,poss) = do
   (L.AlexPn _ ln column, _, _, _) <- L.alexGetInput
@@ -315,12 +337,10 @@ unTok (L.RangedToken  (L.SpecialOp x) _) = x
 unTok (L.RangedToken  (L.LoadA x) _) = x
 unTok (L.RangedToken  (L.LineT x) _) = x
 unTok (L.RangedToken  (L.VarToken x) _) = x
+unTok (L.RangedToken  (L.TypeClass x) _) = x
 unTok (L.RangedToken  (L.RepeatNum x) _) = x
 unTok _ = error "can't untok"
 
-mkPred :: L.RangedToken -> Predicate
-mkPred (L.RangedToken (L.TypeClass c x) _) = IsIn c (TypeVar x)
-mkPred _ = error "can't make predicate"
 
 mkAtom :: (Position -> Text -> Term) -> L.RangedToken -> L.Alex Term
 mkAtom constr tok@(L.RangedToken _ range) = do
@@ -349,7 +369,7 @@ parseActions input = L.runAlex input pActions
 parseBlocks :: Int -> Text -> Either String [Block]
 parseBlocks line input = L.runAlex input (L.lineLexer >> L.setInitialLineNum line >> pBlocks)
 
-parseTypeDecls :: Text -> Either String [(Text,Scheme)]
-parseTypeDecls input = L.runAlex input (L.typeLexer >> pTypeDecls)
+parseScheme :: Text -> Either String Scheme
+parseScheme input = L.runAlex input (L.typeLexer >> pScheme)
 
 }
