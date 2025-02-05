@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module Zwirn.Language.Syntax where
 
 {-
@@ -35,6 +33,8 @@ data Position = Pos
   }
   deriving (Eq, Show)
 
+data EnumKind = Cord | Choice | Run | Alt deriving (Eq, Show)
+
 -- sugary representation of patterns
 data Term
   = TVar Position Text
@@ -53,6 +53,8 @@ data Term
   | TSectionR Text Term
   | TSectionL Term Text
   | TBracket Term
+  | TEnum EnumKind Term Term
+  | TEnumThen EnumKind Term Term Term
   deriving (Eq, Show)
 
 data Def

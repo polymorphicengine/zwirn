@@ -30,7 +30,7 @@ import Zwirn.Core.Map as M
 import Zwirn.Core.Modulate
 import Zwirn.Core.Number as N
 import Zwirn.Core.Random
-import Zwirn.Core.Structure
+import Zwirn.Core.Structure as S
 import Zwirn.Core.Time
 import Zwirn.Language.Builtin.Internal
 import Zwirn.Language.Builtin.Parameters
@@ -327,7 +327,15 @@ randomFunctions =
       "irand"
         === toExp (irand :: Zwirn Int -> Zwirn Int)
         <:: "Number -> Number"
-        --| "random integer values between 0 and given input"
+        --| "random integer values between 0 and given input",
+      "chooseFromTo"
+        === toExp (enumFromToChoice 0 :: Zwirn Double -> Zwirn Double -> Zwirn Double)
+        <:: "Number -> Number -> Number"
+        --| "```chooseFromTo x y == [x | .. y]```",
+      "chooseFromThenTo"
+        === toExp (enumFromThenToChoice 0 :: Zwirn Double -> Zwirn Double -> Zwirn Double -> Zwirn Double)
+        <:: "Number -> Number -> Number -> Number"
+        --| "```chooseFromTo x y z == [x | y .. z]```"
     ]
 
 timeFunctions :: Map.Map Text AnnotatedExpression
@@ -405,7 +413,27 @@ structureFunctions =
       "run"
         === toExp (run :: Zwirn Int -> Zwirn Int)
         <:: "Number -> Number"
-        --| "run n == [0 .. n-1]"
+        --| "```run n == [0 .. n-1]```",
+      "runFromTo"
+        === toExp (runFromTo :: Zwirn Double -> Zwirn Double -> Zwirn Double)
+        <:: "Number -> Number -> Number"
+        --| "```runFromTo x y == [x .. y]```",
+      "runFromThenTo"
+        === toExp (runFromThenTo :: Zwirn Double -> Zwirn Double -> Zwirn Double -> Zwirn Double)
+        <:: "Number -> Number -> Number -> Number"
+        --| "```runFromTo x y z == [x y ..  z]```",
+      "slowrun"
+        === toExp (slowrun :: Zwirn Int -> Zwirn Int)
+        <:: "Number -> Number"
+        --| "```run n == <0 .. n-1>```",
+      "slowrunFromTo"
+        === toExp (slowrunFromTo :: Zwirn Double -> Zwirn Double -> Zwirn Double)
+        <:: "Number -> Number -> Number"
+        --| "```slowrunFromTo x y == <x .. y>```",
+      "slowrunFromThenTo"
+        === toExp (slowrunFromThenTo :: Zwirn Double -> Zwirn Double -> Zwirn Double -> Zwirn Double)
+        <:: "Number -> Number -> Number -> Number"
+        --| "```slowrunFromTo x y z == <x y ..  z>```"
     ]
 
 conditionalFunctions :: Map.Map Text AnnotatedExpression
@@ -499,7 +527,15 @@ cordFunctions =
       "at"
         === toExp (at :: Zwirn Int -> Zwirn (Zwirn Expression -> Zwirn Expression) -> Zwirn Expression -> Zwirn Expression)
         <:: "Number -> (a -> a) -> a -> a"
-        --| "apply a function to a specific layer of a cord"
+        --| "apply a function to a specific layer of a cord",
+      "cordFromTo"
+        === toExp (enumFromToStack :: Zwirn Double -> Zwirn Double -> Zwirn Double)
+        <:: "Number -> Number -> Number"
+        --| "```cordFromTo x y == [x, .. y]```",
+      "cordFromThenTo"
+        === toExp (enumFromThenToStack :: Zwirn Double -> Zwirn Double -> Zwirn Double -> Zwirn Double)
+        <:: "Number -> Number -> Number -> Number"
+        --| "```cordFromThenTo x y z == [x, y .. z]```"
     ]
 
 mapFunctions :: Map.Map Text AnnotatedExpression

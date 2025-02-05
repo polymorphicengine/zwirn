@@ -80,6 +80,8 @@ import Zwirn.Language.Block
   '>'             { L.RangedToken L.RAngle _ }
   -- Choice
   '|'             { L.RangedToken L.Pipe _ }
+  -- Enum
+  '..'            { L.RangedToken L.Enum _ }
   -- Polyrhythm
   '%'             { L.RangedToken L.Poly _ }
   -- Lambda
@@ -154,14 +156,23 @@ atom :: { Term }
   | string                                      { % (mkAtom TText) $1 }
   | '~'                                         { TRest }
 
-seq :: { [Term] }
-  : some(infix)                                 { $1 }
+simpleseq :: { [Term] }
+  : infix                                %shift { [$1] }
+  | infix simpleseq                             { $1: $2 }
+
+seq :: { Term }
+  : simpleseq                                   { TSeq $1 }
+  | infix '..' infix                            { TEnum Run $1 $3 }
+  | infix infix '..' infix                      { TEnumThen Run $1 $2 $4 }
+  |                                             { TRest }
 
 sequence :: { Term }
-  : '[' seq ']'                                 { TSeq $2 }
+  :  '[' seq ']'                                { $2 }
 
 choice :: { Term }
-  : '[' sepBy2(seq, '|') ']'                    { % L.increaseChoice >>= \x -> return $ TChoice x (map TSeq $2)}
+  : '[' sepBy2(simpleseq, '|') ']'                             { % L.increaseChoice >>= \x -> return $ TChoice x (map TSeq $2) }
+  | '[' simpleseq '|' '..' simpleseq ']'                       { TEnum Choice (TSeq $2) (TSeq $5) }
+  | '[' simpleseq '|' simpleseq '..' simpleseq ']'             { TEnumThen Choice (TSeq $2) (TSeq $4) (TSeq $6) }
 
 lambda :: { Term }
   : '\\' some(identifier) '->' term      %shift { TLambda (map unTok $2) $4 }
@@ -174,10 +185,17 @@ repeat :: { Term }
   | simple '!'                                  { TRepeat $1 Nothing }
 
 stack :: { Term }
-  : '[' sepBy2(seq, ',') ']'                    { TStack (map TSeq $2) }
+  : '[' sepBy2(simpleseq, ',') ']'                   { TStack (map TSeq $2) }
+  | '[' simpleseq ',' '..' simpleseq ']'             { TEnum Cord (TSeq $2) (TSeq $5) }
+  | '[' simpleseq ',' simpleseq '..' simpleseq ']'   { TEnumThen Cord (TSeq $2) (TSeq $4) (TSeq $6) }
+
+alt :: { Term }
+  : simpleseq                                   { TAlt $1 }
+  | infix '..' infix                            { TEnum Alt $1 $3 }
+  | infix infix '..' infix                      { TEnumThen Alt $1 $2 $4 }
 
 alternation :: { Term }
-  : '<' seq '>'                                 { TAlt $2 }
+  : '<' alt  '>'                                { $2 }
 
 bracket :: { Term }
   : '(' term ')'                                { TBracket $2 }

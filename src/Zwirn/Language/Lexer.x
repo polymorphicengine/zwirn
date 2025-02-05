@@ -114,6 +114,9 @@ tokens :-
 -- Choice
 <0> "|"     { tok Pipe }
 
+-- Enum
+<0> ".."    { tok Enum }
+
 -- Polyrhythm
 <0> "%"     { tok Poly }
 
@@ -228,6 +231,8 @@ data Token
   -- Lambda
   | Lambda
   | Arrow
+  -- Enum
+  | Enum
   -- Actions
   | Colon
   | StreamA
@@ -278,6 +283,7 @@ instance Show Token where
  show Lambda = quoted "\\"
  show Arrow = quoted "->"
  show Colon = quoted ";"
+ show Enum = quoted ".."
  show StreamA = quoted "<-"
  show TempoCps = ":cps"
  show TempoBpm = ":bpm"
@@ -294,6 +300,7 @@ instance Show Token where
  show TextToken = "Text"
  show NumberToken = "Number"
  show MapToken = "Map"
+ show BusToken = "Bus"
  show (VarToken t) = show t
  show (TypeClass c) = show c
  show EOF = "end of file"

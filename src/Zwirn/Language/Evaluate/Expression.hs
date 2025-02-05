@@ -51,8 +51,8 @@ data Expression
   | EZwirn (Zwirn Expression)
 
 showWithState :: ExpressionMap -> Expression -> String
-showWithState st (EZwirn x) = intercalate ", " $ (\(t, y) -> show t ++ ":" ++ showWithState st y) <$> findAllValuesWithTime (Time 0 1, Time 1 1) st x
-showWithState _ (ENum x) = show x
+showWithState st (EZwirn x) = intercalate "\n" $ (\(t, y) -> show t ++ ":" ++ showWithState st y) <$> findAllValuesWithTime (Time 0 1, Time 1 1) st x
+showWithState _ (ENum x) = take 5 $ show x
 showWithState _ (EText x) = unpack x
 showWithState st (EMap m) = show $ Map.toList $ showWithState st <$> m
 showWithState _ _ = "can't show"

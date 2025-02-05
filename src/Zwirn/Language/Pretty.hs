@@ -72,6 +72,7 @@ instance Pretty Term where
   ppr _ (TNum _ x) = double $ read $ unpack x
   ppr p (TRepeat t (Just i)) = ppr p t <> text "!" <> int i
   ppr p (TRepeat t Nothing) = ppr p t <> text "!"
+  ppr p (TSeq [t]) = ppr p t
   ppr p (TSeq ts) = brackets (hcat (punctuate space (map (ppr p) ts)))
   ppr p (TAlt ts) = text "<" <> hcat (punctuate space (map (ppr p) ts)) <> text ">"
   ppr p (TChoice _ ts) = brackets (hcat $ punctuate (text "|") (map (ppr p) ts))
@@ -83,6 +84,14 @@ instance Pretty Term where
   ppr p (TLambda vs t) = text "\\" <> hcat (punctuate space $ map (text . unpack) vs) <+> text "->" <+> ppr p t
   ppr p (TSectionL t n) = ppr p t <+> text (unpack n)
   ppr p (TSectionR n t) = text (unpack n) <+> ppr p t
+  ppr p (TEnum Run x y) = brackets (ppr p x <+> text ".." <+> ppr p y)
+  ppr p (TEnumThen Alt x y z) = text "<" <> (ppr p x <+> ppr p y <+> text ".." <+> ppr p z) <> text ">"
+  ppr p (TEnum Alt x y) = text "<" <> (ppr p x <+> text ".." <+> ppr p y) <> text ">"
+  ppr p (TEnumThen Run x y z) = brackets (ppr p x <+> ppr p y <+> text ".." <+> ppr p z)
+  ppr p (TEnum Cord x y) = brackets (ppr p x <+> text ", .." <+> ppr p y)
+  ppr p (TEnumThen Cord x y z) = brackets (ppr p x <+> text "," <+> ppr p y <+> text ".." <+> ppr p z)
+  ppr p (TEnum Choice x y) = brackets (ppr p x <+> text "| .. " <+> ppr p y)
+  ppr p (TEnumThen Choice x y z) = brackets (ppr p x <+> text "|" <+> ppr p y <+> text ".." <+> ppr p z)
 
 instance Pretty (Term, Scheme) where
   ppr p (t, s) = ppr p t <+> text "::" <+> ppr p s
