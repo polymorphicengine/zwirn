@@ -1,12 +1,24 @@
 cabal-version:      3.0
 name:               zwirn
 version:            0.1.0.0
-license:            GPL-3.0-or-later
+synopsis:           a live coding language for playing with nested functions of time
+description:        zwirn is a live coding language for playing with nested functions of time,
+                    which trigger the sending of osc-messages. it's syntax is inspired by TidalCycles'
+                    mini-notation and it's API for manipulating patterns.
+license:            GPL-3.0-only
 license-file:       LICENSE
 author:             Martin Gius
-maintainer:         gius_martin@yahoo.de
+maintainer:         Martin Gius
+copyright:          Martin Gius
+category:           Language, Sound
 build-type:         Simple
 extra-doc-files:    README.md
+tested-with:        GHC == 9.8.2
+
+source-repository this
+  type:              git
+  location:          https://github.com/polymorphicengine/zwirn
+  tag:               0.1.0.0
 
 
 library
