@@ -50,29 +50,3 @@ library
   default-language: Haskell2010
   ghc-options: -threaded
                -Wall
-
-executable zwirn-editor
-    main-is:          Main.hs
-    other-modules:    Editor.Backend
-                      Editor.Frontend
-                      Editor.Setup
-                      Editor.UI
-                      Editor.Highlight
-                      Editor.Hydra
-                      Editor.Config
-    build-depends:    base >= 4.17 && < 4.20,
-                      text >= 2.1.1 && < 2.2,
-                      containers >= 0.6.8 && < 0.7,
-                      zwirn >= 0.1 && < 0.2,
-                      threepenny-gui,
-                      exceptions,
-                      filepath,
-                      directory,
-                      conferer,
-                      conferer-yaml,
-                      zwirn-core >= 0.1 && < 0.2,
-                      tidal-link >= 1.1 && < 1.2
-    hs-source-dirs:   zwirn-editor
-    default-language: Haskell2010
-    ghc-options: -threaded
-                 -Wall
