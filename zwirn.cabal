@@ -33,19 +33,19 @@ library
                    Zwirn.Language.Evaluate.Internal
                    Zwirn.Language
                    Zwirn.Stream
-  build-depends: base >= 4.19,
-                 array,
-                 text,
-                 pretty,
-                 mtl,
-                 exceptions,
-                 filepath,
-                 containers,
-                 zwirn-core == 0.1.1.0,
-                 tidal-link,
-                 hosc == 0.21,
-                 network,
-                 bytestring
+  build-depends: array >= 0.5.6 && < 0.6,
+                 base >= 4.17 && < 4.20,
+                 bytestring >= 0.12.1 && < 0.13,
+                 pretty >= 1.1.3 && < 1.2,
+                 containers >= 0.6.8 && < 0.7,
+                 exceptions >= 0.10.9 && < 0.11,
+                 mtl >= 2.3.1 && < 2.4,
+                 filepath >= 1.5.4 && < 1.6,
+                 hosc >= 0.21.1 && < 0.22,
+                 text >= 2.1.1 && < 2.2,
+                 network >= 3.2.7 && < 3.3,
+                 zwirn-core >= 0.1.1 && < 0.2,
+                 tidal-link >= 1.1 && < 1.2
   build-tool-depends: alex:alex, happy:happy
   default-language: Haskell2010
   ghc-options: -threaded
@@ -60,18 +60,18 @@ executable zwirn-editor
                       Editor.Highlight
                       Editor.Hydra
                       Editor.Config
-    build-depends:    base >= 4.19,
-                      text,
-                      containers,
-                      tidal-link,
-                      zwirn,
+    build-depends:    base >= 4.17 && < 4.20,
+                      text >= 2.1.1 && < 2.2,
+                      containers >= 0.6.8 && < 0.7,
+                      zwirn >= 0.1 && < 0.2,
                       threepenny-gui,
                       exceptions,
                       filepath,
                       directory,
                       conferer,
                       conferer-yaml,
-                      zwirn-core
+                      zwirn-core >= 0.1 && < 0.2,
+                      tidal-link >= 1.1 && < 1.2
     hs-source-dirs:   zwirn-editor
     default-language: Haskell2010
     ghc-options: -threaded
@@ -84,24 +84,24 @@ executable zwirn-ci
                       CI.Config
                       CI.Documentation
                       CI.Listener
-    build-depends:    base >= 4.19,
+    build-depends:    base >= 4.17 && < 4.20,
                       haskeline,
-                      text,
-                      mtl,
+                      text >= 2.1.1 && < 2.2,
+                      mtl >= 2.3.1 && < 2.4,
                       file-embed,
                       file-io,
-                      containers,
-                      bytestring,
-                      tidal-link,
-                      zwirn,
-                      hosc,
-                      network,
-                      exceptions,
+                      containers >= 0.6.8 && < 0.7,
+                      bytestring >= 0.12.1 && < 0.13,
+                      tidal-link >= 1.0.4,
+                      zwirn >= 0.1 && < 0.2,
+                      hosc >= 0.21.1 && < 0.22,
+                      network >= 3.2.7 && < 3.3,
+                      exceptions >= 0.10.9 && < 0.11,
                       filepath,
                       directory,
                       conferer,
                       conferer-yaml,
-                      zwirn-core
+                      zwirn-core >= 0.1.1 && < 0.2,
     hs-source-dirs:   zwirn-ci
     default-language: Haskell2010
     ghc-options: -threaded

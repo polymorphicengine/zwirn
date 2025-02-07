@@ -1,9 +1,2 @@
 allow-newer: threepenny-gui:template-haskell
 ignore-project: False
-source-repository-package
-     type: git
-     location: /home/martin/git/zwirn-core
-source-repository-package
-     type: git
-     location: /home/martin/git/Tidal
-     subdir: tidal-link
