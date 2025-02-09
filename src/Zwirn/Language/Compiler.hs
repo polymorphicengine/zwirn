@@ -5,22 +5,7 @@
 {-# OPTIONS_GHC -Wno-incomplete-uni-patterns #-}
 {-# OPTIONS_GHC -Wno-unused-top-binds #-}
 
-module Zwirn.Language.Compiler
-  ( ConfigEnv (..),
-    Environment (..),
-    CI,
-    CIMessage (..),
-    CIError (..),
-    CurrentBlock (..),
-    Stream,
-    compilerInterpreterBasic,
-    compilerInterpreterBlock,
-    compilerInterpreterLine,
-    compilerInterpreterWhole,
-    compilerInterpreterBoot,
-    runCI,
-  )
-where
+module Zwirn.Language.Compiler where
 
 {-
     Compiler.hs - implementation of a compiler-interpreter for zwirn
@@ -80,8 +65,8 @@ data ConfigEnv
   }
 
 data CiConfig = CiConfig
-  { ciOverwriteBuiltin :: Bool,
-    ciDynamicTypes :: Bool
+  { ciConfigOverwriteBuiltin :: Bool,
+    ciConfigDynamicTypes :: Bool
   }
 
 data Environment
@@ -242,11 +227,24 @@ defAction :: Bool -> Def -> CI ()
 defAction ctx d = do
   (LetS x st) <- runSimplifyDef d
   rot <- runRotate st
-  ty <- runTypeCheck rot
+  ty@(Forall _ (Qual _ typ)) <- runTypeCheck rot
   ex <- interpret rot
   exCtx <- checkHighlight ctx ex
+  dynamic <- gets (ciConfigDynamicTypes . ciConfig)
 
-  overwrite <- gets (ciOverwriteBuiltin . ciConfig)
+  if dynamic
+    then checkAndDefine x ty exCtx
+    else do
+      mayty <- gets (lookupType x . intEnv)
+      case mayty of
+        Just (Forall _ (Qual _ oldType)) -> case runSolve [(oldType, typ)] of
+          Left _ -> throw "Cannot overwrite definition with new type. Please use DynamicTypes."
+          Right _ -> checkAndDefine x ty exCtx
+        Nothing -> checkAndDefine x ty exCtx
+
+checkAndDefine :: Text -> Scheme -> Expression -> CI ()
+checkAndDefine x ty exCtx = do
+  overwrite <- gets (ciConfigOverwriteBuiltin . ciConfig)
   if overwrite
     then modify (\env -> env {intEnv = extend (x, exCtx, ty) (intEnv env)})
     else
@@ -326,7 +324,7 @@ streamSetAction ctx x t = do
   ex <- interpret rot
   exCtx <- checkHighlight ctx ex
 
-  dynamic <- gets (ciDynamicTypes . ciConfig)
+  dynamic <- gets (ciConfigDynamicTypes . ciConfig)
 
   if dynamic
     then checkAndSet x ty exCtx
@@ -343,7 +341,7 @@ checkAndSet x ty exCtx =
   if isBasicType ty
     then
       ( do
-          overwrite <- gets (ciOverwriteBuiltin . ciConfig)
+          overwrite <- gets (ciConfigOverwriteBuiltin . ciConfig)
           if overwrite
             then setExpression x ty exCtx
             else
