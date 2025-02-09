@@ -4,7 +4,7 @@ zwirn is a live coding language for playing with nested functions of time which 
 
 # inspiration
 
-zwirn is an experiment in making the pattern language [TidalCycles](https://tidalcycles.org/) into a small functional language of it's own. while zwirn's internals are quite different from Tidal's, zwirns design owes almost everything to tidal and it's creator [Alex McLean](https://slab.org/).
+zwirn is an experiment in making the pattern language [TidalCycles](https://tidalcycles.org/) into a small functional language of it's own. while zwirn's internals are quite different from Tidal's, zwirns design owes almost everything to tidals design by [Alex McLean](https://slab.org/).
 
 the internal representation of signals of time was implemented together (and parallel) with [Julian Rohrhuber](https://wertlos.org/~rohrhuber/), in an effort to port tidal to SuperCollider. This can be found in the seperate haskell library [zwirn-core](https://lab.al0.de/martin/zwirn-core).
 
