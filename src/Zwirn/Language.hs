@@ -2,7 +2,6 @@ module Zwirn.Language
   ( module Zwirn.Language.Block,
     module Zwirn.Language.Compiler,
     module Zwirn.Language.Lexer,
-    module Zwirn.Language.Rotate,
     module Zwirn.Language.Parser,
     module Zwirn.Language.Pretty,
     module Zwirn.Language.Simple,
@@ -20,7 +19,6 @@ import Zwirn.Language.Environment
 import Zwirn.Language.Lexer
 import Zwirn.Language.Parser
 import Zwirn.Language.Pretty
-import Zwirn.Language.Rotate
 import Zwirn.Language.Simple
 import Zwirn.Language.Syntax
 import Zwirn.Language.TypeCheck.Constraint
