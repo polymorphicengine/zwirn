@@ -16,4 +16,10 @@ There are currently two ways to play with zwirn:
   * [zwirnzi](https://github.com/polymorphicengine/zwirnzi) - the zwirn zompiler-interpreter
   * [zwirn-loom](https://github.com/polymorphicengine/zwirn-loom) - a compiler-interpreter for zwirn with an experimental editor interface
 
-Zwirnzi is meant to serve as a way to play with zwirn in an editor of your choice, currently there are no official editor extensions - but it shouldn't be too hard to implement one.
+Zwirnzi is meant to serve as a way to play with zwirn in an editor of your choice, currently there are no official editor extensions - but it shouldn't be too hard to implement one. This means that zwirn-loom is the best way to play with zwirn at the moment.
+
+## Limitations
+
+due to the representation of signals and the way they are queried, there can only be a limited amount of triggers per cycle, if this number is exceeded zwirn fails to find any triggers. Currently the threshold seems to be at 500 triggers per cycle:
+
+while ``` fast 499 $ s "bd" ``` works as expected, ``` fast 500 $ s "bd" ``` is silent. if you would like to increase the amount of trigger per *second* (not cycle!), increase the cycles per second, for example by running ``` :cps 1 ```.
