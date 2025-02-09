@@ -8,7 +8,7 @@ zwirn is an experiment in making the pattern language [TidalCycles](https://tida
 
 the internal representation of signals of time was implemented together (and parallel) with [Julian Rohrhuber](https://wertlos.org/~rohrhuber/), in an effort to port tidal to SuperCollider. This can be found in the seperate haskell library [zwirn-core](https://lab.al0.de/martin/zwirn-core).
 
-the implementation of the compiler is inspired by the excellent [Write You a Haskell](https://github.com/sdiehl/write-you-a-haskell) by Stepehn Diehl.
+the implementation of the compiler is inspired by the excellent [Write You a Haskell](https://github.com/sdiehl/write-you-a-haskell) by Stephen Diehl.
 
 ## Installing zwirn
 
