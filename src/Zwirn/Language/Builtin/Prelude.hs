@@ -50,6 +50,9 @@ instances =
     IsIn "Eq" textT
   ]
 
+builtinNames :: [Text]
+builtinNames = Map.keys builtins
+
 builtins :: Map.Map Text AnnotatedExpression
 builtins =
   Map.unions
