@@ -23,3 +23,7 @@ Zwirnzi is meant to serve as a way to play with zwirn in an editor of your choic
 due to the representation of signals and the way they are queried, there can only be a limited amount of triggers per cycle, if this number is exceeded zwirn fails to find any triggers. Currently the threshold seems to be at 500 triggers per cycle:
 
 while ``` fast 499 $ s "bd" ``` works as expected, ``` fast 500 $ s "bd" ``` is silent. if you would like to increase the amount of trigger per *second* (not cycle!), increase the cycles per second, for example by running ``` :cps 1 ```.
+
+## Documentation
+
+documentation for zwirn is still in progress and available [here](https://github.com/polymorphicengine/zwirn/wiki), feel free to drop me a message if you have any questions.
