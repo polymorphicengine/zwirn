@@ -10,5 +10,6 @@
 /output.txt
 .ghc.environment.*
 package-lock.json
+cabal.project.local
 
 out/
