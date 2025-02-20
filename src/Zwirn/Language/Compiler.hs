@@ -75,7 +75,7 @@ data Environment
     confEnv :: Maybe ConfigEnv,
     currBlock :: Maybe CurrentBlock,
     ciConfig :: CiConfig,
-    soundAction :: Text -> Zwirn Double -> CI ()
+    soundAction :: Maybe (Text -> Zwirn Double -> CI ())
   }
 
 data CIError
@@ -301,7 +301,11 @@ streamAction ctx key t = do
   case ty of
     Forall _ (Qual _ (TypeVar _)) -> gets tStream >>= \str -> liftIO $ streamReplace str key (fromExp exCtx)
     Forall _ (Qual _ (TypeCon "Bus")) -> streamBus key exCtx
-    Forall _ (Qual _ (TypeCon "Sound")) -> gets soundAction >>= \ac -> ac key (fromExp exCtx)
+    Forall _ (Qual _ (TypeCon "Sound")) -> do
+      mayac <- gets soundAction
+      case mayac of
+        Just ac -> ac key (fromExp exCtx)
+        Nothing -> throw "Direct sound output not available!"
     Forall _ (Qual _ (TypeCon _)) -> gets tStream >>= \str -> liftIO $ streamReplace str key (fromExp exCtx)
     _ -> throw "Can only stream base types!"
 
