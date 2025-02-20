@@ -1,6 +1,6 @@
 cabal-version:      3.0
 name:               zwirn
-version:            0.1.0.0
+version:            0.1.0.1
 synopsis:           a live coding language for playing with nested functions of time
 description:        zwirn is a live coding language for playing with nested functions of time,
                     which trigger the sending of osc-messages. it's syntax is inspired by TidalCycles'
