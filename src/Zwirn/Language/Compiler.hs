@@ -234,7 +234,7 @@ dynamicOk name ty = do
   mayty <- gets (lookupType name . intEnv)
   case mayty of
     Just oldType ->
-      when (not dynamic && oldType == ty) $ throw "Cannot overwrite definition with new type. Please use DynamicTypes."
+      when (not dynamic && oldType /= ty) $ throw "Cannot overwrite definition with new type. Please use DynamicTypes."
     Nothing -> return ()
 
 -----------------------------------------------------
