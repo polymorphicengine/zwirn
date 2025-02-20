@@ -220,6 +220,24 @@ checkHighlight True x = return x
 checkHighlight False x = return $ removePosExp x
 
 -----------------------------------------------------
+----------------- Checking Options  -----------------
+-----------------------------------------------------
+
+overwriteOk :: Text -> CI ()
+overwriteOk name = do
+  overwrite <- gets (ciConfigOverwriteBuiltin . ciConfig)
+  when (not overwrite && name `elem` builtinNames) $ throw "Cannot overwrite builtin function. Please use OverwriteBuiltin."
+
+dynamicOk :: Text -> Scheme -> CI ()
+dynamicOk name ty = do
+  dynamic <- gets (ciConfigDynamicTypes . ciConfig)
+  mayty <- gets (lookupType name . intEnv)
+  case mayty of
+    Just oldType ->
+      when (not dynamic && oldType == ty) $ throw "Cannot overwrite definition with new type. Please use DynamicTypes."
+    Nothing -> return ()
+
+-----------------------------------------------------
 ----------------- Compiling Actions -----------------
 -----------------------------------------------------
 
@@ -227,30 +245,12 @@ defAction :: Bool -> Def -> CI ()
 defAction ctx d = do
   (LetS x st) <- runSimplifyDef d
   rot <- runRotate st
-  ty@(Forall _ (Qual _ typ)) <- runTypeCheck rot
+  ty <- runTypeCheck rot
   ex <- interpret rot
   exCtx <- checkHighlight ctx ex
-  dynamic <- gets (ciConfigDynamicTypes . ciConfig)
-
-  if dynamic
-    then checkAndDefine x ty exCtx
-    else do
-      mayty <- gets (lookupType x . intEnv)
-      case mayty of
-        Just (Forall _ (Qual _ oldType)) -> case runSolve [(oldType, typ)] of
-          Left _ -> throw "Cannot overwrite definition with new type. Please use DynamicTypes."
-          Right _ -> checkAndDefine x ty exCtx
-        Nothing -> checkAndDefine x ty exCtx
-
-checkAndDefine :: Text -> Scheme -> Expression -> CI ()
-checkAndDefine x ty exCtx = do
-  overwrite <- gets (ciConfigOverwriteBuiltin . ciConfig)
-  if overwrite
-    then modify (\env -> env {intEnv = extend (x, exCtx, ty) (intEnv env)})
-    else
-      if x `elem` builtinNames
-        then throw "Failed to overwrite builtin function. Please enable OverwriteBuiltin."
-        else modify (\env -> env {intEnv = extend (x, exCtx, ty) (intEnv env)})
+  overwriteOk x
+  dynamicOk x ty
+  modify (\env -> env {intEnv = extend (x, exCtx, ty) (intEnv env)})
 
 showAction :: Term -> CI String
 showAction t = do
@@ -320,48 +320,25 @@ streamSetAction :: Bool -> Text -> Term -> CI ()
 streamSetAction ctx x t = do
   s <- runSimplify t
   rot <- runRotate s
-  ty@(Forall _ (Qual _ typ)) <- runTypeCheck rot
+  ty <- runTypeCheck rot
   ex <- interpret rot
   exCtx <- checkHighlight ctx ex
-
-  dynamic <- gets (ciConfigDynamicTypes . ciConfig)
-
-  if dynamic
-    then checkAndSet x ty exCtx
-    else do
-      mayty <- gets (lookupType x . intEnv)
-      case mayty of
-        Just (Forall _ (Qual _ oldType)) -> case runSolve [(oldType, typ)] of
-          Left _ -> throw "Cannot overwrite definition with new type. Please use DynamicTypes."
-          Right _ -> checkAndSet x ty exCtx
-        Nothing -> checkAndSet x ty exCtx
-
-checkAndSet :: Text -> Scheme -> Expression -> CI ()
-checkAndSet x ty exCtx =
-  if isBasicType ty
-    then
-      ( do
-          overwrite <- gets (ciConfigOverwriteBuiltin . ciConfig)
-          if overwrite
-            then setExpression x ty exCtx
-            else
-              if x `elem` builtinNames
-                then throw "Failed to overwrite builtin function. Please enable OverwriteBuiltin."
-                else setExpression x ty exCtx
-      )
-    else throw "Can only set basic types!"
+  overwriteOk x
+  dynamicOk x ty
+  setExpression x ty exCtx
 
 setExpression :: Text -> Scheme -> Expression -> CI ()
-setExpression x ty exCtx = do
-  modify (\env -> env {intEnv = extend (x, newEx, ty) (intEnv env)})
-  str <- gets tStream
-  liftIO $ streamSet str x exCtx
-  where
-    newEx
-      | isNumberT ty = EZwirn $ getStateN (pure x)
-      | isTextT ty = EZwirn $ getStateT (pure x)
-      | isMapT ty = EZwirn $ getStateM (pure x)
-      | otherwise = EZwirn silence
+setExpression x ty exCtx
+  | isBasicType ty = do
+      let newEx
+            | isNumberT ty = EZwirn $ getStateN (pure x)
+            | isTextT ty = EZwirn $ getStateT (pure x)
+            | isMapT ty = EZwirn $ getStateM (pure x)
+            | otherwise = EZwirn silence
+      modify (\env -> env {intEnv = extend (x, newEx, ty) (intEnv env)})
+      str <- gets tStream
+      liftIO $ streamSet str x exCtx
+  | otherwise = throw "Can only set basic types!"
 
 streamOnceAction :: Bool -> Term -> CI ()
 streamOnceAction ctx t = do
