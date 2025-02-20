@@ -59,6 +59,9 @@ mapT = TypeCon "Map"
 busT :: Type
 busT = TypeCon "Bus"
 
+soundT :: Type
+soundT = TypeCon "Sound"
+
 varA :: Type
 varA = TypeVar "a"
 
@@ -70,14 +73,10 @@ varC = TypeVar "c"
 
 isBasicType :: Scheme -> Bool
 isBasicType (Forall [] (Qual [] (TypeCon "Bus"))) = False
+isBasicType (Forall [] (Qual [] (TypeCon "Sound"))) = False
 isBasicType (Forall [] (Qual [] (TypeCon _))) = True
 isBasicType (Forall _ (Qual [] (TypeVar _))) = True
 isBasicType _ = False
-
-isBus :: Scheme -> Bool
-isBus (Forall [] (Qual [] (TypeCon "Bus"))) = True
-isBus (Forall _ (Qual [] (TypeVar _))) = True
-isBus _ = False
 
 infixr 1 -->
 

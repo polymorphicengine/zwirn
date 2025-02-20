@@ -77,6 +77,7 @@ tokens :-
 <ty> "Number"                      { tok NumberToken }
 <ty> "Map"                         { tok MapToken }
 <ty> "Bus"                         { tok BusToken }
+<ty> "Sound"                       { tok SoundToken }
 <ty> @id                           { tokText VarToken }
 <ty> [A-Z] $alphasmall+            { tokText TypeClass }
 <ty> @id                           { tokText Identifier }
@@ -254,6 +255,7 @@ data Token
   | NumberToken
   | MapToken
   | BusToken
+  | SoundToken
   | VarToken Text
   | TypeClass Text
   -- EOF
@@ -301,6 +303,7 @@ instance Show Token where
  show NumberToken = "Number"
  show MapToken = "Map"
  show BusToken = "Bus"
+ show SoundToken = "Bus"
  show (VarToken t) = show t
  show (TypeClass c) = show c
  show EOF = "end of file"

@@ -44,7 +44,6 @@ import Zwirn.Language.Pretty
 import qualified Zwirn.Language.Rotate as R
 import Zwirn.Language.Simple
 import Zwirn.Language.Syntax
-import Zwirn.Language.TypeCheck.Constraint (runSolve)
 import Zwirn.Language.TypeCheck.Infer
 import Zwirn.Language.TypeCheck.Types
 import Zwirn.Stream
@@ -75,7 +74,8 @@ data Environment
     intEnv :: InterpreterEnv,
     confEnv :: Maybe ConfigEnv,
     currBlock :: Maybe CurrentBlock,
-    ciConfig :: CiConfig
+    ciConfig :: CiConfig,
+    soundAction :: Text -> Zwirn Double -> CI ()
   }
 
 data CIError
@@ -298,23 +298,20 @@ streamAction ctx key t = do
   ty <- runTypeCheck rot
   ex <- interpret rot
   exCtx <- checkHighlight ctx ex
-  if isBasicType ty
-    then
-      ( do
-          str <- gets tStream
-          liftIO $ streamReplace str key (fromExp exCtx)
-      )
-    else
-      if isBus ty
-        then
-          ( do
-              str <- gets tStream
-              let mayindex = readMaybe $ unpack key
-              case mayindex of
-                Just ind -> liftIO $ streamReplaceBus str ind (fromExp exCtx)
-                Nothing -> throw "Please use an integer as bus index."
-          )
-        else throw "Can only stream base types!"
+  case ty of
+    Forall _ (Qual _ (TypeVar _)) -> gets tStream >>= \str -> liftIO $ streamReplace str key (fromExp exCtx)
+    Forall _ (Qual _ (TypeCon "Bus")) -> streamBus key exCtx
+    Forall _ (Qual _ (TypeCon "Sound")) -> gets soundAction >>= \ac -> ac key (fromExp exCtx)
+    Forall _ (Qual _ (TypeCon _)) -> gets tStream >>= \str -> liftIO $ streamReplace str key (fromExp exCtx)
+    _ -> throw "Can only stream base types!"
+
+streamBus :: Text -> Expression -> CI ()
+streamBus key exCtx = do
+  str <- gets tStream
+  let mayindex = readMaybe $ unpack key
+  case mayindex of
+    Just ind -> liftIO $ streamReplaceBus str ind (fromExp exCtx)
+    Nothing -> throw "Please use an integer as bus index."
 
 streamSetAction :: Bool -> Text -> Term -> CI ()
 streamSetAction ctx x t = do

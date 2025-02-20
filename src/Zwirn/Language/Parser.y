@@ -105,6 +105,7 @@ import Zwirn.Language.Block
   numT            { L.RangedToken L.NumberToken _ }
   mapT            { L.RangedToken L.MapToken _ }
   busT            { L.RangedToken L.BusToken _ }
+  soundT          { L.RangedToken L.SoundToken _ }
   varT            { L.RangedToken (L.VarToken _) _ }
   classT          { L.RangedToken (L.TypeClass _) _ }
 
@@ -298,6 +299,7 @@ atomType :: { Type }
   | numT                                        { TypeCon "Number" }
   | mapT                                        { TypeCon "Map" }
   | busT                                        { TypeCon "Bus" }
+  | soundT                                      { TypeCon "Sound" }
   | varT                                        { TypeVar (unTok $1) }
 
 fullType :: { Type }
