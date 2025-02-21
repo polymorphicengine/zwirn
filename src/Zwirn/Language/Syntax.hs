@@ -48,6 +48,7 @@ data Term
   | TChoice Int [Term]
   | TPoly Term Term
   | TLambda [Text] Term
+  | TIfThenElse Term Term (Maybe Term)
   | TApp Term Term
   | TInfix Term Text Term
   | TSectionR Text Term

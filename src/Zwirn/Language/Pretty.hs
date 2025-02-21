@@ -82,6 +82,8 @@ instance Pretty Term where
   ppr p (TInfix t1 n t2) = ppr p t1 <+> text (unpack n) <+> ppr p t2
   ppr p (TBracket t) = parens (ppr p t)
   ppr p (TLambda vs t) = text "\\" <> hcat (punctuate space $ map (text . unpack) vs) <+> text "->" <+> ppr p t
+  ppr p (TIfThenElse x y (Just z)) = text "if" <> ppr p x <> text "then" <> ppr p y <> text "else" <> ppr p z
+  ppr p (TIfThenElse x y Nothing) = text "if" <> ppr p x <> text "then" <> ppr p y
   ppr p (TSectionL t n) = ppr p t <+> text (unpack n)
   ppr p (TSectionR n t) = text (unpack n) <+> ppr p t
   ppr p (TEnum Run x y) = brackets (ppr p x <+> text ".." <+> ppr p y)

@@ -53,6 +53,10 @@ import Zwirn.Language.Block
 %expect 0
 
 %token
+  -- Keywords
+  if              { L.RangedToken L.If _ }
+  then            { L.RangedToken L.Then _ }
+  else            { L.RangedToken L.Else _ }
   -- Identifiers
   identifier      { L.RangedToken (L.Identifier _) _ }
   -- Operators
@@ -235,12 +239,17 @@ sectionR :: { Term }
 sectionL :: { Term }
   : app operator                         %shift { TSectionL $1 (unTok $2) }
 
+conditional :: { Term }
+  : if term then term                    %shift { TIfThenElse $2 $4 Nothing }
+  | if term then term else term                 { TIfThenElse $2 $4 (Just $6) }
+
 -- operators outside of sequences have the weakest binding
 term :: { Term }
   : app operator term                    %shift { TInfix  $1 (unTok $2) $3 }
   | app                                  %shift { $1 }
   | sectionR                             %shift { $1 }
   | sectionL                             %shift { $1 }
+  | conditional                                 { $1 }
 
 -------------------------------------------------------------
 ---------------------- parsing actions ----------------------

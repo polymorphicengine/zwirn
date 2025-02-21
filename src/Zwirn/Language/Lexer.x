@@ -142,6 +142,11 @@ tokens :-
 <0> ":info"                           { tok InfoA }
 <0> (":load") @path                   { tokText (\t -> LoadA $ Text.drop 6 t) }
 
+-- Keywords
+<0> if      { tok If }
+<0> then    { tok Then }
+<0> else    { tok Else }
+
 -- Identifiers
 <0> @id             { tokText Identifier }
 
@@ -232,6 +237,10 @@ data Token
   -- Lambda
   | Lambda
   | Arrow
+  -- If Then Else
+  | If
+  | Then
+  | Else
   -- Enum
   | Enum
   -- Actions
@@ -284,6 +293,9 @@ instance Show Token where
  show RBraces = quoted "}"
  show Lambda = quoted "\\"
  show Arrow = quoted "->"
+ show If = quoted "if"
+ show Then = quoted "then"
+ show Else = quoted "else"
  show Colon = quoted ";"
  show Enum = quoted ".."
  show StreamA = quoted "<-"
