@@ -72,6 +72,7 @@ data Action
   | StreamSet Text Term
   | StreamOnce Term
   | StreamSetTempo Tempo Text
+  | HushAction
   | ConfigPath
   | ResetConfig
   | Def Def

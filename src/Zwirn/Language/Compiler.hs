@@ -360,6 +360,9 @@ streamSetTempoAction :: Tempo -> Text -> CI ()
 streamSetTempoAction CPS t = gets tStream >>= \str -> liftIO $ streamSetCPS str (toRational (read $ unpack t :: Double))
 streamSetTempoAction BPM t = gets tStream >>= \str -> liftIO $ streamSetBPM str (toRational (read $ unpack t :: Double))
 
+hushAction :: CI ()
+hushAction = gets tStream >>= liftIO . streamHush
+
 resetConfigAction :: CI String
 resetConfigAction = do
   (Environment {confEnv = mayEnv}) <- get
@@ -377,6 +380,7 @@ getConfigPathAction = do
 runAction :: Bool -> Action -> CI String
 runAction b (StreamAction i t) = streamAction b i t >> return ""
 runAction b (StreamSet i t) = streamSetAction b i t >> return ""
+runAction _ HushAction = hushAction >> return ""
 runAction b (StreamOnce t) = streamOnceAction b t >> return ""
 runAction _ (StreamSetTempo mode t) = streamSetTempoAction mode t >> return ""
 runAction _ (Show t) = showAction t

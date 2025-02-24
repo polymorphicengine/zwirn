@@ -94,6 +94,7 @@ import Zwirn.Language.Block
   -- Actions
   ';'             { L.RangedToken L.Colon _ }
   '<-'            { L.RangedToken L.StreamA _ }
+  ':hush'         { L.RangedToken L.Hush _ }
   ':cps'          { L.RangedToken L.TempoCps _ }
   ':bpm'          { L.RangedToken L.TempoBpm _ }
   ':t'            { L.RangedToken L.TypeA _ }
@@ -102,7 +103,7 @@ import Zwirn.Language.Block
   ':resetconfig'  { L.RangedToken L.ResetConfigA _ }
   '='             { L.RangedToken L.Assign _ }
   ':load'         { L.RangedToken (L.LoadA _ ) _}
-  ':info'           { L.RangedToken L.InfoA _ }
+  ':info'         { L.RangedToken L.InfoA _ }
   -- Type Tokens
   '=>'            { L.RangedToken L.Context _ }
   textT           { L.RangedToken L.TextToken _ }
@@ -262,6 +263,7 @@ action :: { Action }
   : string     '<-' term                        { StreamAction (unTok $1) $3 }
   | number     '<-' term                        { StreamAction (unTok $1) $3 }
   | identifier '<-' term                        { StreamSet (unTok $1) $3 }
+  | ':hush'                                     { HushAction }
   | ':cps' number                               { StreamSetTempo CPS (unTok $2) }
   | ':bpm' number                               { StreamSetTempo BPM (unTok $2) }
   | '!' term                                    { StreamOnce $2 }

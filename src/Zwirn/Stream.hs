@@ -71,6 +71,9 @@ type RemoteAddress = N.SockAddr
 streamReplace :: Stream -> Text -> Zwirn Expression -> IO ()
 streamReplace str key p = modifyMVar_ (sPlayMap str) (return . Map.insert key p)
 
+streamHush :: Stream -> IO ()
+streamHush str = modifyMVar_ (sPlayMap str) (return . const Map.empty)
+
 streamReplaceBus :: Stream -> Int -> Zwirn Expression -> IO ()
 streamReplaceBus str key p = modifyMVar_ (sBusMap str) (return . Map.insert key p)
 
@@ -209,15 +212,14 @@ handshake addr udp bussesMV = sendHandshake >> listen 0
     checkHandshake waits = do
       busses <- readMVar bussesMV
       when (null busses) $ do
-        -- when (waits == 0) $ print "Waiting for SuperDirt (v.1.7.2 or higher).."
+        when (waits == 0) $ print "Waiting for SuperDirt (v.1.7.2 or higher).."
         sendHandshake
     respond :: O.Message -> IO ()
     respond (O.Message "/dirt/hello" _) = sendHandshake
     respond (O.Message "/dirt/handshake/reply" xs) = do
       prev <- swapMVar bussesMV $ bufferIndices xs
-      return ()
-    -- Only report the first time..
-    -- when (null prev) $ print "Connected to SuperDirt."
+      -- Only report the first time..
+      when (null prev) $ print "Connected to SuperDirt."
     respond _ = return ()
     bufferIndices :: [O.Datum] -> [Int]
     bufferIndices [] = []

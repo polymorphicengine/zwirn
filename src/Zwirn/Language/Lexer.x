@@ -132,6 +132,7 @@ tokens :-
 -- Actions
 <0> ";"                               { tok Colon }
 <0> "<-"                              { tok StreamA }
+<0> ":hush"                           { tok Hush }
 <0> ":cps"                            { tok TempoCps }
 <0> ":bpm"                            { tok TempoBpm }
 <0> ":t"                              { tok TypeA }
@@ -246,6 +247,7 @@ data Token
   -- Actions
   | Colon
   | StreamA
+  | Hush
   | TempoCps
   | TempoBpm
   | TypeA
@@ -299,6 +301,7 @@ instance Show Token where
  show Colon = quoted ";"
  show Enum = quoted ".."
  show StreamA = quoted "<-"
+ show Hush = quoted ":hush"
  show TempoCps = ":cps"
  show TempoBpm = ":bpm"
  show TypeA = quoted ":t"
