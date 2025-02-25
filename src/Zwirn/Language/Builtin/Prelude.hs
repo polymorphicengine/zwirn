@@ -270,7 +270,15 @@ numberFunctions =
 signals :: Map.Map Text AnnotatedExpression
 signals =
   Map.unions
-    [ "sine"
+    [ "now"
+        === toExp (now :: Zwirn Time)
+        <:: "Number"
+        --| "current time",
+      "cyc"
+        === toExp (C.cyc :: Zwirn Int)
+        <:: "Number"
+        --| "current cycle",
+      "sine"
         === toExp (sine :: Zwirn Time)
         <:: "Number"
         --| "sine signal",
