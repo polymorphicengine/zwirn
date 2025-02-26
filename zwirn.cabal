@@ -13,7 +13,7 @@ copyright:          Martin Gius
 category:           Language, Sound
 build-type:         Simple
 extra-doc-files:    README.md
-tested-with:        GHC == 9.8.2
+tested-with:        GHC == 9.12.1, GHC == 9.8.2, GHC == 8.10.7
 
 source-repository this
   type:              git
@@ -46,10 +46,10 @@ library
                    Zwirn.Language
                    Zwirn.Stream
   build-depends: array >= 0.5 && < 0.6,
-                 base >= 4.17 && < 4.20,
+                 base >= 4.14 && < 4.22,
                  bytestring >= 0.12.1 && < 0.13,
                  pretty >= 1.1 && < 1.2,
-                 containers >= 0.6.8 && < 0.7,
+                 containers >= 0.6.8 && < 0.8,
                  exceptions >= 0.10.9 && < 0.11,
                  mtl >= 2.3.1 && < 2.4,
                  filepath >= 1.5.4 && < 1.6,

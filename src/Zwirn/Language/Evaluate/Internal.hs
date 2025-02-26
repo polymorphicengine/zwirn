@@ -32,6 +32,7 @@ import Zwirn.Core.State
 import Zwirn.Core.Types
 import Zwirn.Language.Evaluate.Convert
 import Zwirn.Language.Evaluate.Expression
+import Control.Applicative (liftA2)
 
 -- helper
 
