@@ -65,6 +65,7 @@ import Zwirn.Language.Block
   -- Constants
   string          { L.RangedToken (L.String _) _ }
   number          { L.RangedToken (L.Number _) _ }
+  flag            { L.RangedToken (L.CompilerFlag _) _ }
   line            { L.RangedToken (L.LineT _) _ }
   bsep            { L.RangedToken (L.BlockSep) _ }
   '~'             { L.RangedToken L.Rest _ }
@@ -104,6 +105,8 @@ import Zwirn.Language.Block
   '='             { L.RangedToken L.Assign _ }
   ':load'         { L.RangedToken (L.LoadA _ ) _}
   ':info'         { L.RangedToken L.InfoA _ }
+  ':reset'        { L.RangedToken L.ResetA _ }
+  ':set'          { L.RangedToken L.SetA _ }
   -- Type Tokens
   '=>'            { L.RangedToken L.Context _ }
   textT           { L.RangedToken L.TextToken _ }
@@ -274,6 +277,8 @@ action :: { Action }
   | ':show' term                                { Show $2 }
   | ':load'                                     { Load $ unTok $1 }
   | ':info' identifier                          { Info $ unTok $2 }
+  | ':reset'                                    { ResetEnv }
+  | ':set' flag                                 { Set (unTok $2) }
 
 actionsrecrev :: { [Action] }
   : actionsrecrev ';' action                    { $3:$1 }
@@ -352,6 +357,7 @@ unTok (L.RangedToken  (L.LineT x) _) = x
 unTok (L.RangedToken  (L.VarToken x) _) = x
 unTok (L.RangedToken  (L.TypeClass x) _) = x
 unTok (L.RangedToken  (L.RepeatNum x) _) = x
+unTok (L.RangedToken  (L.CompilerFlag x) _) = x
 unTok _ = error "can't untok"
 
 

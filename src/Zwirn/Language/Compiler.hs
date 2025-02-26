@@ -72,6 +72,7 @@ data Environment
   = Environment
   { tStream :: Stream,
     intEnv :: InterpreterEnv,
+    defaultEnv :: InterpreterEnv, -- the environment that is used to fall back to on a reset
     confEnv :: Maybe ConfigEnv,
     currBlock :: Maybe CurrentBlock,
     ciConfig :: CiConfig,
@@ -377,6 +378,14 @@ getConfigPathAction = do
     Nothing -> throw "Configuration not available."
     Just (ConfigEnv path _) -> liftIO path
 
+resetEnvAction :: CI String
+resetEnvAction = modify (\env -> env {intEnv = defaultEnv env}) >> return "Environment reset to default!"
+
+setAction :: String -> CI String
+setAction "DynamicTypes" = modify (\env -> env {ciConfig = (ciConfig env) {ciConfigDynamicTypes = True}}) >> return "Successfully enabled DynamicTypes."
+setAction "OverwriteBuiltin" = modify (\env -> env {ciConfig = (ciConfig env) {ciConfigOverwriteBuiltin = True}}) >> return "Successfully enabled OverwriteBuiltin."
+setAction _ = return "Unknown compiler flag. The flags are: DynamicTypes, OverwriteBuiltin."
+
 runAction :: Bool -> Action -> CI String
 runAction b (StreamAction i t) = streamAction b i t >> return ""
 runAction b (StreamSet i t) = streamSetAction b i t >> return ""
@@ -390,6 +399,8 @@ runAction _ (Load p) = loadAction p >> return ""
 runAction _ (Info p) = infoAction p
 runAction _ ConfigPath = getConfigPathAction
 runAction _ ResetConfig = resetConfigAction
+runAction _ ResetEnv = resetEnvAction
+runAction _ (Set flag) = setAction (unpack flag)
 
 runActions :: Bool -> [Action] -> CI String
 runActions b as = last <$> mapM (runAction b) as

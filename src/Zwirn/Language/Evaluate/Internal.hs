@@ -2,6 +2,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# OPTIONS_GHC -Wno-incomplete-uni-patterns #-}
+{-# OPTIONS_GHC -Wno-unused-imports #-}
 {-# OPTIONS_GHC -Wno-unused-top-binds #-}
 
 module Zwirn.Language.Evaluate.Internal where
@@ -24,6 +25,7 @@ module Zwirn.Language.Evaluate.Internal where
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 -}
 
+import Control.Applicative (liftA2)
 import qualified Data.Map as Map
 import Data.Text (Text, pack)
 import Zwirn.Core.Core (withState, (<$$>))
@@ -32,7 +34,6 @@ import Zwirn.Core.State
 import Zwirn.Core.Types
 import Zwirn.Language.Evaluate.Convert
 import Zwirn.Language.Evaluate.Expression
-import Control.Applicative (liftA2)
 
 -- helper
 

@@ -80,6 +80,8 @@ data Action
   | Show Term
   | Load Text
   | Info Text
+  | ResetEnv
+  | Set Text
   deriving (Eq, Show)
 
 data Associativity

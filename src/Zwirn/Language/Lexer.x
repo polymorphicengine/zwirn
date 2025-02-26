@@ -25,7 +25,7 @@ module Zwirn.Language.Lexer
 {-
     Lexer.hs - lexer for zwirn, code adapted from
     https://serokell.io/blog/lexing-with-alex
-    Copyright (C) 2023, Martin Gius
+    Copyright (C) 2025, Martin Gius
 
     This library is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -50,6 +50,7 @@ import Control.Monad (when)
 
 $digit = [0-9]
 $alphasmall = [a-z]
+$alphabig = [A-Z]
 $alpha = [a-zA-Z]
 
 @id = ($alphasmall) ($alpha | $digit | \_ )*
@@ -59,6 +60,7 @@ $alpha = [a-zA-Z]
 @op = ((@singles (@singles | @otherops | @specialop)*) | ((@otherops | @specialop) (@singles | @otherops | @specialop)+))
 @num = ("-")? ($digit)+ ("." ($digit)+)?
 @path = $white ($alpha | "/" | ".")+
+@flag = $alphabig $alpha*
 
 tokens :-
 
@@ -141,6 +143,8 @@ tokens :-
 <0> ":config"                         { tok ConfigA }
 <0> ":resetconfig"                    { tok ResetConfigA }
 <0> ":info"                           { tok InfoA }
+<0> ":reset"                          { tok ResetA }
+<0> ":set"                            { tok SetA }
 <0> (":load") @path                   { tokText (\t -> LoadA $ Text.drop 6 t) }
 
 -- Keywords
@@ -158,6 +162,10 @@ tokens :-
 <0> @num            { tokText Number }
 <0> \"[^\"]*\"      { tokText String }
 <0> "~"             { tok Rest }
+
+-- Compiler Flags
+
+<0> @flag           { tokText CompilerFlag }
 
 -- Operators
 <0> @op             { tokText Operator }
@@ -257,6 +265,9 @@ data Token
   | Assign
   | LoadA Text
   | InfoA
+  | ResetA
+  | SetA
+  | CompilerFlag Text
   -- Line & Block Tokens
   | LineT Text
   | BlockSep
@@ -311,6 +322,9 @@ instance Show Token where
  show Assign = quoted "="
  show (LoadA x) = ":load " <> show x
  show InfoA = quoted ":info"
+ show ResetA = quoted ":reset"
+ show SetA = quoted ":set"
+ show (CompilerFlag x) = show x
  show (LineT t) = "line " <> show t
  show BlockSep = "block"
  show Context = "=>"
