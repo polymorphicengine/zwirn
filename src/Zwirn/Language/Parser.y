@@ -22,7 +22,7 @@ import Zwirn.Language.Block
 {-
     Parser.hs - parser for zwirn, code adapted from
     https://serokell.io/blog/parsing-with-happy
-    Copyright (C) 2023, Martin Gius
+    Copyright (C) 2025, Martin Gius
 
     This library is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -57,6 +57,8 @@ import Zwirn.Language.Block
   if              { L.RangedToken L.If _ }
   then            { L.RangedToken L.Then _ }
   else            { L.RangedToken L.Else _ }
+  case            { L.RangedToken L.Case _ }
+  of              { L.RangedToken L.Of _ }
   -- Identifiers
   identifier      { L.RangedToken (L.Identifier _) _ }
   -- Operators
@@ -69,6 +71,7 @@ import Zwirn.Language.Block
   line            { L.RangedToken (L.LineT _) _ }
   bsep            { L.RangedToken (L.BlockSep) _ }
   '~'             { L.RangedToken L.Rest _ }
+  '_'             { L.RangedToken L.Underscore _ }
   -- Repeat
   '!'             { L.RangedToken L.Repeat _ }
   repnum          { L.RangedToken (L.RepeatNum _) _}
@@ -247,6 +250,29 @@ conditional :: { Term }
   : if term then term                    %shift { TIfThenElse $2 $4 Nothing }
   | if term then term else term                 { TIfThenElse $2 $4 (Just $6) }
 
+numbercase :: { (Pattern, Term) }
+  : number '->' term ';'                        { (NumberPattern (read $ Text.unpack $ unTok $1), $3) }
+
+textcase :: { (Pattern, Term) }
+  : string '->' term ';'                        { (TextPattern (unTok $1), $3) }
+
+defaultcase :: { Term }
+  : '_' '->' term ';'                           { $3 }
+
+numbercases :: { [(Pattern, Term)] }
+  : numbercase                           %shift { [$1] }
+  | numbercase numbercases                      { $1:$2 }
+
+textcases :: { [(Pattern, Term)] }
+  : textcase                             %shift { [$1] }
+  | textcase textcases                          { $1:$2 }
+
+caseexp :: { Term }
+  : case term of numbercases                    { TCase $2 Nothing $4 }
+  | case term of textcases                      { TCase $2 Nothing $4 }
+  | case term of numbercases defaultcase        { TCase $2 (Just $5) $4 }
+  | case term of textcases defaultcase          { TCase $2 (Just $5) $4 }
+
 -- operators outside of sequences have the weakest binding
 term :: { Term }
   : app operator term                    %shift { TInfix  $1 (unTok $2) $3 }
@@ -254,27 +280,28 @@ term :: { Term }
   | sectionR                             %shift { $1 }
   | sectionL                             %shift { $1 }
   | conditional                                 { $1 }
+  | caseexp                                     { $1 }
 
 -------------------------------------------------------------
 ---------------------- parsing actions ----------------------
 -------------------------------------------------------------
 
-def :: { Def }
-  : identifier many(identifier) '=' term        { Let (unTok $1) (map unTok $2) $4 }
-
-action :: { Action }
+-- actions that end in a term expression
+termaction :: { Action }
   : string     '<-' term                        { StreamAction (unTok $1) $3 }
   | number     '<-' term                        { StreamAction (unTok $1) $3 }
   | identifier '<-' term                        { StreamSet (unTok $1) $3 }
-  | ':hush'                                     { HushAction }
-  | ':cps' number                               { StreamSetTempo CPS (unTok $2) }
-  | ':bpm' number                               { StreamSetTempo BPM (unTok $2) }
   | '!' term                                    { StreamOnce $2 }
-  | ':config'                                   { ConfigPath }
-  | ':resetconfig'                              { ResetConfig }
-  | def                                         { Def $1 }
+  | identifier many(identifier) '=' term        { Def (Let (unTok $1) (map unTok $2) $4) }
   | ':t' term                                   { Type $2 }
   | ':show' term                                { Show $2 }
+
+action :: { Action }
+  : ':hush'                                     { HushAction }
+  | ':cps' number                               { StreamSetTempo CPS (unTok $2) }
+  | ':bpm' number                               { StreamSetTempo BPM (unTok $2) }
+  | ':config'                                   { ConfigPath }
+  | ':resetconfig'                              { ResetConfig }
   | ':load'                                     { Load $ unTok $1 }
   | ':info' identifier                          { Info $ unTok $2 }
   | ':reset'                                    { ResetEnv }
@@ -282,7 +309,9 @@ action :: { Action }
 
 actionsrecrev :: { [Action] }
   : actionsrecrev ';' action                    { $3:$1 }
+  | actionsrecrev optional(';') termaction      { $3:$1 }
   | action                                      { [$1] }
+  | termaction                                  { [$1] }
 
 actions :: { [Action] }
   : actionsrecrev ';'                           { reverse $1 }

@@ -48,6 +48,7 @@ data Expression
   | ESeq [Expression]
   | EStack [Expression]
   | EChoice Int [Expression]
+  | ECase Expression (Maybe Expression) [(Pattern, Expression)]
   | EZwirn (Zwirn Expression)
 
 showWithState :: ExpressionMap -> Expression -> String

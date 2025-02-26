@@ -31,8 +31,10 @@ where
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 -}
 
+import Data.Bifunctor (second)
 import Data.Maybe (fromJust)
 import Data.Text (unpack)
+import Zwirn.Core.Conditional (caseZwirn)
 import Zwirn.Core.Cord
 import Zwirn.Core.Core
 import Zwirn.Core.Modulate
@@ -42,6 +44,7 @@ import Zwirn.Language.Environment
 import Zwirn.Language.Evaluate.Convert
 import Zwirn.Language.Evaluate.Expression
 import Zwirn.Language.Simple
+import Zwirn.Language.Syntax (Pattern (..))
 import Zwirn.Language.TypeCheck.Types
 
 compile :: SimpleTerm -> Expression
@@ -54,6 +57,7 @@ compile (SText p x) = EZwirn $ addInfo p $ pure $ EText x
 compile (SSeq xs) = ESeq $ map compile xs
 compile (SStack xs) = EStack $ map compile xs
 compile (SChoice i xs) = EChoice i $ map compile xs
+compile (SCase x y xs) = ECase (compile x) (fmap compile y) (map (second compile) xs)
 compile (SInfix s1 n s2) = EApp (EApp (EVar Nothing n) (compile s1)) (compile s2)
 compile (SBracket s) = compile s
 compile SRest = EZwirn silence
@@ -88,6 +92,7 @@ link bs (EApp f x) = link bs f ! link bs x
 link bs (ESeq xs) = EZwirn $ fastcat $ map (toZwirn . link bs) xs
 link bs (EStack xs) = EZwirn $ stack $ map (toZwirn . link bs) xs
 link bs (EChoice i xs) = EZwirn $ chooseWithSeed i $ map (toZwirn . link bs) xs
+link bs (ECase x Nothing xs) = EZwirn $ caseZwirn (toZwirn $ link bs x) silence (map (\(p, z) -> (patternToExpression p, toZwirn $ link bs z)) xs)
 link _ e = e
 
 evaluate :: InterpreterEnv -> SimpleTerm -> Expression
@@ -100,3 +105,7 @@ addPosExp _ x = x
 removePosExp :: Expression -> Expression
 removePosExp (EZwirn z) = EZwirn $ removeInfo z
 removePosExp x = x
+
+patternToExpression :: Pattern -> Expression
+patternToExpression (NumberPattern x) = ENum x
+patternToExpression (TextPattern x) = EText x

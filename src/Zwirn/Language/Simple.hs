@@ -27,6 +27,7 @@ where
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 -}
 
+import Data.Bifunctor (second)
 import Data.Text as Text (Text, filter, pack)
 import Zwirn.Language.Syntax
 
@@ -39,6 +40,7 @@ data SimpleTerm
   | SSeq [SimpleTerm]
   | SStack [SimpleTerm]
   | SChoice Int [SimpleTerm]
+  | SCase SimpleTerm (Maybe SimpleTerm) [(Pattern, SimpleTerm)]
   | SLambda Var SimpleTerm
   | SApp SimpleTerm SimpleTerm
   | SInfix SimpleTerm OperatorSymbol SimpleTerm
@@ -60,6 +62,7 @@ simplify x@(TRepeat _ _) = SSeq $ map simplify $ resolveRepeat x
 simplify (TSeq ts) = SSeq (map simplify $ concatMap resolveRepeat ts)
 simplify (TStack ts) = SStack (map simplify ts)
 simplify (TChoice i ts) = SChoice i (map simplify ts)
+simplify (TCase x def xs) = SCase (simplify x) (fmap simplify def) (map (second simplify) xs)
 simplify (TAlt ts) = SBracket $ SInfix (SSeq ss) "/" (SNum Nothing (pack $ show $ length ss))
   where
     ss = map simplify $ concatMap resolveRepeat ts

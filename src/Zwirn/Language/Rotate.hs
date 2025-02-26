@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TupleSections #-}
 
 module Zwirn.Language.Rotate
   ( runRotate,
@@ -122,5 +123,12 @@ rotate SRest = return SRest
 rotate (SSeq ts) = fmap SSeq (mapM rotate ts)
 rotate (SStack ts) = fmap SStack (mapM rotate ts)
 rotate (SChoice n ts) = fmap (SChoice n) (mapM rotate ts)
+rotate (SCase x Nothing xs) = do
+  y <- rotate x
+  SCase y Nothing <$> mapM (\(p, z) -> (p,) <$> rotate z) xs
+rotate (SCase x (Just def) xs) = do
+  y <- rotate x
+  d <- rotate def
+  SCase y (Just d) <$> mapM (\(p, z) -> (p,) <$> rotate z) xs
 rotate (SLambda vs t) = SLambda vs <$> rotate t
 rotate (SBracket t) = fmap SBracket (rotate t)

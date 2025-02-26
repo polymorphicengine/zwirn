@@ -65,6 +65,10 @@ instance Pretty (Qualified Type) where
 instance Pretty Scheme where
   ppr p (Forall _ t) = ppr p t
 
+instance Pretty Pattern where
+  ppr _ (NumberPattern x) = double x
+  ppr _ (TextPattern x) = text $ unpack x
+
 instance Pretty Term where
   ppr _ (TVar _ x) = text $ unpack x
   ppr _ TRest = text "~"
@@ -77,6 +81,8 @@ instance Pretty Term where
   ppr p (TAlt ts) = text "<" <> hcat (punctuate space (map (ppr p) ts)) <> text ">"
   ppr p (TChoice _ ts) = brackets (hcat $ punctuate (text "|") (map (ppr p) ts))
   ppr p (TStack ts) = brackets (hcat $ punctuate comma (map (ppr p) ts))
+  ppr p (TCase t Nothing ts) = text "case" <> ppr p t <> text "of" <> hcat (punctuate (text ";") (map (\(l, x) -> ppr p l <> text "->" <> ppr p x) ts))
+  ppr p (TCase t (Just def) ts) = text "case" <> ppr p t <> text "of" <> hcat (punctuate (text ";") (map (\(l, x) -> ppr p l <> text "->" <> ppr p x) ts ++ [text "_ ->" <> ppr p def]))
   ppr p (TPoly t1 t2) = ppr p t1 <> text "%" <> ppr p t2
   ppr p (TApp t1 t2) = parensIf (p > 0) (ppr (p + 1) t1 <+> ppr p t2)
   ppr p (TInfix t1 n t2) = ppr p t1 <+> text (unpack n) <+> ppr p t2

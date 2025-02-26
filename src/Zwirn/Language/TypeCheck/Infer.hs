@@ -37,6 +37,7 @@ import Data.Text (Text, pack)
 
 import Zwirn.Language.Environment
 import Zwirn.Language.Simple
+import Zwirn.Language.Syntax (Pattern (..))
 import Zwirn.Language.TypeCheck.Constraint
 import Zwirn.Language.TypeCheck.Types
 
@@ -178,6 +179,18 @@ infer expr = case expr of
     (t, ps, cs) <- infer x
     infs <- mapM infer xs
     return (t, ps, cs ++ concatMap (\(_, _, y) -> y) infs ++ [(t, t') | t' <- map (\(y, _, _) -> y) infs])
+  SCase z Nothing ((NumberPattern _, x) : ys) -> do
+    let xs = map snd ys
+    (t, ps, cs) <- infer x
+    (t2, ps2, cs2) <- infer z
+    infs <- mapM infer xs
+    return (t, ps ++ ps2, cs ++ cs2 ++ concatMap (\(_, _, y) -> y) infs ++ [(t, t') | t' <- map (\(y, _, _) -> y) infs] ++ [(t2, numberT)])
+  SCase z Nothing ((TextPattern _, x) : ys) -> do
+    let xs = map snd ys
+    (t, ps, cs) <- infer x
+    (t2, ps2, cs2) <- infer z
+    infs <- mapM infer xs
+    return (t, ps ++ ps2, cs ++ cs2 ++ concatMap (\(_, _, y) -> y) infs ++ [(t, t') | t' <- map (\(y, _, _) -> y) infs] ++ [(t2, textT)])
   _ -> error "Can't happen"
 
 normalize :: Scheme -> Scheme

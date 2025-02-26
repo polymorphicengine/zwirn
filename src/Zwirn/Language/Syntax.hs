@@ -35,6 +35,9 @@ data Position = Pos
 
 data EnumKind = Cord | Choice | Run | Alt deriving (Eq, Show)
 
+data Pattern = NumberPattern Double | TextPattern Text
+  deriving (Eq, Show)
+
 -- sugary representation of patterns
 data Term
   = TVar Position Text
@@ -56,6 +59,7 @@ data Term
   | TBracket Term
   | TEnum EnumKind Term Term
   | TEnumThen EnumKind Term Term Term
+  | TCase Term (Maybe Term) [(Pattern, Term)]
   deriving (Eq, Show)
 
 data Def

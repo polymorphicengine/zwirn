@@ -151,6 +151,8 @@ tokens :-
 <0> if      { tok If }
 <0> then    { tok Then }
 <0> else    { tok Else }
+<0> case    { tok Case }
+<0> of      { tok Of }
 
 -- Identifiers
 <0> @id             { tokText Identifier }
@@ -162,6 +164,7 @@ tokens :-
 <0> @num            { tokText Number }
 <0> \"[^\"]*\"      { tokText String }
 <0> "~"             { tok Rest }
+<0> "_"             { tok Underscore }
 
 -- Compiler Flags
 
@@ -219,6 +222,7 @@ data Token
   | String Text
   | Number Text
   | Rest
+  | Underscore
   -- Operators
   | Operator Text
   | SpecialOp Text
@@ -250,6 +254,9 @@ data Token
   | If
   | Then
   | Else
+  -- Case Of
+  | Case
+  | Of
   -- Enum
   | Enum
   -- Actions
@@ -289,6 +296,7 @@ instance Show Token where
  show (String s) = show s
  show (Number d) = show d
  show Rest = quoted "~"
+ show Underscore = quoted "_"
  show (Operator o) = show o
  show (SpecialOp o) = show o
  show Repeat = quoted "!"
@@ -309,6 +317,8 @@ instance Show Token where
  show If = quoted "if"
  show Then = quoted "then"
  show Else = quoted "else"
+ show Case = quoted "case"
+ show Of = quoted "of"
  show Colon = quoted ";"
  show Enum = quoted ".."
  show StreamA = quoted "<-"
