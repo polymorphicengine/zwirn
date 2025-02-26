@@ -93,6 +93,7 @@ link bs (ESeq xs) = EZwirn $ fastcat $ map (toZwirn . link bs) xs
 link bs (EStack xs) = EZwirn $ stack $ map (toZwirn . link bs) xs
 link bs (EChoice i xs) = EZwirn $ chooseWithSeed i $ map (toZwirn . link bs) xs
 link bs (ECase x Nothing xs) = EZwirn $ caseZwirn (toZwirn $ link bs x) silence (map (\(p, z) -> (patternToExpression p, toZwirn $ link bs z)) xs)
+link bs (ECase x (Just def) xs) = EZwirn $ caseZwirn (toZwirn $ link bs x) (toZwirn $ link bs def) (map (\(p, z) -> (patternToExpression p, toZwirn $ link bs z)) xs)
 link _ e = e
 
 evaluate :: InterpreterEnv -> SimpleTerm -> Expression
