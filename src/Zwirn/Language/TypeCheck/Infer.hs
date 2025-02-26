@@ -191,6 +191,20 @@ infer expr = case expr of
     (t2, ps2, cs2) <- infer z
     infs <- mapM infer xs
     return (t, ps ++ ps2, cs ++ cs2 ++ concatMap (\(_, _, y) -> y) infs ++ [(t, t') | t' <- map (\(y, _, _) -> y) infs] ++ [(t2, textT)])
+  SCase z (Just def) ((NumberPattern _, x) : ys) -> do
+    let xs = map snd ys
+    (t, ps, cs) <- infer x
+    (t2, ps2, cs2) <- infer z
+    (t3, ps3, cs3) <- infer def
+    infs <- mapM infer xs
+    return (t, ps ++ ps2 ++ ps3, cs ++ cs2 ++ cs3 ++ concatMap (\(_, _, y) -> y) infs ++ [(t, t') | t' <- map (\(y, _, _) -> y) infs] ++ [(t2, numberT)] ++ [(t, t3)])
+  SCase z (Just def) ((TextPattern _, x) : ys) -> do
+    let xs = map snd ys
+    (t, ps, cs) <- infer x
+    (t2, ps2, cs2) <- infer z
+    (t3, ps3, cs3) <- infer def
+    infs <- mapM infer xs
+    return (t, ps ++ ps2 ++ ps3, cs ++ cs2 ++ cs3 ++ concatMap (\(_, _, y) -> y) infs ++ [(t, t') | t' <- map (\(y, _, _) -> y) infs] ++ [(t2, textT)] ++ [(t, t3)])
   _ -> error "Can't happen"
 
 normalize :: Scheme -> Scheme
