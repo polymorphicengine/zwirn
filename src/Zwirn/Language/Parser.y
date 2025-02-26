@@ -258,6 +258,7 @@ textcase :: { (Pattern, Term) }
 
 defaultcase :: { Term }
   : '_' '->' term ';'                           { $3 }
+  | '_' '->' term                        %shift { $3 }
 
 numbercases :: { [(Pattern, Term)] }
   : numbercase                           %shift { [$1] }
