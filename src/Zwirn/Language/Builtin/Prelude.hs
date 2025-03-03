@@ -421,6 +421,10 @@ structureFunctions =
         === toExp (struct :: Zwirn Expression -> Zwirn Expression -> Zwirn Expression)
         <:: "a -> b -> b"
         --| "copy the structure from first value",
+      "timestruct"
+        === toExp (struct :: Zwirn Expression -> Zwirn Expression -> Zwirn Expression)
+        <:: "Number -> a -> a"
+        --| "take the values of the first zwirn as the structure",
       "run"
         === toExp (run :: Zwirn Int -> Zwirn Int)
         <:: "Number -> Number"
