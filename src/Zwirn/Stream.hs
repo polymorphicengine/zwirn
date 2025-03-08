@@ -193,6 +193,9 @@ updateState stmv (st : _) = modifyMVar_ stmv (const $ return st)
 ------------ handshake stuff -------------
 ------------------------------------------
 
+-- handshake is in the responsibility of a specific listener implementation
+-- these functions can be used to implement implement it
+
 sendHandshake :: O.Udp -> RemoteAddress -> IO ()
 sendHandshake udp = O.sendTo udp (O.Packet_Message $ O.Message "/dirt/handshake" [])
 
