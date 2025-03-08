@@ -22,9 +22,8 @@ module Zwirn.Stream where
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 -}
 
-import Control.Concurrent (forkIO)
 import Control.Concurrent.MVar (MVar, modifyMVar_, newMVar, readMVar, swapMVar)
-import Control.Monad (when)
+import Control.Monad (void)
 import Data.Bifunctor (second)
 import qualified Data.Map as Map
 import Data.Maybe (catMaybes, isJust)
@@ -33,7 +32,6 @@ import qualified Data.Text as T
 import GHC.Generics (Generic)
 import qualified Network.Socket as N
 import qualified Sound.Osc as O
-import Sound.Osc.Time.Timeout (recvPacketTimeout)
 import qualified Sound.Osc.Transport.Fd.Udp as O
 import Sound.Tidal.Clock
 import qualified Sound.Tidal.Clock as Clock
@@ -102,8 +100,6 @@ startStream config zMV stMV conf = do
 
   busMapMV <- newMVar Map.empty
   bussesMV <- newMVar []
-
-  _ <- forkIO $ handshake (N.addrAddress remote) local bussesMV
 
   cref <- clocked conf (tickAction zMV busMapMV stMV bussesMV (N.addrAddress remote) (N.addrAddress remoteBus) local)
   return $ Stream zMV busMapMV stMV bussesMV (N.addrAddress remote) (N.addrAddress remoteBus) local cref conf
@@ -193,39 +189,19 @@ updateState :: MVar ExpressionMap -> [ExpressionMap] -> IO ()
 updateState _ [] = return ()
 updateState stmv (st : _) = modifyMVar_ stmv (const $ return st)
 
-handshake :: RemoteAddress -> O.Udp -> MVar [Int] -> IO ()
-handshake addr udp bussesMV = sendHandshake >> listen 0
+------------------------------------------
+------------ handshake stuff -------------
+------------------------------------------
+
+sendHandshake :: O.Udp -> RemoteAddress -> IO ()
+sendHandshake udp = O.sendTo udp (O.Packet_Message $ O.Message "/dirt/handshake" [])
+
+actOnHandshake :: O.Message -> O.Udp -> RemoteAddress -> MVar [Int] -> IO ()
+actOnHandshake (O.Message "/dirt/hello" _) udp remote _ = sendHandshake udp remote
+actOnHandshake (O.Message "/dirt/handshake/reply" xs) _ _ bussesMV = void $ swapMVar bussesMV $ bufferIndices xs
   where
-    sendHandshake :: IO ()
-    sendHandshake = O.sendTo udp (O.Packet_Message $ O.Message "/dirt/handshake" []) addr
-    listen :: Int -> IO ()
-    listen waits = do
-      ms <- recvMessagesTimeout 2 udp
-      if null ms
-        then do
-          checkHandshake waits -- there was a timeout, check handshake
-          listen (waits + 1)
-        else do
-          mapM_ respond ms
-          listen 0
-    checkHandshake :: Int -> IO ()
-    checkHandshake waits = do
-      busses <- readMVar bussesMV
-      when (null busses) $ do
-        when (waits == 0) $ print "Waiting for SuperDirt (v.1.7.2 or higher).."
-        sendHandshake
-    respond :: O.Message -> IO ()
-    respond (O.Message "/dirt/hello" _) = sendHandshake
-    respond (O.Message "/dirt/handshake/reply" xs) = do
-      prev <- swapMVar bussesMV $ bufferIndices xs
-      -- Only report the first time..
-      when (null prev) $ print "Connected to SuperDirt."
-    respond _ = return ()
-    bufferIndices :: [O.Datum] -> [Int]
     bufferIndices [] = []
     bufferIndices (x : xs')
       | x == O.AsciiString (O.ascii "&controlBusIndices") = catMaybes $ takeWhile isJust $ map O.datum_integral xs'
       | otherwise = bufferIndices xs'
-
-recvMessagesTimeout :: Double -> O.Udp -> IO [O.Message]
-recvMessagesTimeout n sock = maybe [] O.packetMessages <$> recvPacketTimeout n sock
+actOnHandshake _ _ _ _ = return ()
